@@ -1,0 +1,297 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────
+
+enum Plan {
+  basic
+  professional
+  premium
+}
+
+enum TenantStatus {
+  active
+  suspended
+  cancelled
+}
+
+enum UserRole {
+  owner
+  admin
+  cashier
+  waiter
+  kitchen
+}
+
+enum TableStatus {
+  free
+  occupied
+  ordering
+  bill
+  reserved
+}
+
+enum OrderStatus {
+  pending
+  confirmed
+  preparing
+  ready
+  delivered
+  paid
+  cancelled
+}
+
+enum OrderItemStatus {
+  pending
+  preparing
+  ready
+  delivered
+}
+
+enum InventoryMovementType {
+  in
+  out
+  adjustment
+}
+
+enum CashRegisterStatus {
+  open
+  closed
+}
+
+enum PaymentMethod {
+  cash
+  card
+  transfer
+}
+
+// ─── Models ───────────────────────────────────────
+
+model Tenant {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String       @db.VarChar(255)
+  slug        String       @unique @db.VarChar(100)
+  logoUrl     String?      @map("logo_url")
+  config      Json         @default("{}")
+  plan        Plan         @default(basic)
+  status      TenantStatus @default(active)
+  maxTables   Int          @default(10) @map("max_tables")
+  maxUsers    Int          @default(3) @map("max_users")
+  maxProducts Int          @default(50) @map("max_products")
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  users         User[]
+  categories    Category[]
+  products      Product[]
+  tables        Table[]
+  orders        Order[]
+  inventory     Inventory[]
+  cashRegisters CashRegister[]
+
+  @@map("tenants")
+}
+
+model User {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  name         String    @db.VarChar(255)
+  username     String    @db.VarChar(50)
+  email        String?   @db.VarChar(255)
+  passwordHash String    @map("password_hash")
+  role         UserRole
+  permissions  Json      @default("{}")
+  active       Boolean   @default(true)
+  lastLogin    DateTime? @map("last_login") @db.Timestamptz
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  tenant             Tenant              @relation(fields: [tenantId], references: [id])
+  orders             Order[]
+  inventoryMovements InventoryMovement[]
+  cashRegisters      CashRegister[]
+
+  @@unique([tenantId, username])
+  @@index([tenantId])
+  @@index([email])
+  @@map("users")
+}
+
+model Category {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  name        String   @db.VarChar(255)
+  description String?
+  sortOrder   Int      @default(0) @map("sort_order")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  products Product[]
+
+  @@index([tenantId])
+  @@map("categories")
+}
+
+model Product {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId    String   @map("tenant_id") @db.Uuid
+  categoryId  String   @map("category_id") @db.Uuid
+  name        String   @db.VarChar(255)
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  imageUrl    String?  @map("image_url")
+  available   Boolean  @default(true)
+  trackStock  Boolean  @default(false) @map("track_stock")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id])
+  category   Category    @relation(fields: [categoryId], references: [id])
+  orderItems OrderItem[]
+  inventory  Inventory?
+
+  @@index([tenantId])
+  @@index([tenantId, categoryId])
+  @@map("products")
+}
+
+model Table {
+  id       String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String      @map("tenant_id") @db.Uuid
+  number   Int
+  qrCode   String?     @map("qr_code")
+  status   TableStatus @default(free)
+  capacity Int         @default(4)
+  active   Boolean     @default(true)
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id])
+  orders Order[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("tables")
+}
+
+model Order {
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String      @map("tenant_id") @db.Uuid
+  tableId      String      @map("table_id") @db.Uuid
+  userId       String?     @map("user_id") @db.Uuid
+  orderNumber  Int         @map("order_number")
+  status       OrderStatus @default(pending)
+  subtotal     Decimal     @default(0) @db.Decimal(10, 2)
+  total        Decimal     @default(0) @db.Decimal(10, 2)
+  notes        String?
+  cancelReason String?     @map("cancel_reason")
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  confirmedAt  DateTime?   @map("confirmed_at") @db.Timestamptz
+  completedAt  DateTime?   @map("completed_at") @db.Timestamptz
+  paidAt       DateTime?   @map("paid_at") @db.Timestamptz
+
+  tenant   Tenant      @relation(fields: [tenantId], references: [id])
+  table    Table       @relation(fields: [tableId], references: [id])
+  user     User?       @relation(fields: [userId], references: [id])
+  items    OrderItem[]
+  payments Payment[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId   String          @map("order_id") @db.Uuid
+  productId String          @map("product_id") @db.Uuid
+  quantity  Int             @default(1)
+  unitPrice Decimal         @map("unit_price") @db.Decimal(10, 2)
+  subtotal  Decimal         @db.Decimal(10, 2)
+  notes     String?
+  status    OrderItemStatus @default(pending)
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model Inventory {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  productId    String   @unique @map("product_id") @db.Uuid
+  currentStock Decimal  @default(0) @map("current_stock") @db.Decimal(10, 2)
+  minStock     Decimal  @default(0) @map("min_stock") @db.Decimal(10, 2)
+  unit         String   @default("piezas") @db.VarChar(50)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  tenant    Tenant              @relation(fields: [tenantId], references: [id])
+  product   Product             @relation(fields: [productId], references: [id])
+  movements InventoryMovement[]
+
+  @@index([tenantId])
+  @@index([tenantId, productId])
+  @@map("inventory")
+}
+
+model InventoryMovement {
+  id          String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  inventoryId String                @map("inventory_id") @db.Uuid
+  type        InventoryMovementType
+  quantity    Decimal               @db.Decimal(10, 2)
+  reason      String?
+  userId      String?               @map("user_id") @db.Uuid
+  createdAt   DateTime              @default(now()) @map("created_at") @db.Timestamptz
+
+  inventory Inventory @relation(fields: [inventoryId], references: [id])
+  user      User?     @relation(fields: [userId], references: [id])
+
+  @@map("inventory_movements")
+}
+
+model CashRegister {
+  id             String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String             @map("tenant_id") @db.Uuid
+  userId         String             @map("user_id") @db.Uuid
+  openedAt       DateTime           @default(now()) @map("opened_at") @db.Timestamptz
+  closedAt       DateTime?          @map("closed_at") @db.Timestamptz
+  openingAmount  Decimal            @default(0) @map("opening_amount") @db.Decimal(10, 2)
+  closingAmount  Decimal?           @map("closing_amount") @db.Decimal(10, 2)
+  expectedAmount Decimal?           @map("expected_amount") @db.Decimal(10, 2)
+  salesTotal     Decimal            @default(0) @map("sales_total") @db.Decimal(10, 2)
+  transactions   Int                @default(0)
+  status         CashRegisterStatus @default(open)
+  notes          String?
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  user     User      @relation(fields: [userId], references: [id])
+  payments Payment[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("cash_registers")
+}
+
+model Payment {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId        String        @map("order_id") @db.Uuid
+  cashRegisterId String?       @map("cash_register_id") @db.Uuid
+  method         PaymentMethod
+  amount         Decimal       @db.Decimal(10, 2)
+  reference      String?       @db.VarChar(255)
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz
+
+  order        Order         @relation(fields: [orderId], references: [id])
+  cashRegister CashRegister? @relation(fields: [cashRegisterId], references: [id])
+
+  @@map("payments")
+}

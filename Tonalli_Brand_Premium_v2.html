@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tonalli — Brand Identity Premium</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=Outfit:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #C9A84C;
+    --gold-light: #E2C97E;
+    --gold-bright: #F0D890;
+    --gold-dark: #9A7B2F;
+    --gold-muted: #A08840;
+    --black: #0A0A0A;
+    --black-rich: #0E0E0E;
+    --black-soft: #141414;
+    --black-card: #1A1A1A;
+    --black-elevated: #222222;
+    --silver: #C0C0C0;
+    --silver-light: #D8D8D8;
+    --silver-muted: #8A8A8A;
+    --silver-dark: #6A6A6A;
+    --platinum: #E8E4DF;
+    --white-warm: #F8F6F3;
+    --white: #FFFFFF;
+    /* Jade - the vital green */
+    --jade: #4A8C6F;
+    --jade-light: #5FA882;
+    --jade-bright: #72BF96;
+    --jade-dark: #3A6F58;
+    --jade-deep: #2D5A47;
+    --jade-muted: #3E7A60;
+    --jade-glow: rgba(74, 140, 111, 0.15);
+    --jade-glow-strong: rgba(74, 140, 111, 0.25);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: 'Outfit', sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ============ HERO ============ */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    background: var(--black);
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    width: 700px;
+    height: 700px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -55%);
+    background:
+      radial-gradient(circle at 50% 45%, rgba(201,168,76,0.06) 0%, transparent 50%),
+      radial-gradient(circle at 55% 55%, rgba(74,140,111,0.03) 0%, transparent 45%);
+    animation: hero-breathe 6s ease-in-out infinite;
+  }
+
+  @keyframes hero-breathe {
+    0%, 100% { transform: translate(-50%, -55%) scale(1); opacity: 0.7; }
+    50% { transform: translate(-50%, -55%) scale(1.15); opacity: 1; }
+  }
+
+  /* Animated Sun Symbol with jade accent ring */
+  .hero-sun {
+    position: relative;
+    width: 170px;
+    height: 170px;
+    margin-bottom: 48px;
+    z-index: 2;
+    animation: fadeIn 1.5s ease-out;
+  }
+
+  .sun-core-outer {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 52px; height: 52px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, var(--gold-light), var(--gold), var(--gold-dark));
+    box-shadow:
+      0 0 30px rgba(201,168,76,0.3),
+      0 0 60px rgba(201,168,76,0.15),
+      0 0 100px rgba(201,168,76,0.05),
+      inset 0 -2px 4px rgba(0,0,0,0.2);
+  }
+
+  .sun-ring-1 {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 80px; height: 80px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 1px solid rgba(201,168,76,0.25);
+  }
+
+  .sun-ring-jade {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 100px; height: 100px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 1px solid rgba(74,140,111,0.15);
+  }
+
+  .sun-ring-2 {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 120px; height: 120px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 1px solid rgba(192,192,192,0.06);
+  }
+
+  .sun-ray-line {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 1.5px;
+    height: 20px;
+    background: linear-gradient(to bottom, var(--gold), transparent);
+    transform-origin: center 60px;
+    opacity: 0.6;
+  }
+
+  .sun-ray-line:nth-child(5) { transform: translate(-50%, -50%) rotate(0deg) translateY(-60px); }
+  .sun-ray-line:nth-child(6) { transform: translate(-50%, -50%) rotate(30deg) translateY(-60px); }
+  .sun-ray-line:nth-child(7) { transform: translate(-50%, -50%) rotate(60deg) translateY(-60px); }
+  .sun-ray-line:nth-child(8) { transform: translate(-50%, -50%) rotate(90deg) translateY(-60px); }
+  .sun-ray-line:nth-child(9) { transform: translate(-50%, -50%) rotate(120deg) translateY(-60px); }
+  .sun-ray-line:nth-child(10) { transform: translate(-50%, -50%) rotate(150deg) translateY(-60px); }
+  .sun-ray-line:nth-child(11) { transform: translate(-50%, -50%) rotate(180deg) translateY(-60px); }
+  .sun-ray-line:nth-child(12) { transform: translate(-50%, -50%) rotate(210deg) translateY(-60px); }
+  .sun-ray-line:nth-child(13) { transform: translate(-50%, -50%) rotate(240deg) translateY(-60px); }
+  .sun-ray-line:nth-child(14) { transform: translate(-50%, -50%) rotate(270deg) translateY(-60px); }
+  .sun-ray-line:nth-child(15) { transform: translate(-50%, -50%) rotate(300deg) translateY(-60px); }
+  .sun-ray-line:nth-child(16) { transform: translate(-50%, -50%) rotate(330deg) translateY(-60px); }
+
+  /* Jade leaf-shaped accents between rays */
+  .sun-leaf {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 4px; height: 8px;
+    background: var(--jade);
+    border-radius: 50%;
+    transform-origin: center 60px;
+    opacity: 0.35;
+  }
+
+  .sun-leaf:nth-child(17) { transform: translate(-50%, -50%) rotate(15deg) translateY(-52px); }
+  .sun-leaf:nth-child(18) { transform: translate(-50%, -50%) rotate(105deg) translateY(-52px); }
+  .sun-leaf:nth-child(19) { transform: translate(-50%, -50%) rotate(195deg) translateY(-52px); }
+  .sun-leaf:nth-child(20) { transform: translate(-50%, -50%) rotate(285deg) translateY(-52px); }
+
+  /* Diamond rays */
+  .sun-ray-diamond {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 5px; height: 5px;
+    background: var(--gold);
+    transform-origin: center 60px;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  }
+
+  .sun-ray-diamond:nth-child(21) { transform: translate(-50%, -50%) rotate(0deg) translateY(-74px); }
+  .sun-ray-diamond:nth-child(22) { transform: translate(-50%, -50%) rotate(90deg) translateY(-74px); }
+  .sun-ray-diamond:nth-child(23) { transform: translate(-50%, -50%) rotate(180deg) translateY(-74px); }
+  .sun-ray-diamond:nth-child(24) { transform: translate(-50%, -50%) rotate(270deg) translateY(-74px); }
+
+  .hero-text {
+    text-align: center;
+    z-index: 2;
+    animation: fadeInUp 1.2s ease-out 0.4s both;
+  }
+
+  .hero-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(52px, 9vw, 88px);
+    font-weight: 300;
+    letter-spacing: 0.25em;
+    line-height: 1;
+    background: linear-gradient(160deg, var(--silver-light) 0%, var(--white) 20%, var(--gold-light) 45%, var(--gold) 65%, var(--jade-light) 90%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 20px;
+  }
+
+  .hero-divider {
+    width: 80px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), var(--jade-muted), transparent);
+    margin: 0 auto 20px;
+  }
+
+  .hero-tagline {
+    font-family: 'Outfit', sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: var(--silver-muted);
+    font-weight: 300;
+  }
+
+  .hero-tagline em {
+    font-style: normal;
+    color: var(--jade-light);
+  }
+
+  .hero-domain {
+    margin-top: 56px;
+    font-size: 15px;
+    color: var(--gold-muted);
+    letter-spacing: 0.15em;
+    z-index: 2;
+    animation: fadeInUp 1.2s ease-out 0.8s both;
+    font-weight: 300;
+  }
+
+  /* ============ SECTION BASE ============ */
+  .section {
+    padding: 120px 60px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 500;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(30px, 4.5vw, 44px);
+    font-weight: 300;
+    color: var(--white);
+    line-height: 1.2;
+    margin-bottom: 20px;
+    letter-spacing: 0.03em;
+  }
+
+  .section-text {
+    font-size: 15px;
+    line-height: 1.9;
+    color: var(--silver-dark);
+    max-width: 560px;
+    font-weight: 300;
+  }
+
+  .gold-line {
+    width: 40px;
+    height: 1px;
+    background: linear-gradient(90deg, var(--gold), var(--jade-muted));
+    margin: 24px 0;
+    opacity: 0.6;
+  }
+
+  /* ============ MEANING ============ */
+  .meaning-wrap {
+    background: var(--black-soft);
+    border-top: 1px solid rgba(201,168,76,0.06);
+    border-bottom: 1px solid rgba(74,140,111,0.04);
+  }
+
+  .meaning-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 100px;
+    align-items: center;
+  }
+
+  .meaning-symbol-wrap {
+    display: flex;
+    justify-content: center;
+  }
+
+  .meaning-symbol {
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 50%, var(--black-card) 0%, var(--black) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: inset 0 0 60px rgba(0,0,0,0.5);
+  }
+
+  .meaning-symbol::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, var(--gold), transparent 12%, transparent 22%, var(--jade) 25%, transparent 28%, transparent 47%, var(--gold), transparent 62%, transparent 72%, var(--jade) 75%, transparent 78%, transparent 97%);
+    opacity: 0.2;
+    mask: radial-gradient(transparent 68%, black 69%);
+    -webkit-mask: radial-gradient(transparent 68%, black 69%);
+  }
+
+  .meaning-symbol::after {
+    content: '';
+    position: absolute;
+    inset: -28px;
+    border-radius: 50%;
+    border: 1px solid rgba(74,140,111,0.04);
+  }
+
+  .meaning-glyph {
+    font-size: 64px;
+    background: linear-gradient(160deg, var(--gold), var(--jade-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 30px rgba(201,168,76,0.15));
+  }
+
+  .meaning-word {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px;
+    font-weight: 400;
+    color: var(--white);
+    margin-bottom: 6px;
+    letter-spacing: 0.05em;
+  }
+
+  .meaning-origin {
+    font-size: 11px;
+    color: var(--gold-muted);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+    font-weight: 400;
+  }
+
+  .meaning-desc {
+    font-size: 15px;
+    line-height: 2;
+    color: var(--silver-dark);
+    font-weight: 300;
+  }
+
+  .meaning-desc em {
+    font-style: normal;
+    color: var(--jade-light);
+  }
+
+  .meaning-quote {
+    margin-top: 36px;
+    padding-left: 20px;
+    border-left: 1px solid var(--jade-muted);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 19px;
+    font-style: italic;
+    color: var(--silver);
+    line-height: 1.7;
+  }
+
+  /* ============ LOGOS ============ */
+  .logos-wrap {
+    background: var(--black);
+  }
+
+  .logo-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 60px;
+  }
+
+  .logo-card {
+    border-radius: 16px;
+    padding: 52px 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 280px;
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .logo-card:hover { transform: translateY(-4px); }
+
+  .logo-card.card-black {
+    background: var(--black-card);
+    border: 1px solid rgba(201,168,76,0.08);
+  }
+  .logo-card.card-black:hover {
+    box-shadow: 0 16px 48px rgba(201,168,76,0.06);
+    border-color: rgba(201,168,76,0.15);
+  }
+
+  .logo-card.card-white {
+    background: var(--white-warm);
+    border: 1px solid rgba(0,0,0,0.04);
+  }
+  .logo-card.card-white:hover { box-shadow: 0 16px 48px rgba(0,0,0,0.1); }
+
+  .logo-card.card-jade {
+    background: linear-gradient(145deg, var(--jade-dark) 0%, var(--jade-deep) 100%);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .logo-card.card-jade:hover { box-shadow: 0 16px 48px rgba(74,140,111,0.15); }
+
+  .logo-mark {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  /* Mini sun icon */
+  .mini-sun {
+    width: 32px;
+    height: 32px;
+    position: relative;
+  }
+
+  .mini-sun .ms-core {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 12px; height: 12px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+  }
+
+  .mini-sun .ms-ring {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 22px; height: 22px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border-width: 1px;
+    border-style: solid;
+  }
+
+  .mini-sun .ms-ray {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 1px; height: 5px;
+    transform-origin: center 12px;
+  }
+
+  .mini-sun .ms-ray:nth-child(3) { transform: translate(-50%, -50%) rotate(0deg) translateY(-12px); }
+  .mini-sun .ms-ray:nth-child(4) { transform: translate(-50%, -50%) rotate(45deg) translateY(-12px); }
+  .mini-sun .ms-ray:nth-child(5) { transform: translate(-50%, -50%) rotate(90deg) translateY(-12px); }
+  .mini-sun .ms-ray:nth-child(6) { transform: translate(-50%, -50%) rotate(135deg) translateY(-12px); }
+  .mini-sun .ms-ray:nth-child(7) { transform: translate(-50%, -50%) rotate(180deg) translateY(-12px); }
+  .mini-sun .ms-ray:nth-child(8) { transform: translate(-50%, -50%) rotate(225deg) translateY(-12px); }
+  .mini-sun .ms-ray:nth-child(9) { transform: translate(-50%, -50%) rotate(270deg) translateY(-12px); }
+  .mini-sun .ms-ray:nth-child(10) { transform: translate(-50%, -50%) rotate(315deg) translateY(-12px); }
+
+  .card-black .ms-core { background: var(--gold); box-shadow: 0 0 10px rgba(201,168,76,0.3); }
+  .card-black .ms-ring { border-color: rgba(201,168,76,0.3); }
+  .card-black .ms-ray { background: var(--gold); opacity: 0.6; }
+
+  .card-white .ms-core { background: var(--black); }
+  .card-white .ms-ring { border-color: rgba(10,10,10,0.15); }
+  .card-white .ms-ray { background: var(--black); opacity: 0.4; }
+
+  .card-jade .ms-core { background: var(--gold-light); box-shadow: 0 0 8px rgba(201,168,76,0.3); }
+  .card-jade .ms-ring { border-color: rgba(226,201,126,0.3); }
+  .card-jade .ms-ray { background: var(--gold-light); opacity: 0.5; }
+
+  .logo-wordmark {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 26px;
+    font-weight: 400;
+    letter-spacing: 0.18em;
+  }
+
+  .card-black .logo-wordmark { color: var(--platinum); }
+  .card-white .logo-wordmark { color: var(--black); }
+  .card-jade .logo-wordmark { color: var(--white); }
+
+  .logo-variant-name {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    font-weight: 400;
+  }
+
+  .card-black .logo-variant-name { color: var(--silver-dark); }
+  .card-white .logo-variant-name { color: var(--silver-muted); }
+  .card-jade .logo-variant-name { color: rgba(255,255,255,0.5); }
+
+  /* ============ COLORS ============ */
+  .colors-wrap {
+    background: var(--black-soft);
+    border-top: 1px solid rgba(201,168,76,0.06);
+    border-bottom: 1px solid rgba(74,140,111,0.04);
+  }
+
+  .palette-main {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-top: 60px;
+  }
+
+  .swatch {
+    border-radius: 14px;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .swatch:hover { transform: translateY(-4px); }
+
+  .swatch-color {
+    height: 150px;
+    position: relative;
+  }
+
+  .swatch-color::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0; right: 0;
+    height: 40%;
+    background: linear-gradient(to top, rgba(0,0,0,0.15), transparent);
+  }
+
+  .swatch-meta {
+    padding: 18px 20px;
+    background: var(--black-card);
+  }
+
+  .swatch-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--white);
+    margin-bottom: 4px;
+    letter-spacing: 0.03em;
+  }
+
+  .swatch-hex {
+    font-size: 11px;
+    color: var(--silver-dark);
+    font-family: 'Outfit', monospace;
+    letter-spacing: 0.05em;
+  }
+
+  .palette-secondary-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .swatch-sm .swatch-color { height: 80px; }
+  .swatch-sm .swatch-meta { padding: 12px 14px; }
+  .swatch-sm .swatch-name { font-size: 11px; }
+  .swatch-sm .swatch-hex { font-size: 10px; }
+
+  /* Color story */
+  .color-story {
+    margin-top: 48px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+  }
+
+  .color-story-item {
+    text-align: center;
+    padding: 32px 24px;
+    border-radius: 14px;
+    background: var(--black-card);
+    border: 1px solid rgba(255,255,255,0.02);
+  }
+
+  .cs-icon {
+    font-size: 28px;
+    margin-bottom: 16px;
+  }
+
+  .cs-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    color: var(--white);
+    margin-bottom: 8px;
+    letter-spacing: 0.05em;
+  }
+
+  .cs-desc {
+    font-size: 12px;
+    color: var(--silver-dark);
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  /* ============ TYPOGRAPHY ============ */
+  .typo-wrap {
+    background: var(--black);
+  }
+
+  .typo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 60px;
+  }
+
+  .typo-card {
+    padding: 48px;
+    border-radius: 16px;
+    background: var(--black-card);
+    border: 1px solid rgba(201,168,76,0.06);
+  }
+
+  .typo-label {
+    font-size: 10px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 500;
+    margin-bottom: 28px;
+  }
+
+  .typo-showcase {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 44px;
+    font-weight: 300;
+    color: var(--white);
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+
+  .typo-showcase-body {
+    font-family: 'Outfit', sans-serif;
+    font-size: 30px;
+    font-weight: 200;
+    color: var(--white);
+    line-height: 1.3;
+    margin-bottom: 8px;
+  }
+
+  .typo-desc {
+    font-size: 13px;
+    color: var(--silver-dark);
+    line-height: 1.8;
+    margin-top: 16px;
+    font-weight: 300;
+  }
+
+  .typo-specimens {
+    margin-top: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .typo-specimen {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .typo-specimen:last-child { border-bottom: none; }
+
+  .typo-spec-label {
+    font-size: 9px;
+    color: var(--gold-muted);
+    width: 48px;
+    flex-shrink: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    font-weight: 500;
+  }
+
+  /* ============ APP PREVIEW ============ */
+  .preview-wrap {
+    background: var(--black-soft);
+    border-top: 1px solid rgba(74,140,111,0.06);
+  }
+
+  .phones {
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+    margin-top: 72px;
+    flex-wrap: wrap;
+  }
+
+  .phone {
+    width: 310px;
+    border-radius: 36px;
+    padding: 10px;
+    background: linear-gradient(160deg, #2A2A2A 0%, #1A1A1A 50%, #111 100%);
+    box-shadow:
+      0 24px 80px rgba(0,0,0,0.6),
+      0 0 0 1px rgba(255,255,255,0.04),
+      inset 0 1px 0 rgba(255,255,255,0.05);
+    transition: transform 0.5s ease;
+  }
+
+  .phone:hover { transform: translateY(-8px); }
+
+  .phone-inner {
+    border-radius: 28px;
+    overflow: hidden;
+    background: var(--black);
+    min-height: 560px;
+  }
+
+  /* Client App */
+  .cl-header {
+    background: var(--black);
+    padding: 24px 20px 18px;
+    text-align: center;
+    border-bottom: 1px solid rgba(201,168,76,0.08);
+    position: relative;
+  }
+
+  .cl-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 30%;
+    right: 30%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--jade-muted), transparent);
+    opacity: 0.5;
+  }
+
+  .cl-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    color: var(--gold);
+    letter-spacing: 0.2em;
+    font-weight: 400;
+  }
+
+  .cl-resto {
+    font-size: 11px;
+    color: var(--silver-muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 4px;
+    font-weight: 300;
+  }
+
+  .cl-mesa-badge {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 5px 18px;
+    border: 1px solid rgba(74,140,111,0.25);
+    border-radius: 20px;
+    font-size: 10px;
+    color: var(--jade-light);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-weight: 400;
+    background: rgba(74,140,111,0.06);
+  }
+
+  .cl-cats {
+    display: flex;
+    gap: 6px;
+    padding: 16px 16px 10px;
+    overflow-x: auto;
+  }
+
+  .cl-cat {
+    padding: 7px 18px;
+    border-radius: 20px;
+    font-size: 11px;
+    white-space: nowrap;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+  }
+
+  .cl-cat.active {
+    background: var(--gold);
+    color: var(--black);
+  }
+
+  .cl-cat.inactive {
+    background: var(--black-card);
+    color: var(--silver-dark);
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .cl-items {
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .cl-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px;
+    background: var(--black-card);
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.02);
+    transition: border-color 0.3s ease;
+  }
+
+  .cl-item:hover {
+    border-color: rgba(74,140,111,0.1);
+  }
+
+  .cl-item-img {
+    width: 58px;
+    height: 58px;
+    border-radius: 12px;
+    flex-shrink: 0;
+  }
+
+  .cl-item-img.i1 { background: linear-gradient(135deg, #5A3A1A, #7A4A2A); }
+  .cl-item-img.i2 { background: linear-gradient(135deg, var(--jade-deep), var(--jade)); }
+  .cl-item-img.i3 { background: linear-gradient(135deg, var(--gold-dark), var(--gold)); }
+
+  .cl-item-info { flex: 1; }
+  .cl-item-name { font-size: 13px; font-weight: 500; color: var(--white); }
+  .cl-item-desc { font-size: 11px; color: var(--silver-dark); margin-top: 3px; font-weight: 300; }
+  .cl-item-price { font-size: 15px; font-weight: 600; color: var(--gold); white-space: nowrap; }
+
+  .cl-item-avail {
+    display: inline-block;
+    margin-top: 4px;
+    font-size: 9px;
+    color: var(--jade-light);
+    letter-spacing: 0.05em;
+  }
+
+  .cl-cart {
+    margin: 12px 14px 16px;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 8px 24px rgba(201,168,76,0.15);
+  }
+
+  .cl-cart-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .cl-cart-badge {
+    background: var(--black);
+    color: var(--gold);
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .cl-cart-text { color: var(--black); font-size: 13px; font-weight: 600; }
+  .cl-cart-total { color: var(--black); font-size: 15px; font-weight: 700; }
+
+  /* Kitchen App */
+  .kt-header {
+    background: var(--black);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(201,168,76,0.08);
+  }
+
+  .kt-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px;
+    color: var(--gold);
+    letter-spacing: 0.15em;
+  }
+
+  .kt-count {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    background: rgba(74,140,111,0.12);
+    color: var(--jade-light);
+    border: 1px solid rgba(74,140,111,0.15);
+  }
+
+  .kt-tabs {
+    display: flex;
+    margin: 12px 14px;
+    background: var(--black-card);
+    border-radius: 10px;
+    padding: 3px;
+    border: 1px solid rgba(255,255,255,0.02);
+  }
+
+  .kt-tab {
+    flex: 1;
+    text-align: center;
+    padding: 9px;
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: 8px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .kt-tab.active {
+    background: var(--gold);
+    color: var(--black);
+  }
+
+  .kt-tab.inactive { color: var(--silver-dark); }
+
+  .kt-orders {
+    padding: 0 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .kt-order {
+    border-radius: 14px;
+    padding: 16px;
+    border-left: 3px solid;
+    background: var(--black-card);
+  }
+
+  .kt-order.o-new { border-color: var(--gold); }
+  .kt-order.o-prep { border-color: var(--silver); }
+  .kt-order.o-ready { border-color: var(--jade); }
+
+  .kt-o-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .kt-o-mesa { font-size: 14px; font-weight: 600; color: var(--white); }
+  .kt-o-time { font-size: 10px; color: var(--silver-dark); font-weight: 300; }
+
+  .kt-o-items {
+    font-size: 12px;
+    color: var(--silver-muted);
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  .kt-o-status {
+    margin-top: 10px;
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .kt-o-status.st-new { background: rgba(201,168,76,0.12); color: var(--gold); }
+  .kt-o-status.st-prep { background: rgba(192,192,192,0.1); color: var(--silver); }
+  .kt-o-status.st-ready { background: var(--jade-glow); color: var(--jade-bright); }
+
+  .phone-label-text {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--silver-dark);
+    font-weight: 400;
+  }
+
+  /* ============ QR SECTION ============ */
+  .qr-wrap {
+    background: var(--black);
+    border-top: 1px solid rgba(201,168,76,0.06);
+  }
+
+  .qr-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+  }
+
+  .qr-card {
+    width: 280px;
+    margin: 0 auto;
+    background: var(--black-card);
+    border-radius: 24px;
+    padding: 36px;
+    text-align: center;
+    border: 1px solid rgba(201,168,76,0.08);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    position: relative;
+  }
+
+  .qr-card::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 20%;
+    right: 20%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-muted), transparent);
+  }
+
+  .qr-box {
+    width: 200px;
+    height: 200px;
+    margin: 0 auto 24px;
+    background: var(--black);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(74,140,111,0.06);
+  }
+
+  .qr-pattern {
+    display: grid;
+    grid-template-columns: repeat(11, 1fr);
+    gap: 3px;
+    width: 150px;
+    height: 150px;
+  }
+
+  .qr-c { border-radius: 2px; }
+  .qr-c.g { background: var(--gold); }
+  .qr-c.j { background: var(--jade); opacity: 0.7; }
+  .qr-c.s { background: var(--silver-dark); opacity: 0.3; }
+  .qr-c.x { background: transparent; }
+
+  .qr-brand {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 22px;
+    color: var(--white);
+    letter-spacing: 0.15em;
+    margin-bottom: 4px;
+  }
+
+  .qr-mesa-num {
+    font-size: 40px;
+    font-weight: 700;
+    background: linear-gradient(160deg, var(--gold), var(--jade-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+
+  .qr-hint {
+    font-size: 11px;
+    color: var(--silver-dark);
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  /* ============ BRAND VALUES ============ */
+  .values-wrap {
+    background: var(--black-soft);
+    border-top: 1px solid rgba(74,140,111,0.04);
+  }
+
+  .values-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 60px;
+  }
+
+  .value-card {
+    padding: 40px 32px;
+    border-radius: 16px;
+    background: var(--black-card);
+    border: 1px solid rgba(255,255,255,0.02);
+    text-align: center;
+    transition: border-color 0.3s ease;
+  }
+
+  .value-card:hover {
+    border-color: rgba(74,140,111,0.1);
+  }
+
+  .value-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 20px;
+  }
+
+  .value-icon.vi-gold {
+    background: rgba(201,168,76,0.1);
+    border: 1px solid rgba(201,168,76,0.15);
+  }
+
+  .value-icon.vi-jade {
+    background: var(--jade-glow);
+    border: 1px solid rgba(74,140,111,0.15);
+  }
+
+  .value-icon.vi-silver {
+    background: rgba(192,192,192,0.06);
+    border: 1px solid rgba(192,192,192,0.1);
+  }
+
+  .value-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px;
+    color: var(--white);
+    margin-bottom: 10px;
+    letter-spacing: 0.03em;
+  }
+
+  .value-desc {
+    font-size: 13px;
+    color: var(--silver-dark);
+    line-height: 1.8;
+    font-weight: 300;
+  }
+
+  /* ============ FOOTER ============ */
+  .brand-footer {
+    padding: 100px 60px;
+    background: var(--black);
+    text-align: center;
+    border-top: 1px solid rgba(201,168,76,0.06);
+    position: relative;
+  }
+
+  .brand-footer::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 1px;
+    background: linear-gradient(90deg, var(--gold), var(--jade-muted));
+  }
+
+  .footer-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 40px;
+    font-weight: 300;
+    letter-spacing: 0.25em;
+    background: linear-gradient(160deg, var(--silver-light), var(--gold-light), var(--gold), var(--jade-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+  }
+
+  .footer-tag {
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--silver-dark);
+    margin-bottom: 36px;
+    font-weight: 300;
+  }
+
+  .footer-url {
+    font-size: 16px;
+    color: var(--gold);
+    letter-spacing: 0.1em;
+    font-weight: 300;
+  }
+
+  .footer-credit {
+    margin-top: 60px;
+    font-size: 11px;
+    color: var(--silver-dark);
+    letter-spacing: 0.1em;
+    font-weight: 300;
+    opacity: 0.5;
+  }
+
+  /* ============ ANIMATIONS ============ */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ============ RESPONSIVE ============ */
+  @media (max-width: 768px) {
+    .section { padding: 72px 24px; }
+    .meaning-grid { grid-template-columns: 1fr; gap: 48px; }
+    .logo-grid { grid-template-columns: 1fr; }
+    .palette-main { grid-template-columns: 1fr 1fr; }
+    .palette-secondary-row { grid-template-columns: repeat(3, 1fr); }
+    .typo-grid { grid-template-columns: 1fr; }
+    .phones { flex-direction: column; align-items: center; gap: 32px; }
+    .qr-grid { grid-template-columns: 1fr; gap: 48px; }
+    .color-story { grid-template-columns: 1fr; }
+    .values-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ HERO ============ -->
+<div class="hero">
+  <div class="hero-sun">
+    <div class="sun-core-outer"></div>
+    <div class="sun-ring-1"></div>
+    <div class="sun-ring-jade"></div>
+    <div class="sun-ring-2"></div>
+    <div class="sun-ray-line"></div><div class="sun-ray-line"></div><div class="sun-ray-line"></div>
+    <div class="sun-ray-line"></div><div class="sun-ray-line"></div><div class="sun-ray-line"></div>
+    <div class="sun-ray-line"></div><div class="sun-ray-line"></div><div class="sun-ray-line"></div>
+    <div class="sun-ray-line"></div><div class="sun-ray-line"></div><div class="sun-ray-line"></div>
+    <div class="sun-leaf"></div><div class="sun-leaf"></div><div class="sun-leaf"></div><div class="sun-leaf"></div>
+    <div class="sun-ray-diamond"></div><div class="sun-ray-diamond"></div>
+    <div class="sun-ray-diamond"></div><div class="sun-ray-diamond"></div>
+  </div>
+  <div class="hero-text">
+    <div class="hero-name">TONALLI</div>
+    <div class="hero-divider"></div>
+    <div class="hero-tagline">Energ&iacute;a <em>vital</em> en cada mesa</div>
+  </div>
+  <div class="hero-domain">tonalli.app</div>
+</div>
+
+<!-- ============ MEANING ============ -->
+<div class="meaning-wrap">
+  <div class="section">
+    <div class="meaning-grid">
+      <div class="meaning-symbol-wrap">
+        <div class="meaning-symbol">
+          <div class="meaning-glyph">&#x2609;</div>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">Significado</div>
+        <div class="meaning-word">Tonalli</div>
+        <div class="meaning-origin">Del n&aacute;huatl &middot; /to.nal.li/</div>
+        <div class="meaning-desc">
+          En la cosmovisi&oacute;n mexica, el <em>tonalli</em> es la energ&iacute;a vital que el sol deposita
+          en cada ser. Es calor, es fuerza, es lo que <em>anima la vida</em>. La comida es exactamente eso:
+          la energ&iacute;a que mueve todo. Cada plato que sale de una cocina lleva consigo el tonalli
+          del cocinero, del fuego, de la tierra, de los <em>ingredientes vivos</em>.
+        </div>
+        <div class="meaning-quote">
+          &ldquo;La comida no solo alimenta el cuerpo &mdash; alimenta el tonalli, la energ&iacute;a vital que nos conecta con la tierra.&rdquo;
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ LOGOS ============ -->
+<div class="logos-wrap">
+  <div class="section">
+    <div class="section-label">Identidad Visual</div>
+    <div class="section-title">Variaciones del Logo</div>
+    <div class="section-text">El s&iacute;mbolo solar acompa&ntilde;a al logotipo como isotipo. Tres versiones para cada contexto de uso.</div>
+
+    <div class="logo-grid">
+      <div class="logo-card card-black">
+        <div class="logo-mark">
+          <div class="mini-sun">
+            <div class="ms-core"></div><div class="ms-ring"></div>
+            <div class="ms-ray"></div><div class="ms-ray"></div><div class="ms-ray"></div><div class="ms-ray"></div>
+            <div class="ms-ray"></div><div class="ms-ray"></div><div class="ms-ray"></div><div class="ms-ray"></div>
+          </div>
+          <div class="logo-wordmark">TONALLI</div>
+        </div>
+        <div class="logo-variant-name">Principal &mdash; Negro + Oro</div>
+      </div>
+
+      <div class="logo-card card-white">
+        <div class="logo-mark">
+          <div class="mini-sun">
+            <div class="ms-core"></div><div class="ms-ring"></div>
+            <div class="ms-ray"></div><div class="ms-ray"></div><div class="ms-ray"></div><div class="ms-ray"></div>
+            <div class="ms-ray"></div><div class="ms-ray"></div><div class="ms-ray"></div><div class="ms-ray"></div>
+          </div>
+          <div class="logo-wordmark">TONALLI</div>
+        </div>
+        <div class="logo-variant-name">Claro &mdash; Fondo blanco</div>
+      </div>
+
+      <div class="logo-card card-jade">
+        <div class="logo-mark">
+          <div class="mini-sun">
+            <div class="ms-core"></div><div class="ms-ring"></div>
+            <div class="ms-ray"></div><div class="ms-ray"></div><div class="ms-ray"></div><div class="ms-ray"></div>
+            <div class="ms-ray"></div><div class="ms-ray"></div><div class="ms-ray"></div><div class="ms-ray"></div>
+          </div>
+          <div class="logo-wordmark">TONALLI</div>
+        </div>
+        <div class="logo-variant-name">Jade &mdash; Vital</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ COLORS ============ -->
+<div class="colors-wrap">
+  <div class="section">
+    <div class="section-label">Paleta de Color</div>
+    <div class="section-title">Obsidiana, Oro, Jade & Plata</div>
+    <div class="section-text">Materiales nobles de la cultura mexica. El jade &mdash; m&aacute;s valioso que el oro para los antiguos mexicanos &mdash; representa la vida y lo sagrado.</div>
+
+    <div class="palette-main">
+      <div class="swatch">
+        <div class="swatch-color" style="background: linear-gradient(145deg, var(--gold-light), var(--gold), var(--gold-dark));"></div>
+        <div class="swatch-meta">
+          <div class="swatch-name">Oro Solar</div>
+          <div class="swatch-hex">#C9A84C</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: linear-gradient(145deg, #1A1A1A, var(--black), #050505);"></div>
+        <div class="swatch-meta">
+          <div class="swatch-name">Obsidiana</div>
+          <div class="swatch-hex">#0A0A0A</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: linear-gradient(145deg, var(--jade-light), var(--jade), var(--jade-dark));"></div>
+        <div class="swatch-meta">
+          <div class="swatch-name">Jade Vital</div>
+          <div class="swatch-hex">#4A8C6F</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: linear-gradient(145deg, var(--silver-light), var(--silver), var(--silver-muted));"></div>
+        <div class="swatch-meta">
+          <div class="swatch-name">Plata</div>
+          <div class="swatch-hex">#C0C0C0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="palette-secondary-row">
+      <div class="swatch swatch-sm">
+        <div class="swatch-color" style="background: var(--gold-dark);"></div>
+        <div class="swatch-meta">
+          <div class="swatch-name">Oro Oscuro</div>
+          <div class="swatch-hex">#9A7B2F</div>
+        </div>
+      </div>
+      <div class="swatch swatch-sm">
+        <div class="swatch-color" style="background: var(--black-card);"></div>
+        <div class="swatch-meta">
+          <div class="swatch-name">Carb&oacute;n</div>
+          <div class="swatch-hex">#1A1A1A</div>
+        </div>
+      </div>
+      <div class="swatch swatch-sm">
+        <div class="swatch-color" style="background: var(--jade-deep);"></div>
+        <div class="swatch-meta">
+          <div class="swatch-name">Jade Profundo</div>
+          <div class="swatch-hex">#2D5A47</div>
+        </div>
+      </div>
+      <div class="swatch swatch-sm">
+        <div class="swatch-color" style="background: var(--jade-bright);"></div>
+        <div class="swatch-meta">
+          <div class="swatch-name">Jade Claro</div>
+          <div class="swatch-hex">#72BF96</div>
+        </div>
+      </div>
+      <div class="swatch swatch-sm">
+        <div class="swatch-color" style="background: var(--platinum);"></div>
+        <div class="swatch-meta">
+          <div class="swatch-name">Platino</div>
+          <div class="swatch-hex">#E8E4DF</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Color meaning -->
+    <div class="color-story">
+      <div class="color-story-item">
+        <div class="cs-icon" style="color: var(--gold);">&#x2726;</div>
+        <div class="cs-title">Oro &mdash; Energ&iacute;a</div>
+        <div class="cs-desc">El sol, el calor, la fuerza que transforma los ingredientes en alimento. Poder y abundancia.</div>
+      </div>
+      <div class="color-story-item">
+        <div class="cs-icon" style="color: var(--jade-light);">&#x2766;</div>
+        <div class="cs-title">Jade &mdash; Vida</div>
+        <div class="cs-desc">Lo vivo, lo fresco, lo que crece. M&aacute;s valioso que el oro para los mexicas. Lo sagrado y vital.</div>
+      </div>
+      <div class="color-story-item">
+        <div class="cs-icon" style="color: var(--silver);">&#x25C8;</div>
+        <div class="cs-title">Plata &mdash; Precisi&oacute;n</div>
+        <div class="cs-desc">La tecnolog&iacute;a, la claridad, el control. La luna que complementa al sol. Eficiencia y modernidad.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TYPOGRAPHY ============ -->
+<div class="typo-wrap">
+  <div class="section">
+    <div class="section-label">Tipograf&iacute;a</div>
+    <div class="section-title">Fuentes de Marca</div>
+
+    <div class="typo-grid">
+      <div class="typo-card">
+        <div class="typo-label">Display / Logotipo</div>
+        <div class="typo-showcase">Cormorant Garamond</div>
+        <div class="typo-desc">Elegancia cl&aacute;sica con personalidad. Para el logotipo, t&iacute;tulos y elementos de presencia.</div>
+        <div class="typo-specimens">
+          <div class="typo-specimen">
+            <span class="typo-spec-label">Logo</span>
+            <span style="font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 300; color: var(--gold); letter-spacing: 0.2em;">TONALLI</span>
+          </div>
+          <div class="typo-specimen">
+            <span class="typo-spec-label">H1</span>
+            <span style="font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 400; color: var(--white);">Men&uacute; del D&iacute;a</span>
+          </div>
+          <div class="typo-specimen">
+            <span class="typo-spec-label">Accent</span>
+            <span style="font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 500; color: var(--jade-light); font-style: italic;">Fresco &amp; Natural</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="typo-card">
+        <div class="typo-label">Body / Interfaz</div>
+        <div class="typo-showcase-body">Outfit</div>
+        <div class="typo-desc">Geom&eacute;trica, moderna, legible. Interfaz, precios, botones y texto de cuerpo.</div>
+        <div class="typo-specimens">
+          <div class="typo-specimen">
+            <span class="typo-spec-label">Body</span>
+            <span style="font-family: 'Outfit', sans-serif; font-size: 15px; color: var(--white);">Tacos al Pastor con pi&ntilde;a</span>
+          </div>
+          <div class="typo-specimen">
+            <span class="typo-spec-label">Status</span>
+            <span style="font-family: 'Outfit', sans-serif; font-size: 11px; color: var(--jade-light); font-weight: 500; letter-spacing: 0.05em;">&#x25CF; Disponible</span>
+          </div>
+          <div class="typo-specimen">
+            <span class="typo-spec-label">Precio</span>
+            <span style="font-family: 'Outfit', sans-serif; font-size: 18px; color: var(--gold); font-weight: 600;">$189.00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP PREVIEW ============ -->
+<div class="preview-wrap">
+  <div class="section">
+    <div class="section-label">Vista Previa</div>
+    <div class="section-title">La Experiencia</div>
+    <div class="section-text">Dos interfaces, un ecosistema premium. El cliente ordena, la cocina recibe al instante.</div>
+
+    <div class="phones">
+      <div>
+        <div class="phone">
+          <div class="phone-inner">
+            <div class="cl-header">
+              <div class="cl-logo">TONALLI</div>
+              <div class="cl-resto">La Cocina de Mar&iacute;a</div>
+              <div class="cl-mesa-badge">&#x25C9; Mesa 7</div>
+            </div>
+            <div class="cl-cats">
+              <div class="cl-cat active">Entradas</div>
+              <div class="cl-cat inactive">Fuerte</div>
+              <div class="cl-cat inactive">Bebidas</div>
+              <div class="cl-cat inactive">Postres</div>
+            </div>
+            <div class="cl-items">
+              <div class="cl-item">
+                <div class="cl-item-img i1"></div>
+                <div class="cl-item-info">
+                  <div class="cl-item-name">Guacamole Cl&aacute;sico</div>
+                  <div class="cl-item-desc">Aguacate, cilantro, lim&oacute;n</div>
+                  <div class="cl-item-avail">&#x25CF; Disponible</div>
+                </div>
+                <div class="cl-item-price">$89</div>
+              </div>
+              <div class="cl-item">
+                <div class="cl-item-img i2"></div>
+                <div class="cl-item-info">
+                  <div class="cl-item-name">Ensalada Tonalli</div>
+                  <div class="cl-item-desc">Mixta, vinagreta de mango</div>
+                  <div class="cl-item-avail">&#x25CF; Disponible</div>
+                </div>
+                <div class="cl-item-price">$75</div>
+              </div>
+              <div class="cl-item">
+                <div class="cl-item-img i3"></div>
+                <div class="cl-item-info">
+                  <div class="cl-item-name">Quesadillas de Flor</div>
+                  <div class="cl-item-desc">Flor de calabaza, Oaxaca</div>
+                  <div class="cl-item-avail">&#x25CF; Disponible</div>
+                </div>
+                <div class="cl-item-price">$95</div>
+              </div>
+            </div>
+            <div class="cl-cart">
+              <div class="cl-cart-left">
+                <div class="cl-cart-badge">3</div>
+                <div class="cl-cart-text">Ver pedido</div>
+              </div>
+              <div class="cl-cart-total">$259</div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-label-text">App Cliente</div>
+      </div>
+
+      <div>
+        <div class="phone">
+          <div class="phone-inner">
+            <div class="kt-header">
+              <div class="kt-logo">TONALLI</div>
+              <div class="kt-count">&#x25CF; 4 activos</div>
+            </div>
+            <div class="kt-tabs">
+              <div class="kt-tab active">Pendientes</div>
+              <div class="kt-tab inactive">Preparando</div>
+              <div class="kt-tab inactive">Listos</div>
+            </div>
+            <div class="kt-orders">
+              <div class="kt-order o-new">
+                <div class="kt-o-head">
+                  <div class="kt-o-mesa">Mesa 7</div>
+                  <div class="kt-o-time">Hace 1 min</div>
+                </div>
+                <div class="kt-o-items">
+                  1x Guacamole Cl&aacute;sico<br>
+                  1x Ensalada Tonalli<br>
+                  1x Quesadillas de Flor
+                </div>
+                <div class="kt-o-status st-new">Nuevo pedido</div>
+              </div>
+              <div class="kt-order o-prep">
+                <div class="kt-o-head">
+                  <div class="kt-o-mesa">Mesa 3</div>
+                  <div class="kt-o-time">Hace 8 min</div>
+                </div>
+                <div class="kt-o-items">
+                  2x Tacos al Pastor<br>
+                  1x Agua de Jamaica
+                </div>
+                <div class="kt-o-status st-prep">En preparaci&oacute;n</div>
+              </div>
+              <div class="kt-order o-ready">
+                <div class="kt-o-head">
+                  <div class="kt-o-mesa">Mesa 12</div>
+                  <div class="kt-o-time">Hace 15 min</div>
+                </div>
+                <div class="kt-o-items">
+                  1x Enchiladas Verdes<br>
+                  1x Flan Napolitano
+                </div>
+                <div class="kt-o-status st-ready">Listo para servir</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-label-text">Vista Cocina</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ QR ============ -->
+<div class="qr-wrap">
+  <div class="section">
+    <div class="qr-grid">
+      <div>
+        <div class="section-label">Punto de Contacto</div>
+        <div class="section-title">El QR en la Mesa</div>
+        <div class="section-text" style="margin-bottom: 20px;">
+          El primer contacto del cliente con Tonalli. Un c&oacute;digo QR premium con acentos en jade y oro que abre instant&aacute;neamente el men&uacute; digital.
+        </div>
+        <div class="gold-line"></div>
+        <div class="section-text">
+          Sin descargas. Sin esperas. Escanea, navega, ordena. La experiencia completa en la palma de la mano.
+        </div>
+      </div>
+      <div class="qr-card">
+        <div class="qr-box">
+          <div class="qr-pattern">
+            <div class="qr-c g"></div><div class="qr-c g"></div><div class="qr-c g"></div><div class="qr-c x"></div><div class="qr-c j"></div><div class="qr-c g"></div><div class="qr-c x"></div><div class="qr-c x"></div><div class="qr-c g"></div><div class="qr-c g"></div><div class="qr-c g"></div>
+            <div class="qr-c g"></div><div class="qr-c x"></div><div class="qr-c g"></div><div class="qr-c s"></div><div class="qr-c g"></div><div class="qr-c x"></div><div class="qr-c j"></div><div class="qr-c s"></div><div class="qr-c g"></div><div class="qr-c x"></div><div class="qr-c g"></div>
+            <div class="qr-c g"></div><div class="qr-c g"></div><div class="qr-c g"></div><div class="qr-c x"></div><div class="qr-c g"></div><div class="qr-c j"></div><div class="qr-c x"></div><div class="qr-c g"></div><div class="qr-c g"></div><div class="qr-c g"></div><div class="qr-c g"></div>
+            <div class="qr-c x"></div><div class="qr-c s"></div><div class="qr-c x"></div><div class="qr-c g"></div><div class="qr-c x"></div><div class="qr-c s"></div><div class="qr-c g"></div><div class="qr-c x"></div><div class="qr-c j"></div><div class="qr-c g"></div><div class="qr-c x"></div>
+            <div class="qr-c j"></div><div class="qr-c g"></div><div class="qr-c x"></div><div class="qr-c x"></div><div class="qr-c g"></div><div class="qr-c g"></div><div class="qr-c g"></div><div class="qr-c x"></div><div class="qr-c x"></div><div class="qr-c g"></div><div class="qr-c j"></div>
+            <div class="qr-c x"></div><div class="qr-c g"></div><div class="qr-c j"></div><div class="qr-c g"></div><div class="qr-c g"></div><div class="qr-c x"></div><div class="qr-c g"></div><div class="qr-c g"></div><div class="qr-c s"></div><div class="qr-c g"></div><div class="qr-c x"></div>
+            <div class="qr-c s"></div><div class="qr-c x"></div><div class="qr-c g"></div><div class="qr-c x"></div><div class="qr-c j"></div><div class="qr-c g"></div><div class="qr-c x"></div><div class="qr-c s"></div><div class="qr-c g"></div><div class="qr-c x"></div><div class="qr-c s"></div>
+            <div class="qr-c x"></div><div class="qr-c j"></div><div class="qr-c x"></div><div class="qr-c g"></div><div class="qr-c x"></div><div class="qr-c g"></div><div class="qr-c g"></div><div class="qr-c x"></div><div class="qr-c g"></div><div class="qr-c j"></div><div class="qr-c x"></div>
+            <div class="qr-c g"></div><div class="qr-c g"></div><div class="qr-c g"></div><div class="qr-c x"></div><div class="qr-c g"></div><div class="qr-c x"></div><div class="qr-c j"></div><div class="qr-c x"></div><div class="qr-c g"></div><div class="qr-c g"></div><div class="qr-c g"></div>
+            <div class="qr-c g"></div><div class="qr-c x"></div><div class="qr-c g"></div><div class="qr-c g"></div><div class="qr-c x"></div><div class="qr-c j"></div><div class="qr-c x"></div><div class="qr-c g"></div><div class="qr-c g"></div><div class="qr-c x"></div><div class="qr-c g"></div>
+            <div class="qr-c g"></div><div class="qr-c g"></div><div class="qr-c g"></div><div class="qr-c x"></div><div class="qr-c g"></div><div class="qr-c g"></div><div class="qr-c s"></div><div class="qr-c x"></div><div class="qr-c g"></div><div class="qr-c g"></div><div class="qr-c g"></div>
+          </div>
+        </div>
+        <div class="qr-brand">TONALLI</div>
+        <div class="qr-mesa-num">7</div>
+        <div class="qr-hint">Escanea para ver el men&uacute;<br>y ordenar desde tu mesa</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ BRAND VALUES ============ -->
+<div class="values-wrap">
+  <div class="section">
+    <div class="section-label">Esencia de Marca</div>
+    <div class="section-title">Los Tres Pilares</div>
+    <div class="section-text">Cada color de la paleta representa un valor fundamental del ecosistema Tonalli.</div>
+
+    <div class="values-grid">
+      <div class="value-card">
+        <div class="value-icon vi-gold">&#x2726;</div>
+        <div class="value-title">Energ&iacute;a</div>
+        <div class="value-desc">El oro del sol. El calor que transforma ingredientes en alimento. Poder, abundancia y la chispa que enciende cada experiencia gastron&oacute;mica.</div>
+      </div>
+      <div class="value-card">
+        <div class="value-icon vi-jade">&#x2766;</div>
+        <div class="value-title">Vida</div>
+        <div class="value-desc">El jade sagrado. Lo fresco, lo que crece, lo que nutre. La conexi&oacute;n entre la tierra, los ingredientes y quien los disfruta. Lo vital.</div>
+      </div>
+      <div class="value-card">
+        <div class="value-icon vi-silver">&#x25C8;</div>
+        <div class="value-title">Precisi&oacute;n</div>
+        <div class="value-desc">La plata de la tecnolog&iacute;a. Claridad operativa, control financiero, eficiencia. La luna que complementa al sol con orden y modernidad.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FOOTER ============ -->
+<div class="brand-footer">
+  <div class="footer-logo">TONALLI</div>
+  <div class="footer-tag">Energ&iacute;a vital en cada mesa</div>
+  <div class="footer-url">tonalli.app</div>
+  <div class="footer-credit">Brand Identity &middot; AURALINK &middot; 2026</div>
+</div>
+
+</body>
+</html>

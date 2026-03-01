@@ -1,0 +1,66 @@
+import { Link } from 'react-router-dom';
+import { MessageCircle } from 'lucide-react';
+
+export default function Footer() {
+  return (
+    <footer className="border-t border-subtle py-12 px-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
+          {/* Brand */}
+          <div className="col-span-2 md:col-span-1">
+            <span className="font-display text-gold text-lg tracking-[4px] font-light">TONALLI</span>
+            <p className="text-silver-dark text-xs mt-2 leading-relaxed">
+              Gestion integral para restaurantes. Hecho con energia vital en Mexico.
+            </p>
+          </div>
+
+          {/* Producto */}
+          <div>
+            <p className="text-gold-muted text-[10px] font-medium tracking-[2px] mb-3">PRODUCTO</p>
+            <div className="space-y-2">
+              <a href="#features" className="block text-silver-dark text-sm hover:text-silver transition-colors">Funciones</a>
+              <a href="#pricing" className="block text-silver-dark text-sm hover:text-silver transition-colors">Precio</a>
+              <Link to="/register" className="block text-silver-dark text-sm hover:text-silver transition-colors">Registro</Link>
+            </div>
+          </div>
+
+          {/* Empresa */}
+          <div>
+            <p className="text-gold-muted text-[10px] font-medium tracking-[2px] mb-3">EMPRESA</p>
+            <div className="space-y-2">
+              <span className="block text-silver-dark text-sm">AURALINK</span>
+              <span className="block text-silver-dark text-sm">Tomatlan, Jalisco</span>
+            </div>
+          </div>
+
+          {/* Contacto */}
+          <div>
+            <p className="text-gold-muted text-[10px] font-medium tracking-[2px] mb-3">CONTACTO</p>
+            <div className="space-y-2">
+              <a
+                href="https://wa.me/523221234567"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-silver-dark text-sm hover:text-jade transition-colors"
+              >
+                <MessageCircle size={14} />
+                WhatsApp
+              </a>
+              <a href="mailto:hola@tonalli.app" className="block text-silver-dark text-sm hover:text-silver transition-colors">
+                hola@tonalli.app
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-subtle pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-silver-dark text-xs">&copy; 2026 AURALINK. Todos los derechos reservados.</p>
+          <div className="flex gap-4 text-silver-dark text-xs">
+            <span className="hover:text-silver cursor-pointer transition-colors">Privacidad</span>
+            <span className="hover:text-silver cursor-pointer transition-colors">Terminos</span>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}

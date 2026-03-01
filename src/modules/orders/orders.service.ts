@@ -1,0 +1,217 @@
+import { Decimal } from '@prisma/client/runtime/library';
+import { OrderStatus, OrderItemStatus } from '@prisma/client';
+import { prisma } from '../../config/database';
+import { AppError } from '../../middleware/errorHandler';
+import { getIO } from '../../websocket/socket';
+import { tenantRoom, kitchenRoom, tableRoom } from '../../websocket/rooms';
+import { generateOrderNumber } from '../../utils/generateOrderNumber';
+import type { CreateOrderInput, ListQuery } from './orders.schema';
+
+const orderInclude = {
+  items: {
+    include: { product: { select: { id: true, name: true, imageUrl: true } } },
+  },
+  table: { select: { id: true, number: true } },
+  user: { select: { id: true, name: true, role: true } },
+};
+
+export async function list(tenantId: string, query: ListQuery) {
+  const where: Record<string, unknown> = { tenantId };
+  if (query.status) where.status = query.status;
+  if (query.tableId) where.tableId = query.tableId;
+  if (query.from || query.to) {
+    where.createdAt = {
+      ...(query.from ? { gte: new Date(query.from) } : {}),
+      ...(query.to ? { lte: new Date(query.to) } : {}),
+    };
+  }
+
+  const [orders, total] = await Promise.all([
+    prisma.order.findMany({
+      where,
+      include: orderInclude,
+      orderBy: { createdAt: 'desc' },
+      skip: (query.page - 1) * query.limit,
+      take: query.limit,
+    }),
+    prisma.order.count({ where }),
+  ]);
+
+  return { orders, total, page: query.page, limit: query.limit };
+}
+
+export async function getById(tenantId: string, id: string) {
+  const order = await prisma.order.findFirst({
+    where: { id, tenantId },
+    include: orderInclude,
+  });
+  if (!order) throw new AppError(404, 'Pedido no encontrado', 'NOT_FOUND');
+  return order;
+}
+
+export async function create(tenantId: string, data: CreateOrderInput, userId?: string) {
+  // Verify table belongs to tenant
+  const table = await prisma.table.findFirst({ where: { id: data.tableId, tenantId } });
+  if (!table) throw new AppError(404, 'Mesa no encontrada', 'TABLE_NOT_FOUND');
+
+  // Fetch products and validate
+  const productIds = data.items.map((i) => i.productId);
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds }, tenantId, available: true },
+  });
+
+  if (products.length !== productIds.length) {
+    throw new AppError(400, 'Uno o más productos no están disponibles', 'PRODUCT_UNAVAILABLE');
+  }
+
+  const productMap = new Map(products.map((p) => [p.id, p]));
+
+  // Calculate totals
+  const items = data.items.map((item) => {
+    const product = productMap.get(item.productId)!;
+    const unitPrice = product.price;
+    const subtotal = new Decimal(unitPrice.toString()).mul(item.quantity);
+    return {
+      productId: item.productId,
+      quantity: item.quantity,
+      unitPrice,
+      subtotal,
+      notes: item.notes,
+    };
+  });
+
+  const total = items.reduce((sum, i) => sum.add(i.subtotal), new Decimal(0));
+  const orderNumber = await generateOrderNumber(tenantId);
+
+  const order = await prisma.order.create({
+    data: {
+      tenantId,
+      tableId: data.tableId,
+      userId,
+      orderNumber,
+      subtotal: total,
+      total,
+      notes: data.notes,
+      items: { create: items },
+    },
+    include: orderInclude,
+  });
+
+  // Update table status
+  await prisma.table.update({
+    where: { id: data.tableId },
+    data: { status: 'occupied' },
+  });
+
+  // Emit WebSocket events
+  const io = getIO();
+  io.of('/staff').to(tenantRoom(tenantId)).emit('order:new', order);
+  io.of('/staff').to(kitchenRoom(tenantId)).emit('order:new', order);
+  io.of('/client').to(tableRoom(tenantId, data.tableId)).emit('order:updated', order);
+
+  return order;
+}
+
+// Valid status transitions
+const statusTransitions: Record<string, string[]> = {
+  pending: ['confirmed', 'cancelled'],
+  confirmed: ['preparing', 'cancelled'],
+  preparing: ['ready', 'cancelled'],
+  ready: ['delivered'],
+  delivered: ['paid'],
+};
+
+export async function updateStatus(tenantId: string, id: string, status: OrderStatus) {
+  const order = await prisma.order.findFirst({ where: { id, tenantId } });
+  if (!order) throw new AppError(404, 'Pedido no encontrado', 'NOT_FOUND');
+
+  const allowed = statusTransitions[order.status] ?? [];
+  if (!allowed.includes(status)) {
+    throw new AppError(
+      400,
+      `No se puede cambiar de "${order.status}" a "${status}"`,
+      'INVALID_TRANSITION',
+    );
+  }
+
+  const timestamps: Record<string, unknown> = {};
+  if (status === 'confirmed') timestamps.confirmedAt = new Date();
+  if (status === 'delivered') timestamps.completedAt = new Date();
+  if (status === 'paid') timestamps.paidAt = new Date();
+
+  const updated = await prisma.order.update({
+    where: { id },
+    data: { status, ...timestamps },
+    include: orderInclude,
+  });
+
+  // If paid or cancelled, free the table (if no other active orders)
+  if (status === 'paid' || status === 'cancelled') {
+    const activeOrders = await prisma.order.count({
+      where: {
+        tenantId,
+        tableId: order.tableId,
+        status: { notIn: ['paid', 'cancelled'] },
+      },
+    });
+    if (activeOrders === 0) {
+      await prisma.table.update({
+        where: { id: order.tableId },
+        data: { status: 'free' },
+      });
+    }
+  }
+
+  // Emit WebSocket
+  const io = getIO();
+  io.of('/staff').to(tenantRoom(tenantId)).emit('order:updated', updated);
+  io.of('/client').to(tableRoom(tenantId, order.tableId)).emit('order:updated', updated);
+
+  return updated;
+}
+
+export async function cancelOrder(tenantId: string, id: string, reason: string) {
+  const order = await prisma.order.findFirst({ where: { id, tenantId } });
+  if (!order) throw new AppError(404, 'Pedido no encontrado', 'NOT_FOUND');
+
+  if (['paid', 'cancelled'].includes(order.status)) {
+    throw new AppError(400, 'No se puede cancelar este pedido', 'INVALID_TRANSITION');
+  }
+
+  const updated = await prisma.order.update({
+    where: { id },
+    data: { status: 'cancelled', cancelReason: reason },
+    include: orderInclude,
+  });
+
+  const io = getIO();
+  io.of('/staff').to(tenantRoom(tenantId)).emit('order:updated', updated);
+  io.of('/client').to(tableRoom(tenantId, order.tableId)).emit('order:updated', updated);
+
+  return updated;
+}
+
+export async function updateItemStatus(
+  tenantId: string,
+  orderId: string,
+  itemId: string,
+  status: OrderItemStatus,
+) {
+  const order = await prisma.order.findFirst({ where: { id: orderId, tenantId } });
+  if (!order) throw new AppError(404, 'Pedido no encontrado', 'NOT_FOUND');
+
+  const item = await prisma.orderItem.findFirst({ where: { id: itemId, orderId } });
+  if (!item) throw new AppError(404, 'Item no encontrado', 'NOT_FOUND');
+
+  const updated = await prisma.orderItem.update({
+    where: { id: itemId },
+    data: { status },
+    include: { product: { select: { id: true, name: true } } },
+  });
+
+  const io = getIO();
+  io.of('/staff').to(tenantRoom(tenantId)).emit('order:item:updated', { orderId, item: updated });
+  io.of('/client').to(tableRoom(tenantId, order.tableId)).emit('order:item:updated', { orderId, item: updated });
+
+  return updated;
+}

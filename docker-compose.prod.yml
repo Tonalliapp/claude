@@ -1,0 +1,112 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: tonalli-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - nginx-certs:/etc/letsencrypt:ro
+      - certbot-webroot:/var/www/certbot:ro
+      - app-static:/var/www/app:ro
+      - menu-static:/var/www/menu:ro
+      - web-static:/var/www/web:ro
+    depends_on:
+      - api
+    networks:
+      - tonalli-network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tonalli-api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://tonalli:${POSTGRES_PASSWORD}@postgres:5432/tonalli?schema=public
+      REDIS_URL: redis://default:${REDIS_PASSWORD}@redis:6379
+      MINIO_ENDPOINT: minio
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - tonalli-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: tonalli-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tonalli
+      POSTGRES_USER: tonalli
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tonalli"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tonalli-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: tonalli-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tonalli-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: tonalli-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - tonalli-network
+
+  certbot:
+    image: certbot/certbot
+    container_name: tonalli-certbot
+    volumes:
+      - nginx-certs:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done'"
+
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:
+  nginx-certs:
+  certbot-webroot:
+  app-static:
+  menu-static:
+  web-static:
+
+networks:
+  tonalli-network:
+    driver: bridge

@@ -1,0 +1,125 @@
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import { useCart } from '@/context/CartContext';
+import { useMenuData } from '@/hooks/useMenu';
+import CategoryPills from '@/components/ui/CategoryPills';
+import ProductCard from '@/components/ui/ProductCard';
+import CartBar from '@/components/ui/CartBar';
+
+export default function MenuPage() {
+  const navigate = useNavigate();
+  const { slug, mesa, items, addItem, updateQuantity, totalItems, totalPrice, restaurant } = useCart();
+  const { data, isLoading } = useMenuData(slug);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const categories = data?.categories ?? [];
+
+  useEffect(() => {
+    if (categories.length > 0 && !activeCategory) {
+      setActiveCategory(categories[0].id);
+    }
+  }, [categories, activeCategory]);
+
+  const handleCategorySelect = useCallback((id: string) => {
+    setActiveCategory(id);
+    const el = sectionRefs.current[id];
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const scrollTop = container.scrollTop + 120;
+
+    for (const cat of categories) {
+      const el = sectionRefs.current[cat.id];
+      if (el && el.offsetTop <= scrollTop) {
+        setActiveCategory(cat.id);
+      }
+    }
+  }, [categories]);
+
+  const getQuantity = (productId: string) => {
+    const item = items.find(i => i.product.id === productId);
+    return item?.quantity ?? 0;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-tonalli-black flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-gold animate-spin" />
+      </div>
+    );
+  }
+
+  const displayName = restaurant?.name || data?.restaurant.name || '';
+
+  return (
+    <div className="min-h-screen bg-tonalli-black flex flex-col">
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 pt-4 pb-2">
+        <button onClick={() => navigate(`/${slug}?mesa=${mesa}`)} className="text-silver-muted hover:text-white transition-colors">
+          <ArrowLeft size={20} />
+        </button>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-white text-base font-medium truncate">{displayName}</h1>
+          {mesa > 0 && <p className="text-gold-muted text-xs">Mesa {mesa}</p>}
+        </div>
+      </div>
+
+      <CategoryPills
+        categories={categories.map(c => ({ id: c.id, name: c.name }))}
+        activeId={activeCategory}
+        onSelect={handleCategorySelect}
+      />
+
+      {/* Products */}
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto px-4 pb-28"
+      >
+        {categories.map(cat => (
+          <div
+            key={cat.id}
+            ref={el => { sectionRefs.current[cat.id] = el; }}
+            className="mb-6"
+          >
+            <h2 className="text-gold-muted text-xs font-medium tracking-[2px] uppercase mb-3 mt-2">
+              {cat.name}
+            </h2>
+            <div className="flex flex-col gap-2.5">
+              {cat.products.map(product => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  quantity={getQuantity(product.id)}
+                  onAdd={() => addItem(product)}
+                  onUpdateQuantity={(qty) => updateQuantity(product.id, qty)}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+
+        {categories.length === 0 && (
+          <div className="text-center py-20">
+            <p className="text-silver-muted">El menú no tiene productos disponibles</p>
+          </div>
+        )}
+      </div>
+
+      <CartBar
+        totalItems={totalItems}
+        totalPrice={totalPrice}
+        onClick={() => navigate(`/${slug}/cart?mesa=${mesa}`)}
+      />
+    </div>
+  );
+}
