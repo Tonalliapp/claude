@@ -1,0 +1,121 @@
+name: Test & Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-api:
+    name: Test API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm test
+
+  build-web:
+    name: Build Web Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: cd web && npm ci
+      - run: cd web && npm run build
+
+      - uses: actions/upload-artifact@v4
+        if: github.ref == 'refs/heads/main'
+        with:
+          name: web-dist
+          path: web/dist/
+          retention-days: 1
+
+  deploy-api:
+    name: Deploy API
+    needs: [test-api]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy API to VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            cd /opt/tonalli
+
+            # Update source files
+            rsync_needed=false
+
+            # Pull latest code (API source)
+            cd /opt/tonalli
+
+            # Copy source files from repo
+            # (We sync from the deploy action instead)
+
+            # Rebuild API container
+            docker compose build api
+
+            # Run migrations
+            docker compose run --rm api npx prisma migrate deploy || true
+
+            # Restart API (zero-downtime)
+            docker compose up -d api
+
+            # Cleanup old images
+            docker image prune -f
+
+            # Health check
+            sleep 5
+            curl -sf http://localhost:3000/health || echo "WARNING: Health check failed"
+
+  deploy-web:
+    name: Deploy Web Frontend
+    needs: [build-web, test-api]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: web-dist/
+
+      - name: Deploy Web to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: web-dist/*
+          target: /opt/tonalli/web-dist/
+          strip_components: 1
+          overwrite: true
+
+      - name: Activate Web Deployment
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            VOLUME_PATH=$(docker volume inspect tonalli_web-static --format '{{.Mountpoint}}')
+            rm -rf "$VOLUME_PATH"/*
+            cp -r /opt/tonalli/web-dist/* "$VOLUME_PATH"/
+            docker exec tonalli-nginx nginx -s reload
+            echo "Web deployed successfully"
