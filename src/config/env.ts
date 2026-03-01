@@ -38,6 +38,11 @@ const envSchema = z.object({
   MENU_BASE_URL: z.string().url(),
   API_BASE_URL: z.string().url(),
 
+  // Email (Resend)
+  RESEND_API_KEY: z.string().min(1),
+  EMAIL_FROM: z.string().default('Tonalli <noreply@tonalli.app>'),
+  APP_BASE_URL: z.string().url().default('https://tonalli.app'),
+
   // Storage
   STORAGE_PUBLIC_URL: z.string().url().optional(),
 });

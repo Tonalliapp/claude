@@ -5,6 +5,7 @@ import { prisma } from '../../config/database';
 import { redis } from '../../config/redis';
 import { authConfig } from '../../config/auth';
 import { AppError } from '../../middleware/errorHandler';
+import { sendPasswordResetEmail, sendWelcomeEmail } from '../../config/email';
 import { generateUniqueSlug } from '../../utils/generateSlug';
 import type { JwtPayload } from '../../middleware/authenticate';
 import type { LoginInput, RegisterInput, UpdateProfileInput, ResetPasswordInput } from './auth.schema';
@@ -81,6 +82,11 @@ export async function register(input: RegisterInput) {
     where: { id: result.user.id },
     data: { lastLogin: new Date() },
   });
+
+  // Send welcome email (non-blocking)
+  sendWelcomeEmail(input.email, input.ownerName, input.restaurantName).catch((err) =>
+    console.error('[Register] Failed to send welcome email:', err)
+  );
 
   return {
     accessToken: tokens.accessToken,
@@ -241,9 +247,12 @@ export async function forgotPassword(email: string) {
   // Store reset token in Redis with 1 hour TTL
   await redis.set(key, user.id, 'EX', 3600);
 
-  // TODO: Send email with reset link
-  // For now, log the token (in production, integrate with email service)
-  console.log(`[Password Reset] Token for ${email}: ${token}`);
+  // Send reset email
+  try {
+    await sendPasswordResetEmail(email, token, user.name);
+  } catch (err) {
+    console.error(`[Password Reset] Failed to send email to ${email}:`, err);
+  }
 
   return { message: 'Si el email existe, recibirás instrucciones para restablecer tu contraseña' };
 }
