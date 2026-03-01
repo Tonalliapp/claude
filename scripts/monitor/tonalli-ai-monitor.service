@@ -1,0 +1,19 @@
+# DEPRECATED: AI monitor now runs as Docker container (see docker-compose.prod.yml)
+# This systemd service file is kept for reference only.
+# Secrets are loaded from /opt/tonalli/.env via Docker Compose.
+
+[Unit]
+Description=Tonalli AI Diagnostics Monitor
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+EnvironmentFile=/opt/tonalli/.env
+ExecStart=/usr/bin/python3 /opt/tonalli/scripts/monitor/ai-diagnostics.py
+Restart=always
+RestartSec=5
+WorkingDirectory=/opt/tonalli
+
+[Install]
+WantedBy=multi-user.target

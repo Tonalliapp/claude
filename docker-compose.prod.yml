@@ -108,6 +108,24 @@ services:
     networks:
       - tonalli-network
 
+  ai-monitor:
+    image: python:3.12-slim
+    container_name: tonalli-ai-monitor
+    restart: unless-stopped
+    working_dir: /app
+    entrypoint: /bin/sh
+    command: >
+      -c "apt-get update -qq > /dev/null 2>&1 && apt-get install -y -qq curl docker.io > /dev/null 2>&1 && exec python3 -u ai-diagnostics.py"
+    volumes:
+      - /opt/tonalli/scripts/monitor:/app:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+    networks:
+      - tonalli-network
+
 volumes:
   postgres-data:
   redis-data:
