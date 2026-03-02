@@ -55,6 +55,16 @@ const config: Config = {
         'status-ready': 'rgba(74, 140, 111, 0.15)',
         'table-jade': 'rgba(74, 140, 111, 0.06)',
       },
+      keyframes: {
+        'pulse-once': {
+          '0%': { boxShadow: '0 0 0 0 rgba(201, 168, 76, 0.5)' },
+          '50%': { boxShadow: '0 0 20px 4px rgba(201, 168, 76, 0.3)' },
+          '100%': { boxShadow: '0 0 0 0 rgba(201, 168, 76, 0)' },
+        },
+      },
+      animation: {
+        'pulse-once': 'pulse-once 1s ease-out',
+      },
     },
   },
   plugins: [],

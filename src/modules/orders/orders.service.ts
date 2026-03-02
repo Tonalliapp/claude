@@ -9,7 +9,7 @@ import type { CreateOrderInput, CreatePosOrderInput, ListQuery } from './orders.
 
 const orderInclude = {
   items: {
-    include: { product: { select: { id: true, name: true, imageUrl: true } } },
+    include: { product: { select: { id: true, name: true, imageUrl: true, category: { select: { id: true, name: true } } } } },
   },
   table: { select: { id: true, number: true } },
   user: { select: { id: true, name: true, role: true } },
@@ -310,6 +310,23 @@ export async function updateItemStatus(
   io.of('/staff').to(tenantRoom(tenantId)).emit('order:item:updated', { orderId, item: updated });
   if (order.tableId) {
     io.of('/client').to(tableRoom(tenantId, order.tableId)).emit('order:item:updated', { orderId, item: updated });
+  }
+
+  // Auto-ready: if all items are ready/delivered, move order to ready
+  if (status === 'ready' || status === 'delivered') {
+    const allItems = await prisma.orderItem.findMany({ where: { orderId } });
+    const allDone = allItems.every((i) => i.status === 'ready' || i.status === 'delivered');
+    if (allDone && order.status === 'preparing') {
+      const readyOrder = await prisma.order.update({
+        where: { id: orderId },
+        data: { status: 'ready' },
+        include: orderInclude,
+      });
+      io.of('/staff').to(tenantRoom(tenantId)).emit('order:updated', readyOrder);
+      if (order.tableId) {
+        io.of('/client').to(tableRoom(tenantId, order.tableId)).emit('order:updated', readyOrder);
+      }
+    }
   }
 
   return updated;
