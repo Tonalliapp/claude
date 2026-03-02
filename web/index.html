@@ -2,17 +2,72 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/tonalli-logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Tonalli — Plataforma SaaS de gestión integral para restaurantes. Menú digital QR, pedidos en tiempo real, POS e inventario." />
+    <title>Tonalli — Tu restaurante, elevado</title>
+
+    <!-- SEO -->
+    <meta name="description" content="Tonalli — Plataforma de gestión integral para restaurantes. Menú digital QR, pedidos en tiempo real, POS, inventario y reportes." />
+    <meta name="keywords" content="restaurante, menú digital, QR, POS, pedidos, inventario, gestión restaurantes, México" />
+    <meta name="author" content="Tonalli" />
+    <link rel="canonical" href="https://tonalli.app" />
+
+    <!-- Open Graph -->
     <meta property="og:title" content="Tonalli — Tu restaurante, elevado" />
     <meta property="og:description" content="Gestión integral para restaurantes: menú digital QR, pedidos, cocina en tiempo real, POS, inventario y reportes." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://tonalli.app" />
-    <title>Tonalli — Tu restaurante, elevado</title>
+    <meta property="og:image" content="https://tonalli.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="es_MX" />
+    <meta property="og:site_name" content="Tonalli" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Tonalli — Tu restaurante, elevado" />
+    <meta name="twitter:description" content="Gestión integral para restaurantes: menú digital QR, pedidos, cocina en tiempo real, POS, inventario y reportes." />
+    <meta name="twitter:image" content="https://tonalli.app/og-image.png" />
+
+    <!-- PWA -->
+    <meta name="theme-color" content="#C9A84C" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Tonalli" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Favicons -->
+    <link rel="icon" type="image/svg+xml" href="/tonalli-logo.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Tonalli",
+      "description": "Plataforma de gestión integral para restaurantes: menú digital QR, pedidos en tiempo real, POS, inventario y reportes.",
+      "url": "https://tonalli.app",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "MXN",
+        "description": "Gratis durante lanzamiento"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "Tonalli",
+        "url": "https://tonalli.app"
+      }
+    }
+    </script>
   </head>
   <body class="bg-tonalli-black text-white font-body antialiased">
     <div id="root"></div>
