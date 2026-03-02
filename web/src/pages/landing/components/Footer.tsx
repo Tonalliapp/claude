@@ -32,7 +32,7 @@ export default function Footer() {
           <div>
             <p className="text-gold-muted text-[10px] font-medium tracking-[2px] mb-3">EMPRESA</p>
             <div className="space-y-2">
-              <span className="block text-silver-dark text-sm">AURALINK</span>
+              <span className="block text-silver-dark text-sm">Tonalli</span>
               <span className="block text-silver-dark text-sm">Tomatlan, Jalisco</span>
             </div>
           </div>
@@ -42,7 +42,7 @@ export default function Footer() {
             <p className="text-gold-muted text-[10px] font-medium tracking-[2px] mb-3">CONTACTO</p>
             <div className="space-y-2">
               <a
-                href="https://wa.me/523221234567"
+                href="https://wa.me/525623655099"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 text-silver-dark text-sm hover:text-jade transition-colors"
@@ -61,7 +61,7 @@ export default function Footer() {
         <div className="h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent mb-6" />
 
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-silver-dark text-xs">&copy; 2026 AURALINK. Todos los derechos reservados.</p>
+          <p className="text-silver-dark text-xs">&copy; 2026 Tonalli. Todos los derechos reservados.</p>
           <div className="flex gap-4 text-silver-dark text-xs">
             <span className="hover:text-silver cursor-pointer transition-colors">Privacidad</span>
             <span className="hover:text-silver cursor-pointer transition-colors">Terminos</span>
