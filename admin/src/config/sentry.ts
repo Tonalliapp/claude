@@ -1,14 +1,14 @@
-// Sentry initialization for admin frontend
-// To enable: npm install @sentry/react, then set VITE_SENTRY_DSN in .env
-//
-// Then in main.tsx add:
-//   import './config/sentry';
-//
-// import * as Sentry from '@sentry/react';
-//
-// const dsn = import.meta.env.VITE_SENTRY_DSN;
-// if (dsn) {
-//   Sentry.init({ dsn, tracesSampleRate: 0.2 });
-// }
+import * as Sentry from '@sentry/react';
 
-export {};
+const meta = import.meta as any;
+const dsn = meta.env?.VITE_SENTRY_DSN as string | undefined;
+
+if (dsn) {
+  Sentry.init({
+    dsn,
+    environment: meta.env?.MODE ?? 'production',
+    tracesSampleRate: 0.2,
+    replaysSessionSampleRate: 0,
+    replaysOnErrorSampleRate: 1.0,
+  });
+}
