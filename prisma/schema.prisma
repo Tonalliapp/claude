@@ -22,6 +22,7 @@ enum TenantStatus {
 }
 
 enum UserRole {
+  superadmin
   owner
   admin
   cashier
@@ -105,7 +106,7 @@ model Tenant {
 
 model User {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId     String    @map("tenant_id") @db.Uuid
+  tenantId     String?   @map("tenant_id") @db.Uuid
   name         String    @db.VarChar(255)
   username     String    @db.VarChar(50)
   email        String?   @db.VarChar(255)
@@ -116,10 +117,11 @@ model User {
   lastLogin    DateTime? @map("last_login") @db.Timestamptz
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
-  tenant             Tenant              @relation(fields: [tenantId], references: [id])
+  tenant             Tenant?             @relation(fields: [tenantId], references: [id])
   orders             Order[]
   inventoryMovements InventoryMovement[]
   cashRegisters      CashRegister[]
+  auditLogs          AuditLog[]
 
   @@unique([tenantId, username])
   @@index([tenantId])
@@ -299,4 +301,22 @@ model Payment {
   cashRegister CashRegister? @relation(fields: [cashRegisterId], references: [id])
 
   @@map("payments")
+}
+
+model AuditLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  action     String   @db.VarChar(100)
+  targetType String   @map("target_type") @db.VarChar(50)
+  targetId   String?  @map("target_id") @db.Uuid
+  details    Json     @default("{}")
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
 }

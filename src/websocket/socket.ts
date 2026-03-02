@@ -44,11 +44,11 @@ export function initSocket(server: HttpServer): Server {
     logger.info(`[WS] Staff connected: ${user.userId} (${user.role})`);
 
     // Auto-join tenant room
-    socket.join(tenantRoom(user.tenantId));
+    socket.join(tenantRoom(user.tenantId!));
 
     // Kitchen role auto-joins kitchen room
     if (user.role === 'kitchen') {
-      socket.join(kitchenRoom(user.tenantId));
+      socket.join(kitchenRoom(user.tenantId!));
     }
 
     socket.on('disconnect', () => {

@@ -117,13 +117,13 @@ export async function login(input: LoginInput) {
     throw new AppError(401, 'Credenciales inválidas', 'INVALID_CREDENTIALS');
   }
 
-  if (owner.tenant.status !== 'active') {
+  if (!owner.tenant || owner.tenant.status !== 'active') {
     throw new AppError(403, 'Restaurante suspendido o cancelado', 'TENANT_INACTIVE');
   }
 
   // Step 2: Find the user by (tenantId, username)
   const user = await prisma.user.findUnique({
-    where: { tenantId_username: { tenantId: owner.tenantId, username: input.username } },
+    where: { tenantId_username: { tenantId: owner.tenantId!, username: input.username } },
   });
 
   if (!user || !user.active) {
@@ -161,9 +161,9 @@ export async function login(input: LoginInput) {
       role: user.role,
     },
     tenant: {
-      id: owner.tenant.id,
-      name: owner.tenant.name,
-      slug: owner.tenant.slug,
+      id: owner.tenant!.id,
+      name: owner.tenant!.name,
+      slug: owner.tenant!.slug,
     },
   };
 }
@@ -185,8 +185,12 @@ export async function refresh(refreshToken: string) {
     include: { tenant: { select: { status: true } } },
   });
 
-  if (!user || user.tenant.status !== 'active') {
-    throw new AppError(401, 'Usuario o restaurante inactivo', 'USER_INACTIVE');
+  if (!user) {
+    throw new AppError(401, 'Usuario inactivo', 'USER_INACTIVE');
+  }
+
+  if (user.tenant && user.tenant.status !== 'active') {
+    throw new AppError(401, 'Restaurante inactivo', 'USER_INACTIVE');
   }
 
   const tokens = generateTokens(payload);
@@ -202,8 +206,10 @@ export async function logout(refreshToken: string): Promise<void> {
   await redis.del(`refresh:${refreshToken}`);
 }
 
-export async function updateProfile(userId: string, tenantId: string, input: UpdateProfileInput) {
-  const user = await prisma.user.findFirst({ where: { id: userId, tenantId } });
+export async function updateProfile(userId: string, tenantId: string | undefined, input: UpdateProfileInput) {
+  const where: { id: string; tenantId?: string } = { id: userId };
+  if (tenantId) where.tenantId = tenantId;
+  const user = await prisma.user.findFirst({ where });
   if (!user) throw new AppError(404, 'Usuario no encontrado', 'NOT_FOUND');
 
   const updateData: Record<string, unknown> = {};
@@ -211,9 +217,9 @@ export async function updateProfile(userId: string, tenantId: string, input: Upd
   if (input.name) updateData.name = input.name;
 
   if (input.email && input.email !== user.email) {
-    const exists = await prisma.user.findFirst({
-      where: { tenantId, email: input.email, id: { not: userId } },
-    });
+    const emailWhere: Record<string, unknown> = { email: input.email, id: { not: userId } };
+    if (tenantId) emailWhere.tenantId = tenantId;
+    const exists = await prisma.user.findFirst({ where: emailWhere });
     if (exists) throw new AppError(409, 'El email ya está en uso', 'EMAIL_EXISTS');
     updateData.email = input.email;
   }

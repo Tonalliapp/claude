@@ -6,6 +6,27 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Seeding database...');
 
+  // ─── Superadmin ────────────────────────────────
+  const existingSuperadmin = await prisma.user.findFirst({
+    where: { email: 'admin@tonalli.app', role: 'superadmin' },
+  });
+  if (!existingSuperadmin) {
+    const superadminHash = await bcrypt.hash('Tonalli2026!', 12);
+    await prisma.user.create({
+      data: {
+        name: 'Super Admin',
+        username: 'superadmin',
+        email: 'admin@tonalli.app',
+        passwordHash: superadminHash,
+        role: 'superadmin',
+        tenantId: null,
+      },
+    });
+    console.log('  Superadmin: admin@tonalli.app (superadmin)');
+  } else {
+    console.log('  Superadmin: already exists');
+  }
+
   // ─── Tenant ─────────────────────────────────────
   const tenant = await prisma.tenant.upsert({
     where: { slug: 'la-cocina-de-maria' },
@@ -145,6 +166,7 @@ async function main() {
   console.log('\nSeed completed!');
   console.log('─────────────────────────────────');
   console.log('Login credentials:');
+  console.log('  Superadmin: admin@tonalli.app + Tonalli2026!');
   console.log('  Owner: carlos@tonalli.app + admin + Tonalli2026!');
   console.log('  Staff: carlos@tonalli.app + [username] + demo1234');
   console.log('  Usernames: ana, pedro, maria, jose');

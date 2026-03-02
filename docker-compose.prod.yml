@@ -14,6 +14,7 @@ services:
       - app-static:/var/www/app:ro
       - menu-static:/var/www/menu:ro
       - web-static:/var/www/web:ro
+      - admin-static:/var/www/admin:ro
     depends_on:
       - api
     networks:
@@ -135,6 +136,7 @@ volumes:
   app-static:
   menu-static:
   web-static:
+  admin-static:
   uptime-kuma-data:
 
 networks:

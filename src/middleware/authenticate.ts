@@ -5,7 +5,7 @@ import { AppError } from './errorHandler';
 
 export interface JwtPayload {
   userId: string;
-  tenantId: string;
+  tenantId: string | null;
   role: string;
 }
 
@@ -29,7 +29,7 @@ export function authenticate(req: Request, _res: Response, next: NextFunction): 
   try {
     const payload = jwt.verify(token, authConfig.accessToken.secret) as JwtPayload;
     req.user = payload;
-    req.tenantId = payload.tenantId;
+    req.tenantId = payload.tenantId ?? undefined;
     next();
   } catch {
     throw new AppError(401, 'Invalid or expired token', 'TOKEN_INVALID');

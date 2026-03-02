@@ -25,7 +25,7 @@ router.post(
   validate({ body: checkoutSchema }),
   async (req, res, next) => {
     try {
-      const result = await createCheckoutSession(req.user!.tenantId, req.body.priceId);
+      const result = await createCheckoutSession(req.user!.tenantId!, req.body.priceId);
       res.json(result);
     } catch (err) {
       next(err);
@@ -40,7 +40,7 @@ router.post(
   roleGuard('owner'),
   async (req, res, next) => {
     try {
-      const result = await createPortalSession(req.user!.tenantId);
+      const result = await createPortalSession(req.user!.tenantId!);
       res.json(result);
     } catch (err) {
       next(err);
@@ -54,7 +54,7 @@ router.get(
   authenticate,
   async (req, res, next) => {
     try {
-      const result = await getSubscriptionStatus(req.user!.tenantId);
+      const result = await getSubscriptionStatus(req.user!.tenantId!);
       res.json(result);
     } catch (err) {
       next(err);

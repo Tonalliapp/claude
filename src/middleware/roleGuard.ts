@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from './errorHandler';
 
-type Role = 'owner' | 'admin' | 'cashier' | 'waiter' | 'kitchen';
+type Role = 'superadmin' | 'owner' | 'admin' | 'cashier' | 'waiter' | 'kitchen';
 
 /**
  * Middleware that restricts access to specific roles.

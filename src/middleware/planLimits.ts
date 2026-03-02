@@ -13,7 +13,7 @@ const RESOURCE_CONFIG: Record<Resource, { maxField: 'maxTables' | 'maxUsers' | '
 export function checkPlanLimit(resource: Resource) {
   return async (req: Request, _res: Response, next: NextFunction) => {
     try {
-      const tenantId = req.user!.tenantId;
+      const tenantId = req.user!.tenantId!;
       const config = RESOURCE_CONFIG[resource];
 
       const tenant = await prisma.tenant.findUnique({

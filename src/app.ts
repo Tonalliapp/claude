@@ -24,6 +24,7 @@ import cashRegisterRoutes from './modules/cashRegister/cashRegister.routes';
 import paymentsRoutes from './modules/payments/payments.routes';
 import reportsRoutes from './modules/reports/reports.routes';
 import subscriptionsRoutes from './modules/subscriptions/subscriptions.routes';
+import adminRoutes from './modules/admin/admin.routes';
 
 const app = express();
 
@@ -84,6 +85,9 @@ app.use('/api/v1/cash-register', cashRegisterRoutes);
 app.use('/api/v1/payments', paymentsRoutes);
 app.use('/api/v1/reports', reportsRoutes);
 app.use('/api/v1/subscriptions', subscriptionsRoutes);
+
+// Admin (superadmin only)
+app.use('/api/v1/admin', adminRoutes);
 
 // ─── 404 ──────────────────────────────────────────
 app.use((_req, res) => {
