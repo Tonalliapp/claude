@@ -83,9 +83,14 @@ model Tenant {
   status      TenantStatus @default(active)
   maxTables   Int          @default(10) @map("max_tables")
   maxUsers    Int          @default(3) @map("max_users")
-  maxProducts Int          @default(50) @map("max_products")
-  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt   DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  maxProducts      Int          @default(50) @map("max_products")
+  stripeCustomerId String?      @unique @map("stripe_customer_id")
+  stripeSubId      String?      @unique @map("stripe_sub_id")
+  stripePriceId    String?      @map("stripe_price_id")
+  trialEndsAt      DateTime?    @map("trial_ends_at") @db.Timestamptz
+  planExpiresAt    DateTime?    @map("plan_expires_at") @db.Timestamptz
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   users         User[]
   categories    Category[]

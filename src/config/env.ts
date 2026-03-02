@@ -43,6 +43,11 @@ const envSchema = z.object({
   EMAIL_FROM: z.string().default('Tonalli <noreply@tonalli.app>'),
   APP_BASE_URL: z.string().url().default('https://tonalli.app'),
 
+  // Stripe
+  STRIPE_SECRET_KEY: z.string().min(1),
+  STRIPE_PUBLISHABLE_KEY: z.string().min(1),
+  STRIPE_WEBHOOK_SECRET: z.string().min(1).default('whsec_placeholder'),
+
   // Storage
   STORAGE_PUBLIC_URL: z.string().url().optional(),
 });

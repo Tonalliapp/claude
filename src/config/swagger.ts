@@ -33,6 +33,7 @@ const tags = [
   { name: 'Cash Register', description: 'Caja registradora' },
   { name: 'Payments', description: 'Pagos' },
   { name: 'Reports', description: 'Reportes y analíticas' },
+  { name: 'Subscriptions', description: 'Suscripciones y pagos con Stripe' },
 ];
 
 // ─── Reusable Schemas ────────────────────────────
@@ -859,6 +860,40 @@ const paths = {
       summary: 'Resumen del dashboard',
       security: auth,
       responses: { ...res200('Métricas del dashboard'), 401: res401 },
+    },
+  },
+
+  // ── Subscriptions ──
+  '/api/v1/subscriptions/checkout': {
+    post: {
+      tags: ['Subscriptions'],
+      summary: 'Crear sesión de checkout en Stripe',
+      security: auth,
+      requestBody: { content: { 'application/json': { schema: { type: 'object', required: ['priceId'], properties: { priceId: { type: 'string' } } } } } },
+      responses: { 200: { description: 'URL de checkout' }, 400: { description: 'Ya tiene suscripción activa' } },
+    },
+  },
+  '/api/v1/subscriptions/portal': {
+    post: {
+      tags: ['Subscriptions'],
+      summary: 'Crear sesión del portal de Stripe',
+      security: auth,
+      responses: { 200: { description: 'URL del portal' }, 400: { description: 'No tiene suscripción' } },
+    },
+  },
+  '/api/v1/subscriptions/status': {
+    get: {
+      tags: ['Subscriptions'],
+      summary: 'Estado de la suscripción',
+      security: auth,
+      responses: { ...res200('Estado de suscripción con plan y límites'), 401: res401 },
+    },
+  },
+  '/api/v1/subscriptions/webhook': {
+    post: {
+      tags: ['Subscriptions'],
+      summary: 'Webhook de Stripe (no llamar manualmente)',
+      responses: res200('Evento procesado'),
     },
   },
 };

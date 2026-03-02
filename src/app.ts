@@ -23,6 +23,7 @@ import inventoryRoutes from './modules/inventory/inventory.routes';
 import cashRegisterRoutes from './modules/cashRegister/cashRegister.routes';
 import paymentsRoutes from './modules/payments/payments.routes';
 import reportsRoutes from './modules/reports/reports.routes';
+import subscriptionsRoutes from './modules/subscriptions/subscriptions.routes';
 
 const app = express();
 
@@ -38,6 +39,8 @@ app.use(
   }),
 );
 app.use(compression());
+// Stripe webhook needs raw body — must be before json parser
+app.use('/api/v1/subscriptions/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -80,6 +83,7 @@ app.use('/api/v1/inventory', inventoryRoutes);
 app.use('/api/v1/cash-register', cashRegisterRoutes);
 app.use('/api/v1/payments', paymentsRoutes);
 app.use('/api/v1/reports', reportsRoutes);
+app.use('/api/v1/subscriptions', subscriptionsRoutes);
 
 // ─── 404 ──────────────────────────────────────────
 app.use((_req, res) => {
