@@ -8,7 +8,7 @@ import { env } from './config/env';
 import { apiLimiter } from './middleware/rateLimiter';
 import { errorHandler } from './middleware/errorHandler';
 import { swaggerSpec } from './config/swagger';
-import { initSentry, sentryErrorHandler } from './config/sentry';
+import { initSentry, setupSentryErrorHandler } from './config/sentry';
 
 // Route imports
 import authRoutes from './modules/auth/auth.routes';
@@ -99,7 +99,7 @@ app.use((_req, res) => {
 });
 
 // ─── Sentry Error Handler ────────────────────────
-app.use(sentryErrorHandler);
+setupSentryErrorHandler(app);
 
 // ─── Error Handler ────────────────────────────────
 app.use(errorHandler);
