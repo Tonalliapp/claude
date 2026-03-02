@@ -17,7 +17,9 @@ const fadeUp = {
 
 export default function HowItWorks() {
   return (
-    <section className="py-24 px-6">
+    <section className="py-24 px-6 relative">
+      {/* Jade accent line */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-px bg-gradient-to-r from-jade to-gold opacity-30" />
       <div className="max-w-4xl mx-auto">
         <motion.div
           initial="hidden"

@@ -1,19 +1,31 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
+import TonalliLogo from '../../../components/TonalliLogo';
 
 export default function CTASection() {
   return (
-    <section className="py-24 px-6">
+    <section className="py-24 px-6 relative">
+      {/* Subtle background glow */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full bg-gold/3 blur-[120px]" />
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="max-w-3xl mx-auto text-center"
+        className="relative max-w-3xl mx-auto text-center"
       >
+        <div className="flex justify-center mb-6">
+          <TonalliLogo size={48} animated />
+        </div>
+        {/* Gold-jade divider */}
+        <div className="w-16 h-px mx-auto mb-8 bg-gradient-to-r from-gold via-jade-muted to-gold opacity-40" />
+
         <h2 className="font-display text-3xl md:text-5xl font-light text-white mb-4">
           Listo para transformar{' '}
-          <span className="text-gold">tu restaurante</span>?
+          <span className="bg-gradient-to-r from-gold-light via-gold to-jade-light bg-clip-text text-transparent">tu restaurante</span>?
         </h2>
         <p className="text-silver-muted text-base md:text-lg mb-10 max-w-xl mx-auto">
           Unete a los restaurantes que ya gestionan todo desde Tonalli. Configuracion en minutos, sin costo.

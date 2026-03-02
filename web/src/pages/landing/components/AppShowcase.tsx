@@ -96,7 +96,9 @@ export default function AppShowcase() {
   const activePanel = panels.find(p => p.id === active)!;
 
   return (
-    <section className="py-24 px-6 border-y border-subtle">
+    <section className="py-24 px-6 border-y border-subtle relative">
+      {/* Gold-jade accent at top */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
       <div className="max-w-5xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

@@ -28,7 +28,9 @@ const fadeUp = {
 
 export default function FeaturesSection() {
   return (
-    <section id="features" className="py-24 px-6">
+    <section id="features" className="py-24 px-6 border-t border-subtle relative">
+      {/* Jade gradient accent at top */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-px bg-gradient-to-r from-transparent via-jade/20 to-transparent" />
       <div className="max-w-6xl mx-auto">
         <motion.div
           initial="hidden"

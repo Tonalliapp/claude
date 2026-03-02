@@ -11,6 +11,98 @@ const subtitles = [
   'Reportes al instante',
 ];
 
+function AnimatedSun() {
+  const rays = Array.from({ length: 12 }, (_, i) => i * 30);
+  const leaves = [15, 105, 195, 285];
+  const diamonds = [0, 90, 180, 270];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.7 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 1.2, ease: 'easeOut' }}
+      className="relative w-[140px] h-[140px] md:w-[170px] md:h-[170px] mx-auto mb-8"
+    >
+      {/* Breathing glow */}
+      <motion.div
+        className="absolute inset-[-30px] rounded-full bg-gold/5 blur-[40px]"
+        animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.8, 0.5] }}
+        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+      />
+
+      <svg viewBox="0 0 200 200" fill="none" className="w-full h-full relative z-10">
+        <defs>
+          <radialGradient id="hero-sun-core" cx="40%" cy="35%">
+            <stop offset="0%" stopColor="#E2C97E" />
+            <stop offset="50%" stopColor="#C9A84C" />
+            <stop offset="100%" stopColor="#9A7B2F" />
+          </radialGradient>
+        </defs>
+
+        {/* Outer silver ring */}
+        <circle cx="100" cy="100" r="60" stroke="#C0C0C0" strokeWidth="0.5" opacity="0.06" />
+        {/* Jade ring */}
+        <circle cx="100" cy="100" r="50" stroke="#4A8C6F" strokeWidth="0.8" opacity="0.15" />
+        {/* Gold ring */}
+        <circle cx="100" cy="100" r="40" stroke="#C9A84C" strokeWidth="1" opacity="0.25" />
+
+        {/* 12 Ray lines */}
+        <g stroke="#C9A84C" strokeWidth="1.5" strokeLinecap="round" opacity="0.6">
+          {rays.map((angle) => {
+            const rad = (angle * Math.PI) / 180;
+            const x1 = 100 + Math.sin(rad) * 35;
+            const y1 = 100 - Math.cos(rad) * 35;
+            const x2 = 100 + Math.sin(rad) * 55;
+            const y2 = 100 - Math.cos(rad) * 55;
+            return <line key={angle} x1={x1} y1={y1} x2={x2} y2={y2} />;
+          })}
+        </g>
+
+        {/* 4 Jade leaf accents */}
+        <g fill="#4A8C6F" opacity="0.35">
+          {leaves.map((angle) => {
+            const rad = (angle * Math.PI) / 180;
+            const cx = 100 + Math.sin(rad) * 48;
+            const cy = 100 - Math.cos(rad) * 48;
+            return <ellipse key={angle} cx={cx} cy={cy} rx="2" ry="4" transform={`rotate(${angle} ${cx} ${cy})`} />;
+          })}
+        </g>
+
+        {/* 4 Gold diamond rays at cardinal points */}
+        <g fill="#C9A84C" opacity="0.7">
+          {diamonds.map((angle) => {
+            const rad = (angle * Math.PI) / 180;
+            const cx = 100 + Math.sin(rad) * 72;
+            const cy = 100 - Math.cos(rad) * 72;
+            const size = 4;
+            return (
+              <polygon
+                key={angle}
+                points={`${cx},${cy - size} ${cx + size * 0.75},${cy} ${cx},${cy + size} ${cx - size * 0.75},${cy}`}
+              />
+            );
+          })}
+        </g>
+
+        {/* Sun core with inner glow */}
+        <circle cx="100" cy="100" r="26" fill="url(#hero-sun-core)" />
+        <circle cx="100" cy="100" r="26" fill="none" stroke="#C9A84C" strokeWidth="0.5" opacity="0.3" />
+      </svg>
+
+      {/* Slow rotation overlay */}
+      <motion.div
+        className="absolute inset-0"
+        animate={{ rotate: 360 }}
+        transition={{ duration: 120, repeat: Infinity, ease: 'linear' }}
+      >
+        <svg viewBox="0 0 200 200" fill="none" className="w-full h-full">
+          <circle cx="100" cy="100" r="68" stroke="#C9A84C" strokeWidth="0.3" opacity="0.08" strokeDasharray="4 8" />
+        </svg>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 export default function HeroSection() {
   const [current, setCurrent] = useState(0);
 
@@ -40,6 +132,11 @@ export default function HeroSection() {
       <div className="relative max-w-7xl mx-auto w-full grid lg:grid-cols-2 gap-12 items-center">
         {/* Left: Text */}
         <div>
+          {/* Animated Sun - mobile only, shows above text */}
+          <div className="lg:hidden">
+            <AnimatedSun />
+          </div>
+
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -55,7 +152,7 @@ export default function HeroSection() {
             className="font-display text-5xl md:text-6xl lg:text-7xl font-light text-white leading-tight mb-4"
           >
             Tu restaurante,{' '}
-            <span className="text-gold">elevado</span>
+            <span className="bg-gradient-to-r from-gold-light via-gold to-jade-light bg-clip-text text-transparent">elevado</span>
           </motion.h1>
 
           <div className="h-8 mb-8">
@@ -104,7 +201,7 @@ export default function HeroSection() {
           </motion.div>
         </div>
 
-        {/* Right: Dashboard mockup */}
+        {/* Right: Dashboard mockup + animated sun */}
         <motion.div
           initial={{ opacity: 0, x: 40 }}
           animate={{ opacity: 1, x: 0 }}
@@ -112,6 +209,11 @@ export default function HeroSection() {
           className="hidden lg:block"
         >
           <div className="relative">
+            {/* Animated Sun - desktop, above the mockup */}
+            <div className="mb-6">
+              <AnimatedSun />
+            </div>
+
             {/* Glow behind */}
             <div className="absolute -inset-4 bg-gold/5 rounded-3xl blur-2xl" />
 

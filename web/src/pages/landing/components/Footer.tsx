@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
+import TonalliLogo from '../../../components/TonalliLogo';
 
 export default function Footer() {
   return (
@@ -8,8 +9,11 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <span className="font-display text-gold text-lg tracking-[4px] font-light">TONALLI</span>
-            <p className="text-silver-dark text-xs mt-2 leading-relaxed">
+            <div className="flex items-center gap-2 mb-2">
+              <TonalliLogo size={22} />
+              <span className="font-display text-gold text-lg tracking-[4px] font-light">TONALLI</span>
+            </div>
+            <p className="text-silver-dark text-xs mt-1 leading-relaxed">
               Gestion integral para restaurantes. Hecho con energia vital en Mexico.
             </p>
           </div>
@@ -53,7 +57,10 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-subtle pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+        {/* Divider gold-jade gradient */}
+        <div className="h-px bg-gradient-to-r from-transparent via-gold/20 to-transparent mb-6" />
+
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-silver-dark text-xs">&copy; 2026 AURALINK. Todos los derechos reservados.</p>
           <div className="flex gap-4 text-silver-dark text-xs">
             <span className="hover:text-silver cursor-pointer transition-colors">Privacidad</span>
