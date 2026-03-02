@@ -3,9 +3,11 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
+import swaggerUi from 'swagger-ui-express';
 import { env } from './config/env';
 import { apiLimiter } from './middleware/rateLimiter';
 import { errorHandler } from './middleware/errorHandler';
+import { swaggerSpec } from './config/swagger';
 
 // Route imports
 import authRoutes from './modules/auth/auth.routes';
@@ -46,6 +48,13 @@ if (env.NODE_ENV === 'development') {
 }
 
 app.use('/api/', apiLimiter);
+
+// ─── API Docs ────────────────────────────────────
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Tonalli API Docs',
+}));
+app.get('/api/docs.json', (_req, res) => res.json(swaggerSpec));
 
 // ─── Health Check ─────────────────────────────────
 app.get('/health', (_req, res) => {
