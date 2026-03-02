@@ -8,7 +8,7 @@ import { env } from './config/env';
 import { apiLimiter } from './middleware/rateLimiter';
 import { errorHandler } from './middleware/errorHandler';
 import { swaggerSpec } from './config/swagger';
-import { initSentry, setupSentryErrorHandler } from './config/sentry';
+import { setupSentryErrorHandler } from './config/sentry';
 
 // Route imports
 import authRoutes from './modules/auth/auth.routes';
@@ -26,9 +26,6 @@ import paymentsRoutes from './modules/payments/payments.routes';
 import reportsRoutes from './modules/reports/reports.routes';
 import subscriptionsRoutes from './modules/subscriptions/subscriptions.routes';
 import adminRoutes from './modules/admin/admin.routes';
-
-// Initialize Sentry before any other middleware
-initSentry();
 
 const app = express();
 

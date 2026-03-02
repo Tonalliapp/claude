@@ -1,4 +1,9 @@
 import 'dotenv/config';
+import { initSentry } from './config/sentry';
+
+// Sentry must init BEFORE importing express/app
+initSentry();
+
 import http from 'http';
 import app from './app';
 import { env } from './config/env';
