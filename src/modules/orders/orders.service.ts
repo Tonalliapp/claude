@@ -5,7 +5,7 @@ import { AppError } from '../../middleware/errorHandler';
 import { getIO } from '../../websocket/socket';
 import { tenantRoom, kitchenRoom, tableRoom } from '../../websocket/rooms';
 import { generateOrderNumber } from '../../utils/generateOrderNumber';
-import type { CreateOrderInput, ListQuery } from './orders.schema';
+import type { CreateOrderInput, CreatePosOrderInput, ListQuery } from './orders.schema';
 
 const orderInclude = {
   items: {
@@ -50,9 +50,11 @@ export async function getById(tenantId: string, id: string) {
 }
 
 export async function create(tenantId: string, data: CreateOrderInput, userId?: string) {
-  // Verify table belongs to tenant
-  const table = await prisma.table.findFirst({ where: { id: data.tableId, tenantId } });
-  if (!table) throw new AppError(404, 'Mesa no encontrada', 'TABLE_NOT_FOUND');
+  // Verify table belongs to tenant (only if tableId provided)
+  if (data.tableId) {
+    const table = await prisma.table.findFirst({ where: { id: data.tableId, tenantId } });
+    if (!table) throw new AppError(404, 'Mesa no encontrada', 'TABLE_NOT_FOUND');
+  }
 
   // Fetch products and validate
   const productIds = data.items.map((i) => i.productId);
@@ -89,27 +91,118 @@ export async function create(tenantId: string, data: CreateOrderInput, userId?: 
       tableId: data.tableId,
       userId,
       orderNumber,
+      orderType: (data as { orderType?: string }).orderType ?? 'dine_in',
       subtotal: total,
       total,
       notes: data.notes,
+      customerName: (data as { customerName?: string }).customerName,
       items: { create: items },
-    },
+    } as any,
     include: orderInclude,
   });
 
-  // Update table status
-  await prisma.table.update({
-    where: { id: data.tableId },
-    data: { status: 'occupied' },
-  });
+  // Update table status (only if table exists)
+  if (data.tableId) {
+    await prisma.table.update({
+      where: { id: data.tableId },
+      data: { status: 'occupied' },
+    });
+  }
 
   // Emit WebSocket events
   const io = getIO();
   io.of('/staff').to(tenantRoom(tenantId)).emit('order:new', order);
   io.of('/staff').to(kitchenRoom(tenantId)).emit('order:new', order);
-  io.of('/client').to(tableRoom(tenantId, data.tableId)).emit('order:updated', order);
+  if (data.tableId) {
+    io.of('/client').to(tableRoom(tenantId, data.tableId)).emit('order:updated', order);
+  }
 
   return order;
+}
+
+export async function createPosOrder(tenantId: string, data: CreatePosOrderInput, userId: string) {
+  // Fetch products and validate
+  const productIds = data.items.map((i) => i.productId);
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds }, tenantId, available: true },
+  });
+
+  if (products.length !== productIds.length) {
+    throw new AppError(400, 'Uno o más productos no están disponibles', 'PRODUCT_UNAVAILABLE');
+  }
+
+  const productMap = new Map(products.map((p) => [p.id, p]));
+
+  const items = data.items.map((item) => {
+    const product = productMap.get(item.productId)!;
+    const unitPrice = product.price;
+    const subtotal = new Decimal(unitPrice.toString()).mul(item.quantity);
+    return {
+      productId: item.productId,
+      quantity: item.quantity,
+      unitPrice,
+      subtotal,
+      notes: item.notes,
+    };
+  });
+
+  const total = items.reduce((sum, i) => sum.add(i.subtotal), new Decimal(0));
+  const orderNumber = await generateOrderNumber(tenantId);
+
+  // Atomic transaction: create order + payment + update cash register
+  const result = await prisma.$transaction(async (tx) => {
+    const order = await tx.order.create({
+      data: {
+        tenantId,
+        userId,
+        orderNumber,
+        orderType: data.orderType,
+        status: data.payImmediately ? 'paid' : 'pending',
+        subtotal: total,
+        total,
+        notes: data.notes,
+        customerName: data.customerName,
+        paidAt: data.payImmediately ? new Date() : undefined,
+        items: { create: items },
+      } as any,
+      include: orderInclude,
+    });
+
+    if (data.payImmediately) {
+      // Get open cash register
+      const cashRegister = await tx.cashRegister.findFirst({
+        where: { tenantId, status: 'open' },
+      });
+
+      await tx.payment.create({
+        data: {
+          orderId: order.id,
+          cashRegisterId: cashRegister?.id,
+          method: data.paymentMethod,
+          amount: total,
+          reference: data.paymentReference,
+        },
+      });
+
+      if (cashRegister) {
+        await tx.cashRegister.update({
+          where: { id: cashRegister.id },
+          data: {
+            salesTotal: { increment: total },
+            transactions: { increment: 1 },
+          },
+        });
+      }
+    }
+
+    return order;
+  });
+
+  // Emit WebSocket events
+  const io = getIO();
+  io.of('/staff').to(tenantRoom(tenantId)).emit('order:new', result);
+
+  return result;
 }
 
 // Valid status transitions
@@ -146,7 +239,7 @@ export async function updateStatus(tenantId: string, id: string, status: OrderSt
   });
 
   // If paid or cancelled, free the table (if no other active orders)
-  if (status === 'paid' || status === 'cancelled') {
+  if ((status === 'paid' || status === 'cancelled') && order.tableId) {
     const activeOrders = await prisma.order.count({
       where: {
         tenantId,
@@ -165,7 +258,9 @@ export async function updateStatus(tenantId: string, id: string, status: OrderSt
   // Emit WebSocket
   const io = getIO();
   io.of('/staff').to(tenantRoom(tenantId)).emit('order:updated', updated);
-  io.of('/client').to(tableRoom(tenantId, order.tableId)).emit('order:updated', updated);
+  if (order.tableId) {
+    io.of('/client').to(tableRoom(tenantId, order.tableId)).emit('order:updated', updated);
+  }
 
   return updated;
 }
@@ -186,7 +281,9 @@ export async function cancelOrder(tenantId: string, id: string, reason: string) 
 
   const io = getIO();
   io.of('/staff').to(tenantRoom(tenantId)).emit('order:updated', updated);
-  io.of('/client').to(tableRoom(tenantId, order.tableId)).emit('order:updated', updated);
+  if (order.tableId) {
+    io.of('/client').to(tableRoom(tenantId, order.tableId)).emit('order:updated', updated);
+  }
 
   return updated;
 }
@@ -211,7 +308,9 @@ export async function updateItemStatus(
 
   const io = getIO();
   io.of('/staff').to(tenantRoom(tenantId)).emit('order:item:updated', { orderId, item: updated });
-  io.of('/client').to(tableRoom(tenantId, order.tableId)).emit('order:item:updated', { orderId, item: updated });
+  if (order.tableId) {
+    io.of('/client').to(tableRoom(tenantId, order.tableId)).emit('order:item:updated', { orderId, item: updated });
+  }
 
   return updated;
 }

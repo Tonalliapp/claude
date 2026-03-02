@@ -120,6 +120,66 @@ export async function salesByWaiter(tenantId: string, query: PeriodQuery) {
   })).sort((a, b) => b.total - a.total);
 }
 
+export async function paymentBreakdown(tenantId: string, query: PeriodQuery) {
+  const from = new Date(query.from);
+  const to = new Date(query.to);
+
+  const payments = await prisma.payment.findMany({
+    where: {
+      order: { tenantId, status: 'paid' },
+      createdAt: { gte: from, lte: to },
+    },
+    select: { method: true, amount: true },
+  });
+
+  const byMethod: Record<string, { count: number; total: Decimal }> = {};
+  for (const p of payments) {
+    if (!byMethod[p.method]) byMethod[p.method] = { count: 0, total: new Decimal(0) };
+    byMethod[p.method].count++;
+    byMethod[p.method].total = byMethod[p.method].total.add(p.amount.toString());
+  }
+
+  return Object.entries(byMethod).map(([method, data]) => ({
+    method,
+    count: data.count,
+    total: data.total.toNumber(),
+  }));
+}
+
+export async function exportSalesCsv(tenantId: string, query: PeriodQuery) {
+  const from = new Date(query.from);
+  const to = new Date(query.to);
+
+  const orders = await prisma.order.findMany({
+    where: {
+      tenantId,
+      status: 'paid',
+      paidAt: { gte: from, lte: to },
+    },
+    include: {
+      table: { select: { number: true } },
+      user: { select: { name: true } },
+      items: { include: { product: { select: { name: true } } } },
+      payments: { select: { method: true } },
+    },
+    orderBy: { paidAt: 'asc' },
+  });
+
+  const header = 'Fecha,No.Pedido,Tipo,Mesa,Mesero,Productos,Total,MetodoPago\n';
+  const rows = orders.map((o) => {
+    const date = o.paidAt ? o.paidAt.toISOString().split('T')[0] : '';
+    const products = o.items.map((i) => `${i.quantity}x ${i.product.name}`).join('; ');
+    const table = o.table?.number ?? '-';
+    const waiter = o.user?.name ?? '-';
+    const orderType = (o as any).orderType ?? 'dine_in';
+    const method = o.payments[0]?.method ?? '-';
+    const escapeCsv = (s: string) => `"${s.replace(/"/g, '""')}"`;
+    return `${date},${o.orderNumber},${orderType},${table},${escapeCsv(waiter)},${escapeCsv(products)},${Number(o.total).toFixed(2)},${method}`;
+  });
+
+  return header + rows.join('\n');
+}
+
 export async function dashboard(tenantId: string) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);

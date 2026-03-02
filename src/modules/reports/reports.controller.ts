@@ -29,6 +29,26 @@ export async function byWaiter(req: Request, res: Response, next: NextFunction) 
   }
 }
 
+export async function paymentBreakdown(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await reportsService.paymentBreakdown(req.tenantId!, req.query as unknown as PeriodQuery);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function exportSalesCsv(req: Request, res: Response, next: NextFunction) {
+  try {
+    const csv = await reportsService.exportSalesCsv(req.tenantId!, req.query as unknown as PeriodQuery);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="ventas-${new Date().toISOString().split('T')[0]}.csv"`);
+    res.send(csv);
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function dashboard(req: Request, res: Response, next: NextFunction) {
   try {
     const result = await reportsService.dashboard(req.tenantId!);

@@ -8,6 +8,8 @@ import * as ctrl from './reports.controller';
 const router = Router();
 router.use(authenticate, roleGuard('owner', 'admin'));
 
+router.get('/export/sales', validate({ query: periodQuerySchema }), ctrl.exportSalesCsv);
+router.get('/payment-breakdown', validate({ query: periodQuerySchema }), ctrl.paymentBreakdown);
 router.get('/sales', validate({ query: periodQuerySchema }), ctrl.sales);
 router.get('/top-products', validate({ query: topProductsQuerySchema }), ctrl.topProducts);
 router.get('/by-waiter', validate({ query: periodQuerySchema }), ctrl.byWaiter);

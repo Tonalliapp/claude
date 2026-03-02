@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { CreditCard, Store, Users } from 'lucide-react';
+import { CreditCard, Store, Users, AlertTriangle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { apiFetch } from '@/config/api';
 import type { SubscriptionOverview } from '@/types';
@@ -65,6 +65,29 @@ export default function SubscriptionsPage() {
           </div>
         </div>
       </div>
+
+      {data.expiringSoon && data.expiringSoon.length > 0 && (
+        <div className="bg-tonalli-black-card border border-gold-border rounded-2xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <AlertTriangle size={16} className="text-gold" />
+            <h3 className="text-white text-sm font-medium">Suscripciones por Expirar (7 dias)</h3>
+          </div>
+          <div className="space-y-2">
+            {data.expiringSoon.map(t => (
+              <div key={t.id} className="flex items-center justify-between py-2 border-b border-subtle last:border-0">
+                <div>
+                  <p className="text-white text-sm font-medium">{t.name}</p>
+                  <p className="text-silver-muted text-xs">{t.slug}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-gold-muted text-xs capitalize">{t.plan}</span>
+                  <span className="text-red-400 text-xs">{new Date(t.planExpiresAt).toLocaleDateString('es-MX')}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

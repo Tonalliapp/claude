@@ -7,6 +7,9 @@ import { SocketProvider } from '@/socket/SocketProvider';
 import App from './App';
 import './index.css';
 
+// Sentry — initialize if VITE_SENTRY_DSN is set and @sentry/react is installed
+// To enable: npm install @sentry/react, then set VITE_SENTRY_DSN in .env
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

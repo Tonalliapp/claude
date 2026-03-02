@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '../../config/database';
 import { AppError } from '../../middleware/errorHandler';
 import type { ListQueryInput, UpdateTenantInput, UpdateUserInput } from './admin.schema';
@@ -18,6 +19,7 @@ export async function getDashboard() {
     recentTenants,
     tenantsByPlan,
     monthlyRegistrations,
+    topRevenueTenants,
   ] = await Promise.all([
     prisma.tenant.count(),
     prisma.tenant.count({ where: { status: 'active' } }),
@@ -40,6 +42,7 @@ export async function getDashboard() {
       GROUP BY month
       ORDER BY month ASC
     `,
+    getTopRevenueTenants(),
   ]);
 
   return {
@@ -59,6 +62,7 @@ export async function getDashboard() {
       month: r.month,
       count: Number(r.count),
     })),
+    topRevenueTenants,
   };
 }
 
@@ -150,6 +154,11 @@ export async function getTenantDetail(id: string) {
 
   return {
     ...tenant,
+    stripeCustomerId: tenant.stripeCustomerId,
+    stripeSubId: tenant.stripeSubId,
+    stripePriceId: tenant.stripePriceId,
+    trialEndsAt: tenant.trialEndsAt,
+    planExpiresAt: tenant.planExpiresAt,
     stats: {
       ...tenant._count,
       totalRevenue: Number(revenueResult._sum.amount ?? 0),
@@ -341,7 +350,7 @@ export async function listAllOrders(query: ListQueryInput) {
       orderNumber: o.orderNumber,
       status: o.status,
       total: Number(o.total),
-      tableNumber: o.table.number,
+      tableNumber: o.table?.number ?? null,
       itemCount: o._count.items,
       tenant: o.tenant,
       createdAt: o.createdAt,
@@ -358,7 +367,9 @@ export async function listAllOrders(query: ListQueryInput) {
 // ─── Subscriptions ──────────────────────────────────
 
 export async function getSubscriptionOverview() {
-  const [byPlan, totalTenants, activeSubs] = await Promise.all([
+  const sevenDaysFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+  const [byPlan, totalTenants, activeSubs, expiringSoon] = await Promise.all([
     prisma.tenant.groupBy({
       by: ['plan'],
       _count: { id: true },
@@ -366,6 +377,14 @@ export async function getSubscriptionOverview() {
     }),
     prisma.tenant.count(),
     prisma.tenant.count({ where: { stripeSubId: { not: null } } }),
+    prisma.tenant.findMany({
+      where: {
+        planExpiresAt: { lte: sevenDaysFromNow, gte: new Date() },
+        status: 'active',
+      },
+      select: { id: true, name: true, slug: true, plan: true, planExpiresAt: true },
+      orderBy: { planExpiresAt: 'asc' },
+    }),
   ]);
 
   return {
@@ -375,5 +394,123 @@ export async function getSubscriptionOverview() {
       plan: g.plan,
       count: g._count.id,
     })),
+    expiringSoon,
   };
+}
+
+// ─── CSV Exports ──────────────────────────────────────
+
+function escapeCsv(s: string): string {
+  return `"${s.replace(/"/g, '""')}"`;
+}
+
+export async function exportTenantsCsv() {
+  const tenants = await prisma.tenant.findMany({
+    include: { _count: { select: { users: true, orders: true, products: true, tables: true } } },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const header = 'ID,Nombre,Slug,Plan,Status,Usuarios,Pedidos,Productos,Mesas,Creado\n';
+  const rows = tenants.map((t) =>
+    `${t.id},${escapeCsv(t.name)},${t.slug},${t.plan},${t.status},${t._count.users},${t._count.orders},${t._count.products},${t._count.tables},${t.createdAt.toISOString().split('T')[0]}`
+  );
+  return header + rows.join('\n');
+}
+
+export async function exportUsersCsv() {
+  const users = await prisma.user.findMany({
+    where: { role: { not: 'superadmin' } },
+    include: { tenant: { select: { name: true } } },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const header = 'ID,Nombre,Username,Email,Rol,Activo,Restaurante,UltimoLogin,Creado\n';
+  const rows = users.map((u) =>
+    `${u.id},${escapeCsv(u.name)},${u.username},${u.email ?? '-'},${u.role},${u.active},${escapeCsv(u.tenant?.name ?? '-')},${u.lastLogin?.toISOString().split('T')[0] ?? '-'},${u.createdAt.toISOString().split('T')[0]}`
+  );
+  return header + rows.join('\n');
+}
+
+export async function exportOrdersCsv() {
+  const orders = await prisma.order.findMany({
+    include: {
+      tenant: { select: { name: true } },
+      table: { select: { number: true } },
+      _count: { select: { items: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 10000,
+  });
+
+  const header = 'ID,Restaurante,NoPedido,Mesa,Items,Total,Status,Creado\n';
+  const rows = orders.map((o) =>
+    `${o.id},${escapeCsv(o.tenant?.name ?? '-')},${o.orderNumber},${o.table?.number ?? '-'},${o._count.items},${Number(o.total).toFixed(2)},${o.status},${o.createdAt.toISOString().split('T')[0]}`
+  );
+  return header + rows.join('\n');
+}
+
+export async function exportAuditLogsCsv() {
+  const logs = await prisma.auditLog.findMany({
+    include: { user: { select: { name: true, email: true } } },
+    orderBy: { createdAt: 'desc' },
+    take: 10000,
+  });
+
+  const header = 'ID,Fecha,Usuario,Email,Accion,TipoTarget,TargetID,IP\n';
+  const rows = logs.map((l) =>
+    `${l.id},${l.createdAt.toISOString()},${escapeCsv(l.user.name)},${l.user.email ?? '-'},${l.action},${l.targetType},${l.targetId ?? '-'},${l.ipAddress ?? '-'}`
+  );
+  return header + rows.join('\n');
+}
+
+// ─── Health Score ──────────────────────────────────────
+
+export async function getTenantHealthScore(tenantId: string) {
+  const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+  if (!tenant) throw new AppError(404, 'Restaurante no encontrado', 'NOT_FOUND');
+
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  const [categoriesCount, productsCount, tablesCount, staffCount, recentOrders] = await Promise.all([
+    prisma.category.count({ where: { tenantId, active: true } }),
+    prisma.product.count({ where: { tenantId, available: true } }),
+    prisma.table.count({ where: { tenantId, active: true } }),
+    prisma.user.count({ where: { tenantId, role: { in: ['admin', 'waiter', 'kitchen', 'cashier'] }, active: true } }),
+    prisma.order.count({ where: { tenantId, createdAt: { gte: sevenDaysAgo } } }),
+  ]);
+
+  const checks = [
+    { label: 'Logo configurado', passed: !!tenant.logoUrl },
+    { label: '3+ categorias', passed: categoriesCount >= 3 },
+    { label: '10+ productos', passed: productsCount >= 10 },
+    { label: '2+ mesas', passed: tablesCount >= 2 },
+    { label: '2+ staff', passed: staffCount >= 2 },
+    { label: 'Actividad reciente (7 dias)', passed: recentOrders > 0 },
+    { label: 'Suscripcion activa', passed: !!tenant.stripeSubId },
+  ];
+
+  const score = Math.round((checks.filter((c) => c.passed).length / checks.length) * 100);
+
+  return { score, checks };
+}
+
+// ─── Dashboard Enhancement ────────────────────────────
+
+export async function getTopRevenueTenants() {
+  const result = await prisma.$queryRaw<Array<{ tenant_id: string; name: string; slug: string; total: string }>>`
+    SELECT t.id as tenant_id, t.name, t.slug, COALESCE(SUM(p.amount), 0) as total
+    FROM tenants t
+    LEFT JOIN orders o ON o.tenant_id = t.id AND o.status = 'paid'
+    LEFT JOIN payments p ON p.order_id = o.id
+    GROUP BY t.id, t.name, t.slug
+    ORDER BY total DESC
+    LIMIT 10
+  `;
+
+  return result.map((r) => ({
+    tenantId: r.tenant_id,
+    name: r.name,
+    slug: r.slug,
+    totalRevenue: Number(r.total),
+  }));
 }

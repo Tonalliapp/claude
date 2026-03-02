@@ -1,41 +1,127 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { TrendingUp, Award, Users, Loader2 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { apiFetch } from '@/config/api';
+import { TrendingUp, Award, Users, Loader2, Download, Banknote, CreditCard, ArrowRightLeft } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { toast } from 'sonner';
+import { apiFetch, apiFetchBlob } from '@/config/api';
 import type { SalesReport, TopProduct, WaiterSales } from '@/types';
 
-type Period = 'day' | 'week' | 'month';
+type Period = 'day' | 'week' | 'month' | 'custom';
+
+interface PaymentBreakdown {
+  method: string;
+  count: number;
+  total: number;
+}
+
+function getDateRange(period: Period, customFrom?: string, customTo?: string): { from: string; to: string } {
+  if (period === 'custom' && customFrom && customTo) {
+    return {
+      from: new Date(customFrom + 'T00:00:00').toISOString(),
+      to: new Date(customTo + 'T23:59:59').toISOString(),
+    };
+  }
+
+  const now = new Date();
+  const to = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+  let from: Date;
+
+  switch (period) {
+    case 'week':
+      from = new Date(to);
+      from.setDate(from.getDate() - 6);
+      from.setHours(0, 0, 0, 0);
+      break;
+    case 'month':
+      from = new Date(to);
+      from.setDate(from.getDate() - 29);
+      from.setHours(0, 0, 0, 0);
+      break;
+    default: // day
+      from = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+      break;
+  }
+
+  return { from: from.toISOString(), to: to.toISOString() };
+}
+
+const PIE_COLORS: Record<string, string> = { cash: '#4CAF50', card: '#C9A84C', transfer: '#9E9E9E' };
+const METHOD_LABELS: Record<string, string> = { cash: 'Efectivo', card: 'Tarjeta', transfer: 'Transferencia' };
+const METHOD_ICONS: Record<string, typeof Banknote> = { cash: Banknote, card: CreditCard, transfer: ArrowRightLeft };
 
 export default function ReportsPage() {
   const [period, setPeriod] = useState<Period>('day');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
+
+  const dateRange = useMemo(
+    () => getDateRange(period, customFrom, customTo),
+    [period, customFrom, customTo],
+  );
+
+  const queryEnabled = period !== 'custom' || (!!customFrom && !!customTo);
+  const dateParams = `from=${encodeURIComponent(dateRange.from)}&to=${encodeURIComponent(dateRange.to)}`;
 
   const { data: sales, isLoading } = useQuery({
-    queryKey: ['sales-report', period],
-    queryFn: () => apiFetch<SalesReport>(`/reports/sales?period=${period}`, { auth: true }),
+    queryKey: ['sales-report', dateRange.from, dateRange.to],
+    queryFn: () => apiFetch<SalesReport>(`/reports/sales?${dateParams}`, { auth: true }),
+    enabled: queryEnabled,
   });
 
   const { data: topProducts } = useQuery({
-    queryKey: ['top-products'],
-    queryFn: () => apiFetch<TopProduct[]>('/reports/top-products?limit=10', { auth: true }).catch(() => []),
+    queryKey: ['top-products', dateRange.from, dateRange.to],
+    queryFn: () => apiFetch<TopProduct[]>(`/reports/top-products?${dateParams}&limit=10`, { auth: true }).catch(() => []),
+    enabled: queryEnabled,
   });
 
   const { data: waiterSales } = useQuery({
-    queryKey: ['waiter-sales'],
-    queryFn: () => apiFetch<WaiterSales[]>('/reports/by-waiter', { auth: true }).catch(() => []),
+    queryKey: ['waiter-sales', dateRange.from, dateRange.to],
+    queryFn: () => apiFetch<WaiterSales[]>(`/reports/by-waiter?${dateParams}`, { auth: true }).catch(() => []),
+    enabled: queryEnabled,
+  });
+
+  const { data: breakdown } = useQuery({
+    queryKey: ['payment-breakdown', dateRange.from, dateRange.to],
+    queryFn: () => apiFetch<PaymentBreakdown[]>(`/reports/payment-breakdown?${dateParams}`, { auth: true }).catch(() => []),
+    enabled: queryEnabled,
   });
 
   const topList = Array.isArray(topProducts) ? topProducts : [];
   const waiterList = Array.isArray(waiterSales) ? waiterSales : [];
+  const breakdownList = Array.isArray(breakdown) ? breakdown : [];
   const chartData = (sales?.daily ?? []).map(d => ({ label: d.date.slice(5), total: d.total }));
+
+  const handleExportCsv = async () => {
+    try {
+      const blob = await apiFetchBlob(`/reports/export/sales?${dateParams}`, { auth: true });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ventas-${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('CSV descargado');
+    } catch (e: any) {
+      toast.error(e.message || 'Error al exportar');
+    }
+  };
 
   return (
     <div className="p-6 lg:p-8 max-w-4xl mx-auto">
-      <h2 className="text-white text-xl font-light tracking-wide mb-5">Reportes</h2>
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-white text-xl font-light tracking-wide">Reportes</h2>
+        <button
+          onClick={handleExportCsv}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gold-border text-gold text-xs font-medium hover:bg-gold/10 transition-colors"
+        >
+          <Download size={14} />
+          Exportar CSV
+        </button>
+      </div>
 
       {/* Period */}
-      <div className="flex gap-2 mb-5">
-        {([['day', 'Hoy'], ['week', 'Semana'], ['month', 'Mes']] as const).map(([k, l]) => (
+      <div className="flex gap-2 mb-3">
+        {([['day', 'Hoy'], ['week', 'Semana'], ['month', 'Mes'], ['custom', 'Personalizado']] as const).map(([k, l]) => (
           <button
             key={k}
             onClick={() => setPeriod(k)}
@@ -45,6 +131,31 @@ export default function ReportsPage() {
           </button>
         ))}
       </div>
+
+      {period === 'custom' && (
+        <div className="flex gap-3 mb-5">
+          <div className="flex-1">
+            <label className="text-silver-muted text-[9px] font-medium tracking-[1.5px] block mb-1">DESDE</label>
+            <input
+              type="date"
+              value={customFrom}
+              onChange={(e) => setCustomFrom(e.target.value)}
+              className="w-full px-3 py-2 bg-tonalli-black-card border border-subtle rounded-xl text-white text-sm focus:outline-none focus:border-gold-border"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="text-silver-muted text-[9px] font-medium tracking-[1.5px] block mb-1">HASTA</label>
+            <input
+              type="date"
+              value={customTo}
+              onChange={(e) => setCustomTo(e.target.value)}
+              className="w-full px-3 py-2 bg-tonalli-black-card border border-subtle rounded-xl text-white text-sm focus:outline-none focus:border-gold-border"
+            />
+          </div>
+        </div>
+      )}
+
+      {period !== 'custom' && <div className="mb-5" />}
 
       {isLoading ? (
         <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 text-gold animate-spin" /></div>
@@ -70,7 +181,7 @@ export default function ReportsPage() {
           {/* Chart */}
           {chartData.length > 0 && (
             <div className="mb-6">
-              <p className="text-gold-muted text-[10px] font-medium tracking-[2px] mb-3">VENTAS POR DÍA</p>
+              <p className="text-gold-muted text-[10px] font-medium tracking-[2px] mb-3">VENTAS POR DIA</p>
               <div className="bg-tonalli-black-card border border-subtle rounded-2xl p-4 h-52">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartData}>
@@ -89,6 +200,40 @@ export default function ReportsPage() {
           )}
         </>
       ) : null}
+
+      {/* Payment Breakdown */}
+      {breakdownList.length > 0 && (
+        <div className="mb-6">
+          <p className="text-gold-muted text-[10px] font-medium tracking-[2px] mb-3">METODOS DE PAGO</p>
+          <div className="flex gap-4 items-center bg-tonalli-black-card border border-subtle rounded-2xl p-4">
+            <div className="w-32 h-32 shrink-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={breakdownList} dataKey="total" nameKey="method" cx="50%" cy="50%" outerRadius={55} innerRadius={30}>
+                    {breakdownList.map((entry) => (
+                      <Cell key={entry.method} fill={PIE_COLORS[entry.method] ?? '#666'} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex-1 space-y-2">
+              {breakdownList.map((b) => {
+                const Icon = METHOD_ICONS[b.method] ?? Banknote;
+                return (
+                  <div key={b.method} className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PIE_COLORS[b.method] ?? '#666' }} />
+                    <Icon size={14} className="text-silver" />
+                    <span className="text-white text-sm flex-1">{METHOD_LABELS[b.method] ?? b.method}</span>
+                    <span className="text-silver-dark text-xs">{b.count} pagos</span>
+                    <span className="text-gold text-sm font-semibold">${b.total.toFixed(0)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Top Products */}
       {topList.length > 0 && (

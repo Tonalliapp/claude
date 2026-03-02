@@ -65,22 +65,44 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="bg-tonalli-black-card border border-gold-border rounded-2xl p-5">
-        <h3 className="text-white text-sm font-medium mb-4">Restaurantes Recientes</h3>
-        <div className="space-y-3">
-          {data.recentTenants.map(t => (
-            <div key={t.id} className="flex items-center justify-between py-2 border-b border-subtle last:border-0">
-              <div>
-                <p className="text-white text-sm font-medium">{t.name}</p>
-                <p className="text-silver-muted text-xs">{t.slug}</p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-tonalli-black-card border border-gold-border rounded-2xl p-5">
+          <h3 className="text-white text-sm font-medium mb-4">Restaurantes Recientes</h3>
+          <div className="space-y-3">
+            {data.recentTenants.map(t => (
+              <div key={t.id} className="flex items-center justify-between py-2 border-b border-subtle last:border-0">
+                <div>
+                  <p className="text-white text-sm font-medium">{t.name}</p>
+                  <p className="text-silver-muted text-xs">{t.slug}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-gold-muted text-xs capitalize">{t.plan}</span>
+                  <StatusBadge status={t.status} />
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="text-gold-muted text-xs capitalize">{t.plan}</span>
-                <StatusBadge status={t.status} />
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
+
+        {data.topRevenueTenants && data.topRevenueTenants.length > 0 && (
+          <div className="bg-tonalli-black-card border border-gold-border rounded-2xl p-5">
+            <h3 className="text-white text-sm font-medium mb-4">Top Restaurantes por Ingresos</h3>
+            <div className="space-y-2">
+              {data.topRevenueTenants.map((t, i) => (
+                <div key={t.tenantId} className="flex items-center gap-3 py-1.5">
+                  <div className="w-6 h-6 rounded-full bg-gold-glow flex items-center justify-center shrink-0">
+                    <span className="text-gold text-xs font-bold">{i + 1}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-medium truncate">{t.name}</p>
+                    <p className="text-silver-muted text-xs">{t.slug}</p>
+                  </div>
+                  <span className="text-gold text-sm font-semibold">${t.totalRevenue.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

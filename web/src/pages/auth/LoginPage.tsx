@@ -1,11 +1,23 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/auth/AuthProvider';
+import { saveTokens } from '@/config/api';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login, loginLoading } = useAuth();
+
+  // Handle impersonate token from admin
+  useEffect(() => {
+    const impersonateToken = searchParams.get('impersonate');
+    const refreshTokenParam = searchParams.get('refresh');
+    if (impersonateToken && refreshTokenParam) {
+      saveTokens(impersonateToken, refreshTokenParam);
+      window.location.href = '/dashboard';
+    }
+  }, [searchParams]);
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');

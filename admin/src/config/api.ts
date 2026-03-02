@@ -89,6 +89,45 @@ export async function apiFetch<T>(path: string, options: FetchOptions = {}): Pro
   return data as T;
 }
 
+export async function apiFetchBlob(path: string, options: FetchOptions = {}): Promise<Blob> {
+  const { method = 'GET', body, auth = false } = options;
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (auth && accessToken) {
+    headers['Authorization'] = `Bearer ${accessToken}`;
+  }
+
+  const fetchOptions: RequestInit = { method, headers };
+
+  if (body) {
+    fetchOptions.body = JSON.stringify(body);
+  }
+
+  let res = await fetch(`${API_BASE}${path}`, fetchOptions);
+
+  if (res.status === 401 && auth) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) {
+      headers['Authorization'] = `Bearer ${accessToken}`;
+      fetchOptions.headers = headers;
+      res = await fetch(`${API_BASE}${path}`, fetchOptions);
+    } else {
+      throw new ApiError('Sesion expirada', 'SESSION_EXPIRED');
+    }
+  }
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => null);
+    const message = errorData?.error?.message || `Error ${res.status}`;
+    const code = errorData?.error?.code || 'UNKNOWN';
+    throw new ApiError(message, code);
+  }
+
+  return res.blob();
+}
+
 export class ApiError extends Error {
   code: string;
   constructor(message: string, code: string) {

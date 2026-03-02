@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Download } from 'lucide-react';
 import { toast } from 'sonner';
-import { apiFetch } from '@/config/api';
+import { apiFetch, apiFetchBlob } from '@/config/api';
 import type { UserListItem, PaginatedResponse } from '@/types';
 import { useDebounce } from '@/hooks/useDebounce';
 import DataTable, { type Column } from '@/components/DataTable';
@@ -61,7 +62,16 @@ export default function UsersPage() {
 
   return (
     <div className="p-6 lg:p-8 space-y-5">
-      <h1 className="text-white text-xl font-medium">Usuarios</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-white text-xl font-medium">Usuarios</h1>
+        <button
+          onClick={async () => { try { const b = await apiFetchBlob('/admin/users/export', { auth: true }); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = 'users.csv'; a.click(); URL.revokeObjectURL(u); toast.success('CSV descargado'); } catch (e: any) { toast.error(e.message); } }}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gold-border text-gold text-xs font-medium hover:bg-gold/10 transition-colors"
+        >
+          <Download size={14} />
+          Exportar CSV
+        </button>
+      </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1">

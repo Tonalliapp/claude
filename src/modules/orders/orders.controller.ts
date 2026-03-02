@@ -29,6 +29,15 @@ export async function create(req: Request, res: Response, next: NextFunction) {
   }
 }
 
+export async function createPosOrder(req: Request, res: Response, next: NextFunction) {
+  try {
+    const order = await ordersService.createPosOrder(req.tenantId!, req.body, req.user!.userId);
+    res.status(201).json(order);
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function updateStatus(req: Request, res: Response, next: NextFunction) {
   try {
     const order = await ordersService.updateStatus(req.tenantId!, req.params.id as string, req.body.status);

@@ -67,21 +67,35 @@ export type OrderStatus =
   | 'paid'
   | 'cancelled';
 
+export type OrderType = 'dine_in' | 'takeout' | 'counter' | 'delivery';
+
 export interface Order {
   id: string;
   orderNumber: number;
   status: OrderStatus;
-  table: { id: string; number: number };
+  orderType?: OrderType;
+  table: { id: string; number: number } | null;
   user?: { id: string; name: string; role: string } | null;
   items: OrderItem[];
   subtotal: number;
   total: number;
   notes?: string | null;
+  customerName?: string | null;
   cancelReason?: string | null;
   createdAt: string;
   confirmedAt?: string | null;
   completedAt?: string | null;
   paidAt?: string | null;
+}
+
+export interface PosOrderInput {
+  items: { productId: string; quantity: number; notes?: string }[];
+  orderType: 'takeout' | 'counter' | 'delivery';
+  customerName?: string;
+  notes?: string;
+  payImmediately: boolean;
+  paymentMethod: 'cash' | 'card' | 'transfer';
+  paymentReference?: string;
 }
 
 export interface User {

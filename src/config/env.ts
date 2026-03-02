@@ -50,6 +50,9 @@ const envSchema = z.object({
 
   // Storage
   STORAGE_PUBLIC_URL: z.string().url().optional(),
+
+  // Sentry
+  SENTRY_DSN: z.string().url().optional(),
 });
 
 function loadEnv() {

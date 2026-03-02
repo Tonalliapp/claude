@@ -25,6 +25,34 @@ async function storeRefreshToken(token: string, payload: JwtPayload) {
   await redis.set(key, JSON.stringify(payload), 'EX', authConfig.refreshToken.ttl);
 }
 
+export async function impersonateTenant(tenantId: string, superadminUserId: string) {
+  const tenant = await prisma.user.findFirst({
+    where: { tenantId, role: 'owner', active: true },
+    select: { id: true, tenantId: true, name: true, role: true },
+  });
+
+  if (!tenant || !tenant.tenantId) {
+    throw new AppError(404, 'No se encontro owner del restaurante', 'OWNER_NOT_FOUND');
+  }
+
+  const jwtPayload: JwtPayload = {
+    userId: tenant.id,
+    tenantId: tenant.tenantId,
+    role: tenant.role as JwtPayload['role'],
+  };
+
+  const accessToken = jwt.sign(
+    { ...jwtPayload, impersonatedBy: superadminUserId },
+    authConfig.accessToken.secret,
+    { expiresIn: '30m' },
+  );
+
+  const refreshTokenStr = crypto.randomBytes(48).toString('hex');
+  await storeRefreshToken(refreshTokenStr, jwtPayload);
+
+  return { accessToken, refreshToken: refreshTokenStr };
+}
+
 export async function superadminLogin(input: SuperadminLoginInput) {
   const user = await prisma.user.findFirst({
     where: { email: input.email, role: 'superadmin', active: true },

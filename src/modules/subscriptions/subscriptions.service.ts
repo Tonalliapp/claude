@@ -182,5 +182,11 @@ export async function handleInvoiceFailed(invoice: Stripe.Invoice) {
     console.warn(`[Stripe] Payment failed for tenant ${tenant.id} (${tenant.name})`);
     // Don't suspend immediately — Stripe retries automatically
     // After all retries fail, subscription.deleted event will fire
+
+    // Send payment failed notification
+    const { sendPaymentFailedEmail } = await import('../notifications/triggers.service');
+    sendPaymentFailedEmail(tenant.id).catch((err) => {
+      console.error('[Stripe] Failed to send payment failed email:', err);
+    });
   }
 }

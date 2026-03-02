@@ -7,6 +7,7 @@ import { disconnectRedis } from './config/redis';
 import { initStorage } from './config/storage';
 import { initSocket } from './websocket/socket';
 import { logger } from './utils/logger';
+import { startTriggers, stopTriggers } from './modules/notifications/triggers.service';
 
 async function bootstrap() {
   // Connect to services
@@ -19,11 +20,13 @@ async function bootstrap() {
 
   server.listen(env.PORT, () => {
     logger.info(`[Tonalli API] Running on port ${env.PORT} (${env.NODE_ENV})`);
+    startTriggers();
   });
 
   // Graceful shutdown
   const shutdown = async (signal: string) => {
     logger.info(`${signal} received — shutting down`);
+    stopTriggers();
     server.close(async () => {
       await disconnectDatabase();
       await disconnectRedis();

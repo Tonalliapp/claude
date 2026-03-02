@@ -35,7 +35,7 @@ export async function createClientOrder(data: CreateClientOrderInput) {
 
   return ordersService.create(
     tenant.id,
-    { tableId: table.id, items: data.items, notes: data.notes },
+    { tableId: table.id, orderType: 'dine_in', items: data.items, notes: data.notes },
     undefined, // no userId for client orders
   );
 }
@@ -61,7 +61,7 @@ export async function getClientOrder(orderId: string) {
     subtotal: order.subtotal,
     total: order.total,
     notes: order.notes,
-    tableNumber: order.table.number,
+    tableNumber: order.table?.number ?? null,
     createdAt: order.createdAt,
     confirmedAt: order.confirmedAt,
     completedAt: order.completedAt,

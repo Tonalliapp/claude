@@ -48,19 +48,21 @@ export async function create(tenantId: string, data: CreatePaymentInput) {
     });
   }
 
-  // Free table if no other active orders
-  const activeOrders = await prisma.order.count({
-    where: {
-      tenantId,
-      tableId: order.tableId,
-      status: { notIn: ['paid', 'cancelled'] },
-    },
-  });
-  if (activeOrders === 0) {
-    await prisma.table.update({
-      where: { id: order.tableId },
-      data: { status: 'free' },
+  // Free table if no other active orders (only if order has a table)
+  if (order.tableId) {
+    const activeOrders = await prisma.order.count({
+      where: {
+        tenantId,
+        tableId: order.tableId,
+        status: { notIn: ['paid', 'cancelled'] },
+      },
     });
+    if (activeOrders === 0) {
+      await prisma.table.update({
+        where: { id: order.tableId },
+        data: { status: 'free' },
+      });
+    }
   }
 
   return payment;

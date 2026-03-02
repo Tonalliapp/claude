@@ -23,9 +23,17 @@ router.use(authenticate, superadminGuard);
 // Dashboard
 router.get('/dashboard', adminController.getDashboard);
 
+// CSV Exports (must be BEFORE /:id routes)
+router.get('/tenants/export', adminController.exportTenantsCsv);
+router.get('/users/export', adminController.exportUsersCsv);
+router.get('/orders/export', adminController.exportOrdersCsv);
+router.get('/audit-logs/export', adminController.exportAuditLogsCsv);
+
 // Tenants
 router.get('/tenants', validate({ query: listQuerySchema }), adminController.listTenants);
 router.get('/tenants/:id', validate({ params: idParamSchema }), adminController.getTenantDetail);
+router.get('/tenants/:id/health', validate({ params: idParamSchema }), adminController.getTenantHealth);
+router.post('/tenants/:id/impersonate', validate({ params: idParamSchema }), adminController.impersonateTenant);
 router.put('/tenants/:id', validate({ params: idParamSchema, body: updateTenantSchema }), adminController.updateTenant);
 router.delete('/tenants/:id', validate({ params: idParamSchema }), adminController.deleteTenant);
 

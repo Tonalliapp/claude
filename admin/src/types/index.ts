@@ -35,6 +35,7 @@ export interface AdminDashboard {
   recentTenants: TenantListItem[];
   tenantsByPlan: { plan: string; count: number }[];
   monthlyRegistrations: { month: string; count: number }[];
+  topRevenueTenants: { tenantId: string; name: string; slug: string; totalRevenue: number }[];
 }
 
 export interface TenantListItem {
@@ -66,6 +67,11 @@ export interface TenantDetail {
   maxTables: number;
   maxUsers: number;
   maxProducts: number;
+  stripeCustomerId: string | null;
+  stripeSubId: string | null;
+  stripePriceId: string | null;
+  trialEndsAt: string | null;
+  planExpiresAt: string | null;
   createdAt: string;
   updatedAt: string;
   users: TenantUser[];
@@ -77,6 +83,11 @@ export interface TenantDetail {
     totalRevenue: number;
     ordersByStatus: { status: string; count: number }[];
   };
+}
+
+export interface TenantHealthScore {
+  score: number;
+  checks: { label: string; passed: boolean }[];
 }
 
 export interface TenantUser {
@@ -111,7 +122,7 @@ export interface OrderListItem {
   orderNumber: number;
   status: string;
   total: number;
-  tableNumber: number;
+  tableNumber: number | null;
   itemCount: number;
   tenant: { id: string; name: string; slug: string };
   createdAt: string;
@@ -121,6 +132,7 @@ export interface SubscriptionOverview {
   totalTenants: number;
   activeSubs: number;
   byPlan: { plan: string; count: number }[];
+  expiringSoon: { id: string; name: string; slug: string; plan: string; planExpiresAt: string }[];
 }
 
 export interface AuditLog {

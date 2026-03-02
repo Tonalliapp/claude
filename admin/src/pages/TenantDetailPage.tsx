@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ArrowLeft, Store, Users, ClipboardList, Package } from 'lucide-react';
+import { ArrowLeft, Store, Users, ClipboardList, Package, ExternalLink, Check, X as XIcon, CreditCard } from 'lucide-react';
 import { apiFetch } from '@/config/api';
-import type { TenantDetail } from '@/types';
+import type { TenantDetail, TenantHealthScore } from '@/types';
 import KpiCard from '@/components/KpiCard';
 import StatusBadge from '@/components/StatusBadge';
 import GoldButton from '@/components/ui/GoldButton';
@@ -21,6 +21,22 @@ export default function TenantDetailPage() {
     queryKey: ['admin-tenant', id],
     queryFn: () => apiFetch<TenantDetail>(`/admin/tenants/${id}`, { auth: true }),
     enabled: !!id,
+  });
+
+  const { data: health } = useQuery({
+    queryKey: ['admin-tenant-health', id],
+    queryFn: () => apiFetch<TenantHealthScore>(`/admin/tenants/${id}/health`, { auth: true }),
+    enabled: !!id,
+  });
+
+  const impersonateMutation = useMutation({
+    mutationFn: () => apiFetch<{ accessToken: string; refreshToken: string }>(`/admin/tenants/${id}/impersonate`, { method: 'POST', auth: true }),
+    onSuccess: (data) => {
+      const url = `https://tonalli.app/login?impersonate=${data.accessToken}&refresh=${data.refreshToken}`;
+      window.open(url, '_blank');
+      toast.success('Sesion de restaurante abierta en nueva pestana');
+    },
+    onError: (err: Error) => toast.error(err.message),
   });
 
   const updateMutation = useMutation({
@@ -69,6 +85,14 @@ export default function TenantDetailPage() {
         </div>
         <div className="flex items-center gap-3">
           <StatusBadge status={tenant.status} />
+          <button
+            onClick={() => impersonateMutation.mutate()}
+            disabled={impersonateMutation.isPending}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-jade/30 text-jade text-xs font-medium hover:bg-jade/10 transition-colors"
+          >
+            <ExternalLink size={14} />
+            Entrar como restaurante
+          </button>
           <GoldButton variant="outline" onClick={openEdit} className="w-auto px-4 py-2">
             Editar
           </GoldButton>
@@ -110,6 +134,61 @@ export default function TenantDetailPage() {
             ))}
           </div>
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Stripe Data */}
+        <div className="bg-tonalli-black-card border border-gold-border rounded-2xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <CreditCard size={16} className="text-gold" />
+            <h3 className="text-white text-sm font-medium">Suscripcion</h3>
+          </div>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between"><span className="text-silver-muted">Stripe Customer</span><span className="text-silver font-mono text-xs">{tenant.stripeCustomerId ?? '-'}</span></div>
+            <div className="flex justify-between"><span className="text-silver-muted">Stripe Sub</span><span className="text-silver font-mono text-xs">{tenant.stripeSubId ?? '-'}</span></div>
+            <div className="flex justify-between"><span className="text-silver-muted">Price ID</span><span className="text-silver font-mono text-xs">{tenant.stripePriceId ?? '-'}</span></div>
+            <div className="flex justify-between"><span className="text-silver-muted">Trial finaliza</span><span className="text-silver">{tenant.trialEndsAt ? new Date(tenant.trialEndsAt).toLocaleDateString('es-MX') : '-'}</span></div>
+            <div className="flex justify-between"><span className="text-silver-muted">Plan expira</span><span className="text-silver">{tenant.planExpiresAt ? new Date(tenant.planExpiresAt).toLocaleDateString('es-MX') : '-'}</span></div>
+            {tenant.stripeCustomerId && (
+              <a
+                href={`https://dashboard.stripe.com/customers/${tenant.stripeCustomerId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-gold text-xs hover:underline"
+              >
+                <ExternalLink size={12} />
+                Ver en Stripe Dashboard
+              </a>
+            )}
+          </div>
+        </div>
+
+        {/* Health Score */}
+        {health && (
+          <div className="bg-tonalli-black-card border border-gold-border rounded-2xl p-5">
+            <h3 className="text-white text-sm font-medium mb-4">Health Score</h3>
+            <div className="flex items-center gap-6 mb-4">
+              <div className="relative w-20 h-20">
+                <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
+                  <circle cx="40" cy="40" r="34" fill="none" stroke="#2A2A2A" strokeWidth="6" />
+                  <circle cx="40" cy="40" r="34" fill="none" stroke={health.score >= 70 ? '#4CAF50' : health.score >= 40 ? '#C9A84C' : '#EF4444'} strokeWidth="6" strokeLinecap="round" strokeDasharray={`${(health.score / 100) * 213.6} 213.6`} />
+                </svg>
+                <span className="absolute inset-0 flex items-center justify-center text-white text-lg font-bold">{health.score}</span>
+              </div>
+              <div className="flex-1 space-y-1.5">
+                {health.checks.map((c, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    {c.passed
+                      ? <Check size={14} className="text-jade shrink-0" />
+                      : <XIcon size={14} className="text-red-400 shrink-0" />
+                    }
+                    <span className={`text-xs ${c.passed ? 'text-silver' : 'text-silver-muted'}`}>{c.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {tenant.stats.ordersByStatus.length > 0 && (

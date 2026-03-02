@@ -7,9 +7,24 @@ const orderItemSchema = z.object({
 });
 
 export const createOrderSchema = z.object({
-  tableId: z.string().uuid(),
+  tableId: z.string().uuid().optional(),
+  orderType: z.enum(['dine_in', 'takeout', 'counter', 'delivery']).default('dine_in'),
   items: z.array(orderItemSchema).min(1),
   notes: z.string().optional(),
+  customerName: z.string().max(255).optional(),
+}).refine(
+  (data) => data.orderType !== 'dine_in' || !!data.tableId,
+  { message: 'Mesa requerida para pedidos en mesa', path: ['tableId'] },
+);
+
+export const createPosOrderSchema = z.object({
+  items: z.array(orderItemSchema).min(1),
+  orderType: z.enum(['takeout', 'counter', 'delivery']).default('counter'),
+  customerName: z.string().max(255).optional(),
+  notes: z.string().optional(),
+  payImmediately: z.boolean().default(true),
+  paymentMethod: z.enum(['cash', 'card', 'transfer']).default('cash'),
+  paymentReference: z.string().max(255).optional(),
 });
 
 export const updateStatusSchema = z.object({
@@ -43,4 +58,5 @@ export const listQuerySchema = z.object({
 });
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
+export type CreatePosOrderInput = z.infer<typeof createPosOrderSchema>;
 export type ListQuery = z.infer<typeof listQuerySchema>;

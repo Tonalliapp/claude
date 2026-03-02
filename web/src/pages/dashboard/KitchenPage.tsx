@@ -105,7 +105,7 @@ export default function KitchenPage() {
                   <div className="flex items-center gap-2.5">
                     <span className="text-white text-xl font-semibold">#{String(order.orderNumber).padStart(3, '0')}</span>
                     <span className="px-2.5 py-1 rounded-lg border border-jade/25 bg-table-jade text-jade-light text-xs font-medium">
-                      Mesa {order.table.number}
+                      {order.table ? `Mesa ${order.table.number}` : order.orderType === 'takeout' ? 'Para Llevar' : order.orderType === 'delivery' ? 'Domicilio' : 'Mostrador'}
                     </span>
                   </div>
                   <KitchenTimer createdAt={order.createdAt} />

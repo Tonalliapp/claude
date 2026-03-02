@@ -136,7 +136,7 @@ export default function OrdersPage() {
                       #{String(order.orderNumber).padStart(3, '0')}
                     </span>
                     <span className="px-2 py-0.5 rounded-md border border-jade/25 bg-table-jade text-jade-light text-[10px] font-medium">
-                      Mesa {order.table.number}
+                      {order.table ? `Mesa ${order.table.number}` : order.orderType === 'takeout' ? 'Para Llevar' : order.orderType === 'delivery' ? 'Domicilio' : 'Mostrador'}
                     </span>
                   </div>
                   <div className="flex flex-col items-end gap-1">
@@ -203,7 +203,7 @@ export default function OrdersPage() {
       {detailOrder && (
         <Modal title={`Pedido #${String(detailOrder.orderNumber).padStart(3, '0')}`} onClose={() => setDetailOrder(null)}>
           <div className="flex justify-between items-center">
-            <span className="text-silver-muted text-xs">Mesa {detailOrder.table.number}</span>
+            <span className="text-silver-muted text-xs">{detailOrder.table ? `Mesa ${detailOrder.table.number}` : detailOrder.orderType === 'takeout' ? 'Para Llevar' : detailOrder.orderType === 'delivery' ? 'Domicilio' : 'Mostrador'}</span>
             <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${STATUS_BADGES[detailOrder.status]?.bg} ${STATUS_BADGES[detailOrder.status]?.text}`}>
               {STATUS_BADGES[detailOrder.status]?.label}
             </span>

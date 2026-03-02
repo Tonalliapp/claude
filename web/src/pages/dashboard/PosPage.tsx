@@ -1,12 +1,13 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { DollarSign, CreditCard, Banknote, ArrowRightLeft, Lock, Unlock, Loader2 } from 'lucide-react';
+import { DollarSign, CreditCard, Banknote, ArrowRightLeft, Lock, Unlock, Loader2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/config/api';
 import type { CashRegister, PaymentsResponse, Order, OrdersResponse } from '@/types';
 import Modal from '@/components/ui/Modal';
 import InputField from '@/components/ui/InputField';
 import GoldButton from '@/components/ui/GoldButton';
+import PosNewSale from './components/PosNewSale';
 
 const METHODS = [
   { key: 'cash' as const, icon: Banknote, label: 'Efectivo', color: 'text-jade' },
@@ -25,6 +26,7 @@ export default function PosPage() {
   const [selOrder, setSelOrder] = useState<Order | null>(null);
   const [payMethod, setPayMethod] = useState<'cash' | 'card' | 'transfer'>('cash');
   const [payRef, setPayRef] = useState('');
+  const [showNewSale, setShowNewSale] = useState(false);
 
   const { data: register, isLoading: regLoading, refetch: refetchReg } = useQuery({
     queryKey: ['cash-register'],
@@ -98,9 +100,15 @@ export default function PosPage() {
             </div>
           </div>
 
-          <button onClick={() => setShowClose(true)} className="w-full border border-gold text-gold py-3 rounded-xl font-semibold hover:bg-gold/10 transition-colors mb-6">
-            Cerrar Caja
-          </button>
+          <div className="flex gap-3 mb-6">
+            <button onClick={() => setShowNewSale(true)} className="flex-1 flex items-center justify-center gap-2 bg-jade hover:bg-jade-light text-white py-3 rounded-xl font-semibold transition-colors">
+              <Plus size={18} />
+              Nueva Venta
+            </button>
+            <button onClick={() => setShowClose(true)} className="flex-1 border border-gold text-gold py-3 rounded-xl font-semibold hover:bg-gold/10 transition-colors">
+              Cerrar Caja
+            </button>
+          </div>
 
           {(delivered?.orders?.length ?? 0) > 0 && (
             <>
@@ -110,7 +118,7 @@ export default function PosPage() {
                   <button key={o.id} onClick={() => { setSelOrder(o); setPayMethod('cash'); setPayRef(''); setShowPay(true); }} className="w-full flex justify-between items-center bg-tonalli-black-card border border-subtle rounded-xl p-3.5 hover:border-gold-border transition-colors">
                     <div className="flex items-center gap-2.5">
                       <span className="text-white text-[15px] font-semibold">#{String(o.orderNumber).padStart(3, '0')}</span>
-                      <span className="text-jade-light text-xs">Mesa {o.table.number}</span>
+                      <span className="text-jade-light text-xs">{o.table ? `Mesa ${o.table.number}` : o.orderType === 'takeout' ? 'Para Llevar' : o.orderType === 'delivery' ? 'Domicilio' : 'Mostrador'}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-gold text-base font-semibold">${o.total.toFixed(2)}</span>
@@ -158,6 +166,11 @@ export default function PosPage() {
           <InputField label="NOTAS (OPCIONAL)" value={closeNotes} onChange={setCloseNotes} placeholder="Observaciones del turno" />
           <GoldButton loading={closeMut.isPending} onClick={() => closeMut.mutate({ closingAmount: parseFloat(closeAmt) || 0, ...(closeNotes.trim() ? { notes: closeNotes.trim() } : {}) })}>Cerrar Caja</GoldButton>
         </Modal>
+      )}
+
+      {/* New Sale Modal */}
+      {showNewSale && (
+        <PosNewSale onClose={() => setShowNewSale(false)} onSuccess={() => { inv(); setShowNewSale(false); }} />
       )}
 
       {/* Pay Modal */}

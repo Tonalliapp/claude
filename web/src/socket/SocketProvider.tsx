@@ -72,8 +72,8 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       addNotification({
         type: 'order_new',
         title: 'Nuevo Pedido',
-        message: `Pedido #${String(order.orderNumber).padStart(3, '0')} - Mesa ${order.table.number}`,
-        tableNumber: order.table.number,
+        message: `Pedido #${String(order.orderNumber).padStart(3, '0')} - ${order.table ? `Mesa ${order.table.number}` : 'Mostrador'}`,
+        tableNumber: order.table?.number,
         orderId: order.id,
         timestamp: new Date().toISOString(),
       });

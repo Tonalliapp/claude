@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { logger } from '../utils/logger';
+import { captureException } from '../config/sentry';
 
 export class AppError extends Error {
   constructor(
@@ -41,6 +42,7 @@ export function errorHandler(
   }
 
   logger.error('Unhandled error', { message: err.message, stack: err.stack });
+  captureException(err);
 
   res.status(500).json({
     error: { message: 'Internal server error', code: 'INTERNAL_ERROR' },
