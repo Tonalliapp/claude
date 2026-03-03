@@ -12,6 +12,7 @@ import {
   Minimize,
   AlertTriangle,
   ChefHat,
+  Bike,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/config/api';
@@ -176,12 +177,30 @@ function KitchenOrderCard({
       <div className="flex justify-between items-center mb-2.5">
         <div className="flex items-center gap-2">
           <span className="text-white text-lg font-bold">{formatOrderNumber(order.orderNumber)}</span>
-          <span className="px-2 py-0.5 rounded-md border border-white/10 bg-tonalli-black-soft text-silver-light text-xs font-medium">
-            {getOrderTypeLabel(order)}
-          </span>
+          {order.orderType === 'delivery' ? (
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-md border border-orange-400/30 bg-orange-500/15 text-orange-300 text-xs font-medium">
+              <Bike size={12} />
+              Domicilio
+            </span>
+          ) : (
+            <span className="px-2 py-0.5 rounded-md border border-white/10 bg-tonalli-black-soft text-silver-light text-xs font-medium">
+              {getOrderTypeLabel(order)}
+            </span>
+          )}
         </div>
         <KitchenTimer createdAt={order.createdAt} />
       </div>
+
+      {/* Delivery info */}
+      {order.orderType === 'delivery' && order.deliveryMeta?.driverName && (
+        <div className="bg-orange-500/10 rounded-lg px-2.5 py-1.5 mb-2.5 flex items-center gap-1.5">
+          <Bike size={12} className="text-orange-300 shrink-0" />
+          <span className="text-orange-200 text-xs font-medium truncate">
+            {order.deliveryMeta.driverName}
+            {order.deliveryMeta.estimatedMinutes != null && ` · ~${order.deliveryMeta.estimatedMinutes} min`}
+          </span>
+        </div>
+      )}
 
       {/* Notes */}
       {order.notes && (

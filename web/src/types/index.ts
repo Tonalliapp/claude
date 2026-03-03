@@ -83,6 +83,16 @@ export interface Order {
   notes?: string | null;
   customerName?: string | null;
   cancelReason?: string | null;
+  deliveryAddress?: string | null;
+  deliveryPhone?: string | null;
+  deliveryMeta?: {
+    driverName?: string;
+    driverPhone?: string;
+    estimatedMinutes?: number;
+    yessweraOrderId?: string;
+    deliveredAt?: string;
+  } | null;
+  source?: 'tonalli' | 'yesswera';
   createdAt: string;
   confirmedAt?: string | null;
   completedAt?: string | null;

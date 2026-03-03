@@ -26,6 +26,7 @@ import paymentsRoutes from './modules/payments/payments.routes';
 import reportsRoutes from './modules/reports/reports.routes';
 import subscriptionsRoutes from './modules/subscriptions/subscriptions.routes';
 import adminRoutes from './modules/admin/admin.routes';
+import deliveryRoutes from './modules/delivery/delivery.routes';
 
 const app = express();
 
@@ -70,6 +71,9 @@ app.get('/health', (_req, res) => {
 // Public (no auth)
 app.use('/api/v1/menu', menuRoutes);
 app.use('/api/v1/client/orders', clientOrdersRoutes);
+
+// Delivery partner integration (HMAC auth)
+app.use('/api/v1/delivery', deliveryRoutes);
 
 // Auth
 app.use('/api/v1/auth', authRoutes);
