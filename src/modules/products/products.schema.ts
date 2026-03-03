@@ -32,5 +32,18 @@ export const reorderProductsSchema = z.object({
   ids: z.array(z.string().uuid()).min(1),
 });
 
+const ingredientUnits = ['piezas', 'kg', 'g', 'lt', 'ml'] as const;
+
+export const setRecipeSchema = z.object({
+  items: z.array(
+    z.object({
+      ingredientId: z.string().uuid(),
+      quantity: z.number().positive(),
+      unit: z.enum(ingredientUnits),
+    }),
+  ).min(1),
+});
+
 export type CreateProductInput = z.infer<typeof createProductSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
+export type SetRecipeInput = z.infer<typeof setRecipeSchema>;

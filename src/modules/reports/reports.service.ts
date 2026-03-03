@@ -1,5 +1,6 @@
 import { prisma } from '../../config/database';
 import { Decimal } from '@prisma/client/runtime/library';
+import { convertUnits } from '../../utils/unitConversion';
 import type { PeriodQuery, TopProductsQuery } from './reports.schema';
 
 export async function salesByPeriod(tenantId: string, query: PeriodQuery) {
@@ -214,5 +215,133 @@ export async function dashboard(tenantId: string) {
     totalProducts,
     totalTables: tables.length,
     occupiedTables,
+  };
+}
+
+export async function productCosts(tenantId: string) {
+  const products = await prisma.product.findMany({
+    where: { tenantId, available: true },
+    include: {
+      recipeItems: {
+        include: { ingredient: { select: { id: true, name: true, unit: true, costPerUnit: true } } },
+      },
+    },
+    orderBy: { name: 'asc' },
+  });
+
+  let totalMarginSum = new Decimal(0);
+  let countWithRecipe = 0;
+  let lowestMargin = { name: '', percent: Infinity };
+  let highestMargin = { name: '', percent: -Infinity };
+
+  const productList = products.map((product) => {
+    const price = new Decimal(product.price.toString());
+    let recipeCost = new Decimal(0);
+
+    const recipeItems = product.recipeItems.map((item) => {
+      const costPerUnit = new Decimal(item.ingredient.costPerUnit.toString());
+      const qty = new Decimal(item.quantity.toString());
+      const convertedQty = convertUnits(qty.toNumber(), item.unit, item.ingredient.unit);
+      const lineCost = costPerUnit.mul(convertedQty);
+      recipeCost = recipeCost.add(lineCost);
+
+      return {
+        ingredientName: item.ingredient.name,
+        quantity: Number(item.quantity),
+        unit: item.unit,
+        lineCost: Number(lineCost.toFixed(2)),
+      };
+    });
+
+    const margin = price.sub(recipeCost);
+    const marginPercent = price.greaterThan(0) ? margin.div(price).mul(100).toNumber() : 0;
+
+    if (product.recipeItems.length > 0) {
+      countWithRecipe++;
+      totalMarginSum = totalMarginSum.add(marginPercent);
+
+      if (marginPercent < lowestMargin.percent) {
+        lowestMargin = { name: product.name, percent: marginPercent };
+      }
+      if (marginPercent > highestMargin.percent) {
+        highestMargin = { name: product.name, percent: marginPercent };
+      }
+    }
+
+    return {
+      productId: product.id,
+      productName: product.name,
+      price: Number(price.toFixed(2)),
+      recipeCost: Number(recipeCost.toFixed(2)),
+      margin: Number(margin.toFixed(2)),
+      marginPercent: Number(marginPercent.toFixed(2)),
+      recipeItems,
+    };
+  });
+
+  return {
+    products: productList,
+    summary: {
+      averageMarginPercent: countWithRecipe > 0
+        ? Number(totalMarginSum.div(countWithRecipe).toFixed(2))
+        : 0,
+      lowestMarginProduct: lowestMargin.percent === Infinity ? null : lowestMargin.name,
+      highestMarginProduct: highestMargin.percent === -Infinity ? null : highestMargin.name,
+    },
+  };
+}
+
+export async function ingredientConsumption(tenantId: string, query: PeriodQuery) {
+  const from = new Date(query.from);
+  const to = new Date(query.to);
+
+  const ingredients = await prisma.ingredient.findMany({
+    where: { tenantId, active: true },
+    select: {
+      id: true,
+      name: true,
+      unit: true,
+      currentStock: true,
+      costPerUnit: true,
+      movements: {
+        where: { createdAt: { gte: from, lte: to } },
+        select: { type: true, quantity: true },
+      },
+    },
+    orderBy: { name: 'asc' },
+  });
+
+  let totalCostOfGoods = new Decimal(0);
+
+  const ingredientList = ingredients.map((ing) => {
+    let totalConsumed = new Decimal(0);
+    let totalPurchased = new Decimal(0);
+
+    for (const m of ing.movements) {
+      const qty = new Decimal(m.quantity.toString());
+      if (m.type === 'out') {
+        totalConsumed = totalConsumed.add(qty);
+      } else if (m.type === 'in') {
+        totalPurchased = totalPurchased.add(qty);
+      }
+    }
+
+    const costPerUnit = new Decimal(ing.costPerUnit.toString());
+    const costOfConsumption = totalConsumed.mul(costPerUnit);
+    totalCostOfGoods = totalCostOfGoods.add(costOfConsumption);
+
+    return {
+      ingredientName: ing.name,
+      unit: ing.unit,
+      totalConsumed: totalConsumed.toNumber(),
+      totalPurchased: totalPurchased.toNumber(),
+      currentStock: Number(ing.currentStock),
+      costOfConsumption: Number(costOfConsumption.toFixed(2)),
+    };
+  });
+
+  return {
+    ingredients: ingredientList,
+    totalCostOfGoods: Number(totalCostOfGoods.toFixed(2)),
   };
 }

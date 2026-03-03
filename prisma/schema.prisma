@@ -79,18 +79,26 @@ enum OrderType {
   delivery
 }
 
+enum IngredientUnit {
+  piezas
+  kg
+  g
+  lt
+  ml
+}
+
 // ─── Models ───────────────────────────────────────
 
 model Tenant {
-  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String       @db.VarChar(255)
-  slug        String       @unique @db.VarChar(100)
-  logoUrl     String?      @map("logo_url")
-  config      Json         @default("{}")
-  plan        Plan         @default(basic)
-  status      TenantStatus @default(active)
-  maxTables   Int          @default(10) @map("max_tables")
-  maxUsers    Int          @default(3) @map("max_users")
+  id               String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String       @db.VarChar(255)
+  slug             String       @unique @db.VarChar(100)
+  logoUrl          String?      @map("logo_url")
+  config           Json         @default("{}")
+  plan             Plan         @default(basic)
+  status           TenantStatus @default(active)
+  maxTables        Int          @default(10) @map("max_tables")
+  maxUsers         Int          @default(3) @map("max_users")
   maxProducts      Int          @default(50) @map("max_products")
   stripeCustomerId String?      @unique @map("stripe_customer_id")
   stripeSubId      String?      @unique @map("stripe_sub_id")
@@ -108,6 +116,7 @@ model Tenant {
   inventory     Inventory[]
   cashRegisters CashRegister[]
   integrations  TenantIntegration[]
+  ingredients   Ingredient[]
 
   @@map("tenants")
 }
@@ -125,11 +134,12 @@ model User {
   lastLogin    DateTime? @map("last_login") @db.Timestamptz
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
-  tenant             Tenant?             @relation(fields: [tenantId], references: [id])
-  orders             Order[]
-  inventoryMovements InventoryMovement[]
-  cashRegisters      CashRegister[]
-  auditLogs          AuditLog[]
+  tenant              Tenant?              @relation(fields: [tenantId], references: [id])
+  orders              Order[]
+  inventoryMovements  InventoryMovement[]
+  ingredientMovements IngredientMovement[]
+  cashRegisters       CashRegister[]
+  auditLogs           AuditLog[]
 
   @@unique([tenantId, username])
   @@index([tenantId])
@@ -167,10 +177,11 @@ model Product {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
-  tenant     Tenant      @relation(fields: [tenantId], references: [id])
-  category   Category    @relation(fields: [categoryId], references: [id])
-  orderItems OrderItem[]
-  inventory  Inventory?
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  category    Category     @relation(fields: [categoryId], references: [id])
+  orderItems  OrderItem[]
+  inventory   Inventory?
+  recipeItems RecipeItem[]
 
   @@index([tenantId])
   @@index([tenantId, categoryId])
@@ -363,4 +374,58 @@ model TenantIntegration {
   tenant Tenant @relation(fields: [tenantId], references: [id])
 
   @@map("tenant_integrations")
+}
+
+// ─── Ingredients & Recipes ──────────────────────────
+
+model Ingredient {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String         @map("tenant_id") @db.Uuid
+  name         String         @db.VarChar(255)
+  unit         IngredientUnit @default(piezas)
+  costPerUnit  Decimal        @default(0) @map("cost_per_unit") @db.Decimal(10, 4)
+  currentStock Decimal        @default(0) @map("current_stock") @db.Decimal(10, 3)
+  minStock     Decimal        @default(0) @map("min_stock") @db.Decimal(10, 3)
+  active       Boolean        @default(true)
+  createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  tenant      Tenant               @relation(fields: [tenantId], references: [id])
+  recipeItems RecipeItem[]
+  movements   IngredientMovement[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("ingredients")
+}
+
+model RecipeItem {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId    String         @map("product_id") @db.Uuid
+  ingredientId String         @map("ingredient_id") @db.Uuid
+  quantity     Decimal        @db.Decimal(10, 3)
+  unit         IngredientUnit
+
+  product    Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+
+  @@unique([productId, ingredientId])
+  @@index([productId])
+  @@map("recipe_items")
+}
+
+model IngredientMovement {
+  id           String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ingredientId String                @map("ingredient_id") @db.Uuid
+  type         InventoryMovementType
+  quantity     Decimal               @db.Decimal(10, 3)
+  reason       String?
+  userId       String?               @map("user_id") @db.Uuid
+  createdAt    DateTime              @default(now()) @map("created_at") @db.Timestamptz
+
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id])
+  user       User?      @relation(fields: [userId], references: [id])
+
+  @@index([ingredientId])
+  @@map("ingredient_movements")
 }

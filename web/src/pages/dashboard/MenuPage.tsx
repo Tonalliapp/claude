@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Reorder } from 'framer-motion';
-import { Plus, ChevronDown, ChevronUp, Pencil, Trash2, GripVertical, Loader2 } from 'lucide-react';
+import { Plus, ChevronDown, ChevronUp, Pencil, Trash2, GripVertical, Loader2, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/config/api';
 import type { Category, Product } from '@/types';
@@ -10,6 +10,7 @@ import InputField from '@/components/ui/InputField';
 import GoldButton from '@/components/ui/GoldButton';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import ImageUpload from '@/components/ui/ImageUpload';
+import RecipeModal from './components/RecipeModal';
 
 export default function MenuPage() {
   const queryClient = useQueryClient();
@@ -34,6 +35,7 @@ export default function MenuPage() {
   const [prodDesc, setProdDesc] = useState('');
   const [prodPrice, setProdPrice] = useState('');
   const [deleteProdId, setDeleteProdId] = useState<string | null>(null);
+  const [recipeProd, setRecipeProd] = useState<Product | null>(null);
 
   const inv = () => {
     queryClient.invalidateQueries({ queryKey: ['categories'] });
@@ -257,6 +259,9 @@ export default function MenuPage() {
                             <p className="text-gold text-[13px] font-semibold mt-0.5">${Number(p.price).toFixed(2)}</p>
                           </div>
                           <div className="flex items-center gap-2">
+                            <button onClick={() => setRecipeProd(p)} className="p-1.5 text-silver-dark hover:text-jade transition-colors" aria-label="Receta">
+                              <BookOpen size={13} />
+                            </button>
                             <button onClick={() => openEditProd(p)} className="p-1.5 text-silver-dark hover:text-gold transition-colors" aria-label="Editar producto">
                               <Pencil size={13} />
                             </button>
@@ -364,6 +369,16 @@ export default function MenuPage() {
         onCancel={() => setDeleteProdId(null)}
         loading={deleteProdMut.isPending}
       />
+
+      {/* Recipe Modal */}
+      {recipeProd && (
+        <RecipeModal
+          productId={recipeProd.id}
+          productName={recipeProd.name}
+          productPrice={Number(recipeProd.price)}
+          onClose={() => setRecipeProd(null)}
+        />
+      )}
     </div>
   );
 }

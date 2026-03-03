@@ -255,3 +255,72 @@ export interface CashRegisterCloseResponse extends CashRegister {
   totalTransactions: number;
   totalSales: number;
 }
+
+// ─── Ingredients & Recipes ─────────────────────────
+
+export type IngredientUnit = 'piezas' | 'kg' | 'g' | 'lt' | 'ml';
+
+export interface Ingredient {
+  id: string;
+  name: string;
+  unit: IngredientUnit;
+  costPerUnit: number;
+  currentStock: number;
+  minStock: number;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RecipeItem {
+  id: string;
+  ingredientId: string;
+  ingredientName: string;
+  ingredientUnit: IngredientUnit;
+  quantity: number;
+  unit: IngredientUnit;
+  lineCost: number;
+}
+
+export interface ProductRecipe {
+  productId: string;
+  productName: string;
+  price: number;
+  recipeCost: number;
+  margin: number;
+  marginPercent: number;
+  items: RecipeItem[];
+}
+
+export interface ProductCost {
+  productId: string;
+  productName: string;
+  price: number;
+  recipeCost: number;
+  margin: number;
+  marginPercent: number;
+  recipeItems: { ingredientName: string; quantity: number; unit: string; lineCost: number }[];
+}
+
+export interface ProductCostsReport {
+  products: ProductCost[];
+  summary: {
+    averageMarginPercent: number;
+    lowestMarginProduct: string | null;
+    highestMarginProduct: string | null;
+  };
+}
+
+export interface IngredientConsumption {
+  ingredientName: string;
+  unit: string;
+  totalConsumed: number;
+  totalPurchased: number;
+  currentStock: number;
+  costOfConsumption: number;
+}
+
+export interface IngredientConsumptionReport {
+  ingredients: IngredientConsumption[];
+  totalCostOfGoods: number;
+}

@@ -81,3 +81,30 @@ export async function uploadImage(req: Request, res: Response, next: NextFunctio
     next(error);
   }
 }
+
+export async function getRecipe(req: Request, res: Response, next: NextFunction) {
+  try {
+    const recipe = await productsService.getRecipe(req.tenantId!, req.params.id as string);
+    res.json(recipe);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function setRecipe(req: Request, res: Response, next: NextFunction) {
+  try {
+    const recipe = await productsService.setRecipe(req.tenantId!, req.params.id as string, req.body);
+    res.json(recipe);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteRecipe(req: Request, res: Response, next: NextFunction) {
+  try {
+    await productsService.deleteRecipe(req.tenantId!, req.params.id as string);
+    res.json({ message: 'Receta eliminada' });
+  } catch (error) {
+    next(error);
+  }
+}

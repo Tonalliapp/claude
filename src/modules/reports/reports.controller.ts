@@ -57,3 +57,21 @@ export async function dashboard(req: Request, res: Response, next: NextFunction)
     next(error);
   }
 }
+
+export async function productCosts(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await reportsService.productCosts(req.tenantId!);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function ingredientConsumption(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await reportsService.ingredientConsumption(req.tenantId!, req.query as unknown as PeriodQuery);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}

@@ -14,5 +14,7 @@ router.get('/sales', validate({ query: periodQuerySchema }), ctrl.sales);
 router.get('/top-products', validate({ query: topProductsQuerySchema }), ctrl.topProducts);
 router.get('/by-waiter', validate({ query: periodQuerySchema }), ctrl.byWaiter);
 router.get('/dashboard', ctrl.dashboard);
+router.get('/product-costs', ctrl.productCosts);
+router.get('/ingredient-consumption', validate({ query: periodQuerySchema }), ctrl.ingredientConsumption);
 
 export default router;
