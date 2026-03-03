@@ -100,6 +100,12 @@ export default function InventoryPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const deleteIngMut = useMutation({
+    mutationFn: (id: string) => apiFetch(`/ingredients/${id}`, { method: 'DELETE', auth: true }),
+    onSuccess: () => { inv(); setShowEditIng(false); toast.success('Ingrediente eliminado'); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const ingMoveMut = useMutation({
     mutationFn: (d: { id: string; type: string; quantity: number; reason: string }) =>
       apiFetch(`/ingredients/${d.id}/movement`, { method: 'POST', body: { type: d.type, quantity: d.quantity, reason: d.reason }, auth: true }),
@@ -327,15 +333,20 @@ export default function InventoryPage() {
           </div>
           <InputField label="COSTO POR UNIDAD" value={ingCost} onChange={setIngCost} type="number" />
           <InputField label="STOCK MINIMO" value={ingMinStock} onChange={setIngMinStock} type="number" />
-          <GoldButton loading={editIngMut.isPending} disabled={!ingName.trim()} onClick={() => editIngMut.mutate({
-            id: selectedIng.id,
-            name: ingName.trim(),
-            unit: ingUnit,
-            costPerUnit: parseFloat(ingCost) || 0,
-            minStock: parseFloat(ingMinStock) || 0,
-          })}>
-            Guardar
-          </GoldButton>
+          <div className="flex gap-3">
+            <GoldButton variant="danger" loading={deleteIngMut.isPending} onClick={() => deleteIngMut.mutate(selectedIng.id)}>
+              Eliminar
+            </GoldButton>
+            <GoldButton loading={editIngMut.isPending} disabled={!ingName.trim()} onClick={() => editIngMut.mutate({
+              id: selectedIng.id,
+              name: ingName.trim(),
+              unit: ingUnit,
+              costPerUnit: parseFloat(ingCost) || 0,
+              minStock: parseFloat(ingMinStock) || 0,
+            })} className="flex-1">
+              Guardar
+            </GoldButton>
+          </div>
         </Modal>
       )}
 

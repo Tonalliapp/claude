@@ -76,7 +76,11 @@ export async function remove(tenantId: string, id: string) {
     );
   }
 
-  return prisma.ingredient.delete({ where: { id } });
+  // Soft-delete: set active=false (preserves movement history)
+  return prisma.ingredient.update({
+    where: { id },
+    data: { active: false },
+  });
 }
 
 export async function getAlerts(tenantId: string) {

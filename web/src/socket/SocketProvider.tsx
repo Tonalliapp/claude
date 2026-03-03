@@ -118,6 +118,28 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       });
     });
 
+    socket.on('inventory:alert', (data: { productName: string; currentStock: number; minStock: number }) => {
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory-alerts'] });
+      addNotification({
+        type: 'order_updated',
+        title: 'Stock Bajo',
+        message: `${data.productName}: ${data.currentStock} unidades (min: ${data.minStock})`,
+        timestamp: new Date().toISOString(),
+      });
+    });
+
+    socket.on('ingredient:alert', (data: { ingredientName: string; currentStock: number; minStock: number }) => {
+      queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+      queryClient.invalidateQueries({ queryKey: ['ingredient-alerts'] });
+      addNotification({
+        type: 'order_updated',
+        title: 'Ingrediente Bajo',
+        message: `${data.ingredientName}: ${data.currentStock} (min: ${data.minStock})`,
+        timestamp: new Date().toISOString(),
+      });
+    });
+
     socketRef.current = socket;
 
     return () => {

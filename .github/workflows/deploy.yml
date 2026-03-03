@@ -60,14 +60,8 @@ jobs:
           script: |
             cd /opt/tonalli
 
-            # Update source files
-            rsync_needed=false
-
-            # Pull latest code (API source)
-            cd /opt/tonalli
-
-            # Copy source files from repo
-            # (We sync from the deploy action instead)
+            # Pull latest code
+            git pull origin main
 
             # Rebuild API container
             docker compose build api
