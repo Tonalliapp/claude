@@ -1,8 +1,17 @@
 import { prisma } from '../../config/database';
-import { stripe, getPlanFromPriceId, PLAN_CONFIG } from '../../config/stripe';
+import { stripe, getPlanFromPriceId, PLAN_CONFIG, PRICE_IDS } from '../../config/stripe';
 import { env } from '../../config/env';
 import { AppError } from '../../middleware/errorHandler';
 import type Stripe from 'stripe';
+
+function getBillingInterval(priceId: string | null): 'monthly' | 'yearly' | null {
+  if (!priceId) return null;
+  const yearlyIds: string[] = [PRICE_IDS.basic_yearly, PRICE_IDS.professional_yearly, PRICE_IDS.premium_yearly];
+  if (yearlyIds.includes(priceId)) return 'yearly';
+  const monthlyIds: string[] = [PRICE_IDS.basic_monthly, PRICE_IDS.professional_monthly, PRICE_IDS.premium_monthly];
+  if (monthlyIds.includes(priceId)) return 'monthly';
+  return null;
+}
 
 export async function createCheckoutSession(tenantId: string, priceId: string) {
   const tenant = await prisma.tenant.findUnique({
@@ -38,8 +47,8 @@ export async function createCheckoutSession(tenantId: string, priceId: string) {
     mode: 'subscription',
     payment_method_types: ['card'],
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${env.APP_BASE_URL}/dashboard/settings?subscription=success`,
-    cancel_url: `${env.APP_BASE_URL}/dashboard/settings?subscription=cancelled`,
+    success_url: `${env.APP_BASE_URL}/dashboard/billing?subscription=success`,
+    cancel_url: `${env.APP_BASE_URL}/dashboard/billing?subscription=cancelled`,
     metadata: { tenantId },
     subscription_data: {
       metadata: { tenantId },
@@ -58,26 +67,31 @@ export async function createPortalSession(tenantId: string) {
 
   const session = await stripe.billingPortal.sessions.create({
     customer: tenant.stripeCustomerId,
-    return_url: `${env.APP_BASE_URL}/dashboard/settings`,
+    return_url: `${env.APP_BASE_URL}/dashboard/billing`,
   });
 
   return { url: session.url };
 }
 
 export async function getSubscriptionStatus(tenantId: string) {
-  const tenant = await prisma.tenant.findUnique({
-    where: { id: tenantId },
-    select: {
-      plan: true,
-      stripeSubId: true,
-      stripePriceId: true,
-      trialEndsAt: true,
-      planExpiresAt: true,
-      maxTables: true,
-      maxUsers: true,
-      maxProducts: true,
-    },
-  });
+  const [tenant, tablesCount, usersCount, productsCount] = await Promise.all([
+    prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: {
+        plan: true,
+        stripeSubId: true,
+        stripePriceId: true,
+        trialEndsAt: true,
+        planExpiresAt: true,
+        maxTables: true,
+        maxUsers: true,
+        maxProducts: true,
+      },
+    }),
+    prisma.table.count({ where: { tenantId, active: true } }),
+    prisma.user.count({ where: { tenantId, active: true } }),
+    prisma.product.count({ where: { tenantId } }),
+  ]);
 
   if (!tenant) throw new AppError(404, 'Tenant no encontrado', 'NOT_FOUND');
 
@@ -91,10 +105,74 @@ export async function getSubscriptionStatus(tenantId: string) {
     isExpired: isExpired && !tenant.stripeSubId,
     trialEndsAt: tenant.trialEndsAt,
     planExpiresAt: tenant.planExpiresAt,
+    currentPriceId: tenant.stripePriceId,
+    billingInterval: getBillingInterval(tenant.stripePriceId),
     limits: {
       maxTables: tenant.maxTables,
       maxUsers: tenant.maxUsers,
       maxProducts: tenant.maxProducts,
+    },
+    usage: {
+      tables: tablesCount,
+      users: usersCount,
+      products: productsCount,
+    },
+  };
+}
+
+export async function getInvoices(tenantId: string) {
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { stripeCustomerId: true },
+  });
+
+  if (!tenant) throw new AppError(404, 'Tenant no encontrado', 'NOT_FOUND');
+  if (!tenant.stripeCustomerId) return { invoices: [] };
+
+  const stripeInvoices = await stripe.invoices.list({
+    customer: tenant.stripeCustomerId,
+    limit: 12,
+  });
+
+  const invoices = stripeInvoices.data.map((inv) => ({
+    id: inv.id,
+    number: inv.number,
+    date: inv.created ? new Date(inv.created * 1000).toISOString() : null,
+    amount: (inv.amount_paid ?? 0) / 100,
+    currency: inv.currency?.toUpperCase() ?? 'MXN',
+    status: inv.status,
+    pdfUrl: inv.invoice_pdf,
+    hostedUrl: inv.hosted_invoice_url,
+  }));
+
+  return { invoices };
+}
+
+export async function getPaymentMethod(tenantId: string) {
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { stripeCustomerId: true },
+  });
+
+  if (!tenant) throw new AppError(404, 'Tenant no encontrado', 'NOT_FOUND');
+  if (!tenant.stripeCustomerId) return { paymentMethod: null };
+
+  const customer = await stripe.customers.retrieve(tenant.stripeCustomerId, {
+    expand: ['invoice_settings.default_payment_method'],
+  }) as Stripe.Customer;
+
+  const pm = customer.invoice_settings?.default_payment_method;
+  if (!pm || typeof pm === 'string') return { paymentMethod: null };
+
+  const card = pm.card;
+  if (!card) return { paymentMethod: null };
+
+  return {
+    paymentMethod: {
+      brand: card.brand,
+      last4: card.last4,
+      expMonth: card.exp_month,
+      expYear: card.exp_year,
     },
   };
 }

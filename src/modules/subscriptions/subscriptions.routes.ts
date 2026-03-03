@@ -9,6 +9,8 @@ import {
   createCheckoutSession,
   createPortalSession,
   getSubscriptionStatus,
+  getInvoices,
+  getPaymentMethod,
   handleCheckoutCompleted,
   handleSubscriptionUpdated,
   handleSubscriptionDeleted,
@@ -55,6 +57,36 @@ router.get(
   async (req, res, next) => {
     try {
       const result = await getSubscriptionStatus(req.user!.tenantId!);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+// ─── Invoices ───────────────────────────────────
+router.get(
+  '/invoices',
+  authenticate,
+  roleGuard('owner'),
+  async (req, res, next) => {
+    try {
+      const result = await getInvoices(req.user!.tenantId!);
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+// ─── Payment Method ─────────────────────────────
+router.get(
+  '/payment-method',
+  authenticate,
+  roleGuard('owner'),
+  async (req, res, next) => {
+    try {
+      const result = await getPaymentMethod(req.user!.tenantId!);
       res.json(result);
     } catch (err) {
       next(err);

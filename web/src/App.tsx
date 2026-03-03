@@ -20,6 +20,7 @@ import InventoryPage from '@/pages/dashboard/InventoryPage';
 import ReportsPage from '@/pages/dashboard/ReportsPage';
 import UsersPage from '@/pages/dashboard/UsersPage';
 import SettingsPage from '@/pages/dashboard/SettingsPage';
+import BillingPage from '@/pages/dashboard/BillingPage';
 import ProfilePage from '@/pages/dashboard/ProfilePage';
 import OnboardingPage from '@/pages/onboarding/OnboardingPage';
 
@@ -57,6 +58,7 @@ export default function App() {
             <Route path="dashboard/reports" element={<ReportsPage />} />
             <Route path="dashboard/users" element={<UsersPage />} />
             <Route path="dashboard/settings" element={<SettingsPage />} />
+            <Route path="dashboard/billing" element={<BillingPage />} />
             <Route path="dashboard/profile" element={<ProfilePage />} />
           </Route>
         </Route>

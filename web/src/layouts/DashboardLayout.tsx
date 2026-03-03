@@ -6,6 +6,7 @@ import {
   UtensilsCrossed,
   Grid3X3,
   ChefHat,
+  CreditCard,
   DollarSign,
   Package,
   BarChart3,
@@ -33,6 +34,7 @@ const NAV_ITEMS = [
   { to: '/dashboard/reports', icon: BarChart3, label: 'Reportes', roles: ['owner', 'admin'] },
   { to: '/dashboard/users', icon: Users, label: 'Usuarios', roles: ['owner', 'admin'] },
   { to: '/dashboard/settings', icon: Settings, label: 'Config', roles: ['owner', 'admin'] },
+  { to: '/dashboard/billing', icon: CreditCard, label: 'Facturacion', roles: ['owner'] },
 ] as const;
 
 export default function DashboardLayout() {
