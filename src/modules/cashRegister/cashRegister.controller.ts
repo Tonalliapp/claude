@@ -27,3 +27,21 @@ export async function close(req: Request, res: Response, next: NextFunction) {
     next(error);
   }
 }
+
+export async function history(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await cashRegisterService.history(req.tenantId!, req.query as any);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function summary(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await cashRegisterService.summary(req.tenantId!, req.params.id as string);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}

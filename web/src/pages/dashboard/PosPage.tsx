@@ -1,9 +1,15 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { DollarSign, CreditCard, Banknote, ArrowRightLeft, Lock, Unlock, Loader2, Plus } from 'lucide-react';
+import {
+  DollarSign, CreditCard, Banknote, ArrowRightLeft, Lock, Unlock,
+  Plus, Truck, Store, ShoppingBag, UtensilsCrossed, Clock, ChevronRight, X,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/config/api';
-import type { CashRegister, PaymentsResponse, Order, OrdersResponse } from '@/types';
+import type {
+  CashRegister, PaymentsResponse, Order, OrdersResponse,
+  CashRegisterCloseResponse, CashRegisterHistoryResponse, CashRegisterSummary,
+} from '@/types';
 import Modal from '@/components/ui/Modal';
 import InputField from '@/components/ui/InputField';
 import GoldButton from '@/components/ui/GoldButton';
@@ -14,6 +20,72 @@ const METHODS = [
   { key: 'card' as const, icon: CreditCard, label: 'Tarjeta', color: 'text-gold' },
   { key: 'transfer' as const, icon: ArrowRightLeft, label: 'Transferencia', color: 'text-silver' },
 ];
+
+function SourceBadge({ order }: { order: Order }) {
+  if (order.source === 'yesswera') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-orange-500/15 text-orange-400 text-[11px] font-medium">
+        <Truck size={12} />
+        Yesswera
+      </span>
+    );
+  }
+  if (order.table) {
+    return (
+      <span className="inline-flex items-center gap-1 text-jade-light text-xs">
+        <UtensilsCrossed size={12} />
+        Mesa {order.table.number}
+      </span>
+    );
+  }
+  if (order.orderType === 'takeout') {
+    return (
+      <span className="inline-flex items-center gap-1 text-silver text-xs">
+        <ShoppingBag size={12} />
+        Para Llevar
+      </span>
+    );
+  }
+  if (order.orderType === 'delivery') {
+    return (
+      <span className="inline-flex items-center gap-1 text-orange-400 text-xs">
+        <Truck size={12} />
+        Domicilio
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-silver text-xs">
+      <Store size={12} />
+      Mostrador
+    </span>
+  );
+}
+
+function BreakdownSection({ title, data }: { title: string; data: Record<string, { count: number; total: number }> }) {
+  return (
+    <div className="mb-4">
+      <p className="text-gold-muted text-[10px] font-medium tracking-[2px] mb-2">{title}</p>
+      <div className="space-y-1.5">
+        {Object.entries(data).map(([key, val]) => {
+          const M = METHODS.find((m) => m.key === key);
+          const label = M?.label ?? (key === 'tonalli' ? 'Tonalli' : key === 'yesswera' ? 'Yesswera' : key);
+          return (
+            <div key={key} className="flex items-center justify-between bg-tonalli-black-card rounded-lg px-3 py-2">
+              <div className="flex items-center gap-2">
+                {M && <M.icon size={14} className={M.color} />}
+                {key === 'yesswera' && <Truck size={14} className="text-orange-400" />}
+                <span className="text-silver text-sm">{label}</span>
+                <span className="text-silver-dark text-xs">({val.count})</span>
+              </div>
+              <span className="text-gold text-sm font-semibold">${val.total.toFixed(2)}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function PosPage() {
   const queryClient = useQueryClient();
@@ -27,13 +99,17 @@ export default function PosPage() {
   const [payMethod, setPayMethod] = useState<'cash' | 'card' | 'transfer'>('cash');
   const [payRef, setPayRef] = useState('');
   const [showNewSale, setShowNewSale] = useState(false);
+  const [closeResult, setCloseResult] = useState<CashRegisterCloseResponse | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showSummary, setShowSummary] = useState<CashRegisterSummary | null>(null);
+  const [historyPage, setHistoryPage] = useState(1);
 
-  const { data: register, isLoading: regLoading, refetch: refetchReg } = useQuery({
+  const { data: register } = useQuery({
     queryKey: ['cash-register'],
     queryFn: () => apiFetch<CashRegister>('/cash-register/current', { auth: true }).catch(() => null),
   });
 
-  const { data: paymentsData, refetch: refetchPay } = useQuery({
+  const { data: paymentsData } = useQuery({
     queryKey: ['payments-today'],
     queryFn: () => { const d = new Date().toISOString().split('T')[0]; return apiFetch<PaymentsResponse>(`/payments?from=${d}&to=${d}`, { auth: true }).catch(() => ({ payments: [], total: 0, page: 1, limit: 50 })); },
   });
@@ -44,17 +120,23 @@ export default function PosPage() {
     refetchInterval: 15000,
   });
 
+  const { data: historyData } = useQuery({
+    queryKey: ['cash-register-history', historyPage],
+    queryFn: () => apiFetch<CashRegisterHistoryResponse>(`/cash-register/history?page=${historyPage}&limit=10`, { auth: true }),
+    enabled: showHistory,
+  });
+
   const inv = () => { queryClient.invalidateQueries({ queryKey: ['cash-register'] }); queryClient.invalidateQueries({ queryKey: ['payments-today'] }); queryClient.invalidateQueries({ queryKey: ['delivered-orders'] }); queryClient.invalidateQueries({ queryKey: ['orders'] }); queryClient.invalidateQueries({ queryKey: ['tables'] }); };
 
   const openMut = useMutation({
     mutationFn: (a: number) => apiFetch('/cash-register/open', { method: 'POST', body: { openingAmount: a }, auth: true }),
-    onSuccess: () => { inv(); setShowOpen(false); toast.success('Caja abierta'); },
+    onSuccess: () => { inv(); setShowOpen(false); setShowHistory(false); toast.success('Caja abierta'); },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const closeMut = useMutation({
-    mutationFn: (d: { closingAmount: number; notes?: string }) => apiFetch('/cash-register/close', { method: 'POST', body: d, auth: true }),
-    onSuccess: () => { inv(); setShowClose(false); setCloseAmt(''); setCloseNotes(''); toast.success('Caja cerrada'); },
+    mutationFn: (d: { closingAmount: number; notes?: string }) => apiFetch<CashRegisterCloseResponse>('/cash-register/close', { method: 'POST', body: d, auth: true }),
+    onSuccess: (data) => { inv(); setShowClose(false); setCloseAmt(''); setCloseNotes(''); setCloseResult(data); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -67,6 +149,23 @@ export default function PosPage() {
   const isOpen = register && register.status === 'open';
   const payList = paymentsData?.payments ?? [];
   const total = payList.reduce((s, p) => s + (p.amount ?? 0), 0);
+
+  // Live breakdown from today's payments
+  const liveBreakdown = payList.reduce((acc, p) => {
+    if (!acc[p.method]) acc[p.method] = { count: 0, total: 0 };
+    acc[p.method].count += 1;
+    acc[p.method].total += p.amount ?? 0;
+    return acc;
+  }, {} as Record<string, { count: number; total: number }>);
+
+  const fetchSummary = async (id: string) => {
+    try {
+      const data = await apiFetch<CashRegisterSummary>(`/cash-register/${id}/summary`, { auth: true });
+      setShowSummary(data);
+    } catch {
+      toast.error('Error al cargar resumen');
+    }
+  };
 
   return (
     <div className="p-6 lg:p-8 max-w-3xl mx-auto">
@@ -83,9 +182,15 @@ export default function PosPage() {
           <Lock size={32} className="text-silver-dark mx-auto mb-3" />
           <p className="text-white text-xl font-light mb-1">Caja Cerrada</p>
           <p className="text-silver-muted text-sm mb-6">Abre la caja para empezar a cobrar</p>
-          <button onClick={() => setShowOpen(true)} className="bg-gold hover:bg-gold-light text-tonalli-black px-8 py-3 rounded-xl font-semibold transition-colors">
-            Abrir Caja
-          </button>
+          <div className="flex flex-col items-center gap-3">
+            <button onClick={() => setShowOpen(true)} className="bg-gold hover:bg-gold-light text-tonalli-black px-8 py-3 rounded-xl font-semibold transition-colors">
+              Abrir Caja
+            </button>
+            <button onClick={() => setShowHistory(true)} className="flex items-center gap-1.5 text-silver-muted hover:text-silver text-sm transition-colors">
+              <Clock size={14} />
+              Ver Historial de Turnos
+            </button>
+          </div>
         </div>
       ) : (
         <>
@@ -99,6 +204,26 @@ export default function PosPage() {
               <p className="text-jade text-xl font-semibold">${total.toFixed(2)}</p>
             </div>
           </div>
+
+          {/* Live breakdown by method */}
+          {Object.keys(liveBreakdown).length > 0 && (
+            <div className="flex gap-2 mb-4">
+              {METHODS.map((m) => {
+                const val = liveBreakdown[m.key];
+                if (!val) return null;
+                return (
+                  <div key={m.key} className="flex-1 bg-tonalli-black-card border border-subtle rounded-xl p-3">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <m.icon size={12} className={m.color} />
+                      <span className="text-silver-muted text-[9px] tracking-[1px]">{m.label.toUpperCase()}</span>
+                    </div>
+                    <p className="text-white text-sm font-semibold">${val.total.toFixed(2)}</p>
+                    <p className="text-silver-dark text-[10px]">{val.count} cobros</p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           <div className="flex gap-3 mb-6">
             <button onClick={() => setShowNewSale(true)} className="flex-1 flex items-center justify-center gap-2 bg-jade hover:bg-jade-light text-white py-3 rounded-xl font-semibold transition-colors">
@@ -118,7 +243,8 @@ export default function PosPage() {
                   <button key={o.id} onClick={() => { setSelOrder(o); setPayMethod('cash'); setPayRef(''); setShowPay(true); }} className="w-full flex justify-between items-center bg-tonalli-black-card border border-subtle rounded-xl p-3.5 hover:border-gold-border transition-colors">
                     <div className="flex items-center gap-2.5">
                       <span className="text-white text-[15px] font-semibold">#{String(o.orderNumber).padStart(3, '0')}</span>
-                      <span className="text-jade-light text-xs">{o.table ? `Mesa ${o.table.number}` : o.orderType === 'takeout' ? 'Para Llevar' : o.orderType === 'delivery' ? 'Domicilio' : 'Mostrador'}</span>
+                      <SourceBadge order={o} />
+                      {o.customerName && <span className="text-silver-dark text-xs">{o.customerName}</span>}
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-gold text-base font-semibold">${o.total.toFixed(2)}</span>
@@ -168,6 +294,86 @@ export default function PosPage() {
         </Modal>
       )}
 
+      {/* Close Result Modal — breakdown */}
+      {closeResult && (
+        <Modal title="Turno Cerrado" onClose={() => setCloseResult(null)}>
+          <div className="text-center mb-4">
+            <p className="text-silver-muted text-[10px] tracking-[2px] mb-1">DIFERENCIA</p>
+            <p className={`text-3xl font-semibold ${closeResult.difference === 0 ? 'text-jade' : closeResult.difference > 0 ? 'text-jade' : 'text-red-400'}`}>
+              {closeResult.difference >= 0 ? '+' : ''}${closeResult.difference.toFixed(2)}
+            </p>
+            <p className="text-silver-dark text-xs mt-1">{closeResult.totalTransactions} transacciones | Total: ${closeResult.totalSales.toFixed(2)}</p>
+          </div>
+          <BreakdownSection title="DESGLOSE POR METODO" data={closeResult.breakdown} />
+          {Object.keys(closeResult.bySource).length > 0 && (
+            <BreakdownSection title="DESGLOSE POR FUENTE" data={closeResult.bySource} />
+          )}
+          <GoldButton onClick={() => setCloseResult(null)}>Cerrar</GoldButton>
+        </Modal>
+      )}
+
+      {/* History View */}
+      {showHistory && !isOpen && (
+        <Modal title="Historial de Turnos" onClose={() => setShowHistory(false)}>
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {(historyData?.registers ?? []).map((reg) => (
+              <button
+                key={reg.id}
+                onClick={() => fetchSummary(reg.id)}
+                className="w-full flex items-center justify-between bg-tonalli-black-card border border-subtle rounded-xl p-3.5 hover:border-gold-border transition-colors"
+              >
+                <div className="text-left">
+                  <p className="text-white text-sm font-medium">
+                    {reg.closedAt ? new Date(reg.closedAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                  </p>
+                  <p className="text-silver-dark text-xs">{reg.user.name} | {reg._count.payments} cobros</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="text-right">
+                    <p className="text-gold text-sm font-semibold">${Number(reg.salesTotal).toFixed(2)}</p>
+                    {reg.expectedAmount != null && reg.closingAmount != null && (
+                      <p className={`text-[11px] ${Number(reg.closingAmount) - Number(reg.expectedAmount) === 0 ? 'text-jade' : 'text-red-400'}`}>
+                        Dif: ${(Number(reg.closingAmount) - Number(reg.expectedAmount)).toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                  <ChevronRight size={16} className="text-silver-dark" />
+                </div>
+              </button>
+            ))}
+            {(historyData?.registers ?? []).length === 0 && (
+              <p className="text-silver-muted text-sm text-center py-8">Sin turnos anteriores</p>
+            )}
+          </div>
+          {historyData && historyData.total > historyData.limit && (
+            <div className="flex justify-center gap-2 mt-3">
+              <button disabled={historyPage <= 1} onClick={() => setHistoryPage((p) => p - 1)} className="px-3 py-1.5 text-xs text-silver-dark border border-subtle rounded-lg disabled:opacity-30 hover:text-silver">Anterior</button>
+              <span className="px-3 py-1.5 text-xs text-silver-dark">{historyPage} / {Math.ceil(historyData.total / historyData.limit)}</span>
+              <button disabled={historyPage >= Math.ceil(historyData.total / historyData.limit)} onClick={() => setHistoryPage((p) => p + 1)} className="px-3 py-1.5 text-xs text-silver-dark border border-subtle rounded-lg disabled:opacity-30 hover:text-silver">Siguiente</button>
+            </div>
+          )}
+        </Modal>
+      )}
+
+      {/* Summary Modal */}
+      {showSummary && (
+        <Modal title={`Resumen — ${showSummary.register.closedAt ? new Date(showSummary.register.closedAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : ''}`} onClose={() => setShowSummary(null)}>
+          <div className="text-center mb-4">
+            <p className="text-silver-muted text-[10px] tracking-[2px] mb-1">DIFERENCIA</p>
+            <p className={`text-3xl font-semibold ${showSummary.difference === 0 ? 'text-jade' : showSummary.difference > 0 ? 'text-jade' : 'text-red-400'}`}>
+              {showSummary.difference >= 0 ? '+' : ''}${showSummary.difference.toFixed(2)}
+            </p>
+            <p className="text-silver-dark text-xs mt-1">{showSummary.totalTransactions} transacciones | Total: ${showSummary.totalSales.toFixed(2)}</p>
+            <p className="text-silver-dark text-xs">Apertura: ${Number(showSummary.register.openingAmount).toFixed(2)} | Cierre: ${Number(showSummary.register.closingAmount ?? 0).toFixed(2)}</p>
+          </div>
+          <BreakdownSection title="DESGLOSE POR METODO" data={showSummary.breakdown} />
+          {Object.keys(showSummary.bySource).length > 0 && (
+            <BreakdownSection title="DESGLOSE POR FUENTE" data={showSummary.bySource} />
+          )}
+          <GoldButton onClick={() => setShowSummary(null)}>Cerrar</GoldButton>
+        </Modal>
+      )}
+
       {/* New Sale Modal */}
       {showNewSale && (
         <PosNewSale onClose={() => setShowNewSale(false)} onSuccess={() => { inv(); setShowNewSale(false); }} />
@@ -179,8 +385,11 @@ export default function PosPage() {
           <div className="text-center mb-2">
             <p className="text-silver-muted text-[10px] tracking-[2px]">TOTAL A COBRAR</p>
             <p className="text-gold text-4xl font-semibold">${selOrder.total.toFixed(2)}</p>
+            <div className="mt-1"><SourceBadge order={selOrder} /></div>
+            {selOrder.customerName && <p className="text-silver-dark text-xs mt-1">{selOrder.customerName}</p>}
+            {selOrder.deliveryAddress && <p className="text-silver-dark text-xs">{selOrder.deliveryAddress}</p>}
           </div>
-          <p className="text-gold-muted text-[10px] font-medium tracking-[2px]">MÉTODO DE PAGO</p>
+          <p className="text-gold-muted text-[10px] font-medium tracking-[2px]">METODO DE PAGO</p>
           <div className="flex gap-2">
             {METHODS.map(m => (
               <button key={m.key} onClick={() => setPayMethod(m.key)} className={`flex-1 flex items-center justify-center gap-1.5 py-3 rounded-lg border text-xs font-medium transition-colors ${payMethod === m.key ? 'border-gold bg-status-pending text-gold' : 'border-light-border bg-tonalli-black-card text-silver-dark'}`}>

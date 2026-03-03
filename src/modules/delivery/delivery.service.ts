@@ -5,6 +5,7 @@ import { AppError } from '../../middleware/errorHandler';
 import { getIO } from '../../websocket/socket';
 import { tenantRoom, kitchenRoom } from '../../websocket/rooms';
 import { generateOrderNumber } from '../../utils/generateOrderNumber';
+import { deductInventory } from '../../utils/inventoryDeduction';
 import type { CreateDeliveryOrderInput, DeliveryWebhookInput } from './delivery.schema';
 
 const orderInclude = {
@@ -105,6 +106,9 @@ export async function createDeliveryOrder(tenantId: string, data: CreateDelivery
     } as any,
     include: orderInclude,
   });
+
+  // Auto-deduct inventory
+  await deductInventory(tenantId, data.items, order.orderNumber);
 
   // Emit WebSocket events — order appears on KDS instantly
   const io = getIO();

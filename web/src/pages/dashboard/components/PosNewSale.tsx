@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Search, Plus, Minus, Trash2, X, Banknote, CreditCard, ArrowRightLeft, ShoppingBag, Store, Truck, Loader2 } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, X, Banknote, CreditCard, ArrowRightLeft, ShoppingBag, Store, Truck, Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/config/api';
-import type { Product, Category, PosOrderInput } from '@/types';
+import type { Product, Category, PosOrderInput, InventoryItem } from '@/types';
 
 interface Props {
   onClose: () => void;
@@ -30,6 +30,23 @@ const PAY_METHODS = [
   { key: 'transfer' as const, icon: ArrowRightLeft, label: 'Transferencia' },
 ];
 
+function StockBadge({ product, stockMap }: { product: Product; stockMap: Map<string, InventoryItem> }) {
+  if (!product.trackStock) return null;
+  const inv = stockMap.get(product.id);
+  if (!inv) return null;
+
+  const stock = Number(inv.currentStock);
+  const min = Number(inv.minStock);
+
+  if (stock <= 0) {
+    return <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold bg-red-500/20 text-red-400">Agotado</span>;
+  }
+  if (stock <= min) {
+    return <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold bg-yellow-500/20 text-yellow-400">{stock}</span>;
+  }
+  return <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold bg-jade/20 text-jade">{stock}</span>;
+}
+
 export default function PosNewSale({ onClose, onSuccess }: Props) {
   const [search, setSearch] = useState('');
   const [selectedCat, setSelectedCat] = useState<string | null>(null);
@@ -49,7 +66,19 @@ export default function PosNewSale({ onClose, onSuccess }: Props) {
     queryFn: () => apiFetch<{ products: Product[]; total: number }>('/products?limit=500', { auth: true }),
   });
 
+  const { data: inventoryData } = useQuery({
+    queryKey: ['inventory'],
+    queryFn: () => apiFetch<InventoryItem[]>('/inventory', { auth: true }),
+  });
+
   const products = productsData?.products ?? [];
+  const stockMap = useMemo(() => {
+    const map = new Map<string, InventoryItem>();
+    for (const item of inventoryData ?? []) {
+      map.set(item.productId, item);
+    }
+    return map;
+  }, [inventoryData]);
 
   const filtered = useMemo(() => {
     let list = products.filter((p) => p.available);
@@ -64,6 +93,14 @@ export default function PosNewSale({ onClose, onSuccess }: Props) {
   const cartTotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
 
   const addToCart = (product: Product) => {
+    // Warn if out of stock but allow adding
+    if (product.trackStock) {
+      const inv = stockMap.get(product.id);
+      if (inv && Number(inv.currentStock) <= 0) {
+        toast.warning(`${product.name} esta agotado, pero se puede agregar`);
+      }
+    }
+
     setCart((prev) => {
       const existing = prev.find((i) => i.productId === product.id);
       if (existing) {
@@ -146,16 +183,23 @@ export default function PosNewSale({ onClose, onSuccess }: Props) {
 
           <div className="flex-1 overflow-y-auto p-4 pt-0">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {filtered.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => addToCart(p)}
-                  className="bg-tonalli-black-card border border-subtle rounded-xl p-3 text-left hover:border-gold-border transition-colors"
-                >
-                  <p className="text-white text-sm font-medium truncate">{p.name}</p>
-                  <p className="text-gold text-base font-semibold mt-1">${Number(p.price).toFixed(2)}</p>
-                </button>
-              ))}
+              {filtered.map((p) => {
+                const inv = stockMap.get(p.id);
+                const outOfStock = p.trackStock && inv && Number(inv.currentStock) <= 0;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => addToCart(p)}
+                    className={`bg-tonalli-black-card border border-subtle rounded-xl p-3 text-left hover:border-gold-border transition-colors ${outOfStock ? 'opacity-50' : ''}`}
+                  >
+                    <div className="flex items-start justify-between gap-1">
+                      <p className="text-white text-sm font-medium truncate flex-1">{p.name}</p>
+                      <StockBadge product={p} stockMap={stockMap} />
+                    </div>
+                    <p className="text-gold text-base font-semibold mt-1">${Number(p.price).toFixed(2)}</p>
+                  </button>
+                );
+              })}
               {filtered.length === 0 && (
                 <p className="text-silver-muted text-sm col-span-full text-center py-8">Sin productos</p>
               )}

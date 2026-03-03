@@ -226,3 +226,32 @@ export interface OrdersResponse {
   page: number;
   limit: number;
 }
+
+export interface CashRegisterSummary {
+  register: CashRegister & { payments: Payment[] };
+  breakdown: Record<'cash' | 'card' | 'transfer', { count: number; total: number }>;
+  bySource: Record<string, { count: number; total: number }>;
+  difference: number;
+  totalTransactions: number;
+  totalSales: number;
+}
+
+export interface CashRegisterHistoryItem extends CashRegister {
+  _count: { payments: number };
+}
+
+export interface CashRegisterHistoryResponse {
+  registers: CashRegisterHistoryItem[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface CashRegisterCloseResponse extends CashRegister {
+  payments: Payment[];
+  breakdown: Record<'cash' | 'card' | 'transfer', { count: number; total: number }>;
+  bySource: Record<string, { count: number; total: number }>;
+  difference: number;
+  totalTransactions: number;
+  totalSales: number;
+}

@@ -5,6 +5,7 @@ import { AppError } from '../../middleware/errorHandler';
 import { getIO } from '../../websocket/socket';
 import { tenantRoom, kitchenRoom, tableRoom } from '../../websocket/rooms';
 import { generateOrderNumber } from '../../utils/generateOrderNumber';
+import { deductInventory } from '../../utils/inventoryDeduction';
 import type { CreateOrderInput, CreatePosOrderInput, ListQuery } from './orders.schema';
 
 const orderInclude = {
@@ -13,12 +14,14 @@ const orderInclude = {
   },
   table: { select: { id: true, number: true } },
   user: { select: { id: true, name: true, role: true } },
-};
+} as const;
 
 export async function list(tenantId: string, query: ListQuery) {
   const where: Record<string, unknown> = { tenantId };
   if (query.status) where.status = query.status;
   if (query.tableId) where.tableId = query.tableId;
+  if (query.source) where.source = query.source;
+  if (query.orderType) where.orderType = query.orderType;
   if (query.from || query.to) {
     where.createdAt = {
       ...(query.from ? { gte: new Date(query.from) } : {}),
@@ -109,6 +112,9 @@ export async function create(tenantId: string, data: CreateOrderInput, userId?: 
     });
   }
 
+  // Auto-deduct inventory
+  await deductInventory(tenantId, data.items, order.orderNumber);
+
   // Emit WebSocket events
   const io = getIO();
   io.of('/staff').to(tenantRoom(tenantId)).emit('order:new', order);
@@ -197,6 +203,9 @@ export async function createPosOrder(tenantId: string, data: CreatePosOrderInput
 
     return order;
   });
+
+  // Auto-deduct inventory
+  await deductInventory(tenantId, data.items, result.orderNumber);
 
   // Emit WebSocket events
   const io = getIO();

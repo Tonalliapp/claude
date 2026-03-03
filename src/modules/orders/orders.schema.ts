@@ -51,6 +51,8 @@ export const orderItemParamSchema = z.object({
 export const listQuerySchema = z.object({
   status: z.enum(['pending', 'confirmed', 'preparing', 'ready', 'delivered', 'paid', 'cancelled']).optional(),
   tableId: z.string().uuid().optional(),
+  source: z.enum(['tonalli', 'yesswera']).optional(),
+  orderType: z.enum(['dine_in', 'takeout', 'counter', 'delivery']).optional(),
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
   page: z.coerce.number().int().positive().default(1),
