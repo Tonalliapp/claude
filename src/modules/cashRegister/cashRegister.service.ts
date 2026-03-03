@@ -1,7 +1,9 @@
 import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '../../config/database';
 import { AppError } from '../../middleware/errorHandler';
-import type { OpenCashRegisterInput, CloseCashRegisterInput, HistoryQuery } from './cashRegister.schema';
+import { getIO } from '../../websocket/socket';
+import { tenantRoom } from '../../websocket/rooms';
+import type { OpenCashRegisterInput, CloseCashRegisterInput, HistoryQuery, CreateMovementInput } from './cashRegister.schema';
 
 function buildBreakdown(payments: { method: string; amount: unknown; order: { source: string } | null }[]) {
   const breakdown: Record<string, { count: number; total: number }> = {
@@ -37,6 +39,7 @@ export async function getCurrent(tenantId: string) {
     include: {
       user: { select: { id: true, name: true } },
       payments: { include: { order: { select: { id: true, orderNumber: true, source: true } } } },
+      movements: { include: { user: { select: { id: true, name: true } } }, orderBy: { createdAt: 'desc' } },
     },
   });
 
@@ -53,7 +56,7 @@ export async function open(tenantId: string, userId: string, data: OpenCashRegis
     throw new AppError(409, 'Ya hay una caja abierta', 'CASH_REGISTER_OPEN');
   }
 
-  return prisma.cashRegister.create({
+  const register = await prisma.cashRegister.create({
     data: {
       tenantId,
       userId,
@@ -62,6 +65,11 @@ export async function open(tenantId: string, userId: string, data: OpenCashRegis
     },
     include: { user: { select: { id: true, name: true } } },
   });
+
+  const io = getIO();
+  io.of('/staff').to(tenantRoom(tenantId)).emit('cash-register:updated', register);
+
+  return register;
 }
 
 export async function close(tenantId: string, data: CloseCashRegisterInput) {
@@ -73,8 +81,21 @@ export async function close(tenantId: string, data: CloseCashRegisterInput) {
     throw new AppError(404, 'No hay caja abierta', 'NO_OPEN_REGISTER');
   }
 
+  // Fetch movements to compute net cash adjustments
+  const movements = await prisma.cashMovement.findMany({
+    where: { cashRegisterId: register.id },
+  });
+
+  let movementsNet = new Decimal(0);
+  for (const m of movements) {
+    const amt = new Decimal(m.amount.toString());
+    if (m.type === 'deposit') movementsNet = movementsNet.add(amt);
+    else movementsNet = movementsNet.sub(amt); // withdrawal and expense reduce cash
+  }
+
   const expectedAmount = new Decimal(register.openingAmount.toString())
-    .add(register.salesTotal.toString());
+    .add(register.salesTotal.toString())
+    .add(movementsNet);
 
   const updated = await prisma.cashRegister.update({
     where: { id: register.id },
@@ -88,12 +109,16 @@ export async function close(tenantId: string, data: CloseCashRegisterInput) {
     include: {
       user: { select: { id: true, name: true } },
       payments: { include: { order: { select: { id: true, orderNumber: true, source: true } } } },
+      movements: { include: { user: { select: { id: true, name: true } } } },
     },
   });
 
   // Include breakdown in close response
   const { breakdown, bySource, totalTransactions, totalSales } = buildBreakdown(updated.payments);
   const difference = Number(updated.closingAmount ?? 0) - Number(updated.expectedAmount ?? 0);
+
+  const io = getIO();
+  io.of('/staff').to(tenantRoom(tenantId)).emit('cash-register:updated', updated);
 
   return {
     ...updated,
@@ -129,6 +154,7 @@ export async function summary(tenantId: string, registerId: string) {
     include: {
       user: { select: { id: true, name: true } },
       payments: { include: { order: { select: { id: true, orderNumber: true, source: true } } } },
+      movements: { include: { user: { select: { id: true, name: true } } } },
     },
   });
 
@@ -147,4 +173,30 @@ export async function summary(tenantId: string, registerId: string) {
     totalTransactions,
     totalSales,
   };
+}
+
+export async function createMovement(tenantId: string, userId: string, data: CreateMovementInput) {
+  const register = await prisma.cashRegister.findFirst({
+    where: { tenantId, status: 'open' },
+  });
+
+  if (!register) {
+    throw new AppError(404, 'No hay caja abierta', 'NO_OPEN_REGISTER');
+  }
+
+  const movement = await prisma.cashMovement.create({
+    data: {
+      cashRegisterId: register.id,
+      userId,
+      type: data.type,
+      amount: data.amount,
+      description: data.description,
+    },
+    include: { user: { select: { id: true, name: true } } },
+  });
+
+  const io = getIO();
+  io.of('/staff').to(tenantRoom(tenantId)).emit('cash-register:updated', { type: 'movement', id: movement.id });
+
+  return movement;
 }

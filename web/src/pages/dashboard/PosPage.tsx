@@ -3,11 +3,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   DollarSign, CreditCard, Banknote, ArrowRightLeft, Lock, Unlock,
   Plus, Truck, Store, ShoppingBag, UtensilsCrossed, Clock, ChevronRight, X,
+  TrendingUp, TrendingDown, FileText, Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/config/api';
 import type {
-  CashRegister, PaymentsResponse, Order, OrdersResponse,
+  CashRegister, CashMovement, PaymentsResponse, Order, OrdersResponse,
   CashRegisterCloseResponse, CashRegisterHistoryResponse, CashRegisterSummary,
 } from '@/types';
 import Modal from '@/components/ui/Modal';
@@ -103,15 +104,21 @@ export default function PosPage() {
   const [showHistory, setShowHistory] = useState(false);
   const [showSummary, setShowSummary] = useState<CashRegisterSummary | null>(null);
   const [historyPage, setHistoryPage] = useState(1);
+  const [showMovement, setShowMovement] = useState(false);
+  const [movType, setMovType] = useState<'deposit' | 'withdrawal' | 'expense'>('deposit');
+  const [movAmt, setMovAmt] = useState('');
+  const [movDesc, setMovDesc] = useState('');
 
   const { data: register } = useQuery({
     queryKey: ['cash-register'],
     queryFn: () => apiFetch<CashRegister>('/cash-register/current', { auth: true }).catch(() => null),
+    refetchInterval: 30000,
   });
 
   const { data: paymentsData } = useQuery({
     queryKey: ['payments-today'],
     queryFn: () => { const d = new Date().toISOString().split('T')[0]; return apiFetch<PaymentsResponse>(`/payments?from=${d}T00:00:00.000Z&to=${d}T23:59:59.999Z`, { auth: true }).catch(() => ({ payments: [], total: 0, page: 1, limit: 50 })); },
+    refetchInterval: 30000,
   });
 
   const { data: delivered } = useQuery({
@@ -143,6 +150,12 @@ export default function PosPage() {
   const payMut = useMutation({
     mutationFn: (d: { orderId: string; method: string; amount: number; reference?: string }) => apiFetch('/payments', { method: 'POST', body: d, auth: true }),
     onSuccess: () => { inv(); setShowPay(false); setSelOrder(null); setPayRef(''); toast.success('Pago registrado'); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const movMut = useMutation({
+    mutationFn: (d: { type: string; amount: number; description?: string }) => apiFetch('/cash-register/movement', { method: 'POST', body: d, auth: true }),
+    onSuccess: () => { inv(); setShowMovement(false); setMovAmt(''); setMovDesc(''); toast.success('Movimiento registrado'); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -194,7 +207,7 @@ export default function PosPage() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="grid grid-cols-3 gap-3 mb-4">
             <div className="bg-tonalli-black-card border border-subtle rounded-2xl p-4">
               <p className="text-silver-muted text-[9px] font-medium tracking-[1.5px] mb-1.5">APERTURA</p>
               <p className="text-gold text-xl font-semibold">${Number(register!.openingAmount ?? 0).toFixed(2)}</p>
@@ -202,6 +215,17 @@ export default function PosPage() {
             <div className="bg-tonalli-black-card border border-subtle rounded-2xl p-4">
               <p className="text-silver-muted text-[9px] font-medium tracking-[1.5px] mb-1.5">COBRADO HOY</p>
               <p className="text-jade text-xl font-semibold">${total.toFixed(2)}</p>
+            </div>
+            <div className="bg-tonalli-black-card border border-subtle rounded-2xl p-4">
+              <p className="text-silver-muted text-[9px] font-medium tracking-[1.5px] mb-1.5">EN CAJA</p>
+              <p className="text-white text-xl font-semibold">${(() => {
+                const opening = Number(register!.openingAmount ?? 0);
+                const cashSales = liveBreakdown['cash']?.total ?? 0;
+                const movs = register?.movements ?? [];
+                const deposits = movs.filter(m => m.type === 'deposit').reduce((s, m) => s + Number(m.amount), 0);
+                const withdrawals = movs.filter(m => m.type !== 'deposit').reduce((s, m) => s + Number(m.amount), 0);
+                return (opening + cashSales + deposits - withdrawals).toFixed(2);
+              })()}</p>
             </div>
           </div>
 
@@ -234,6 +258,51 @@ export default function PosPage() {
               Cerrar Caja
             </button>
           </div>
+
+          <div className="flex gap-2 mb-4">
+            <button onClick={() => { setMovType('deposit'); setMovAmt(''); setMovDesc(''); setShowMovement(true); }} className="flex-1 flex items-center justify-center gap-1.5 bg-tonalli-black-card border border-subtle rounded-xl py-2.5 text-jade text-xs font-medium hover:border-jade/30 transition-colors">
+              <TrendingUp size={14} />
+              Fondeo
+            </button>
+            <button onClick={() => { setMovType('withdrawal'); setMovAmt(''); setMovDesc(''); setShowMovement(true); }} className="flex-1 flex items-center justify-center gap-1.5 bg-tonalli-black-card border border-subtle rounded-xl py-2.5 text-red-400 text-xs font-medium hover:border-red-500/30 transition-colors">
+              <TrendingDown size={14} />
+              Retiro
+            </button>
+            <button onClick={() => { setMovType('expense'); setMovAmt(''); setMovDesc(''); setShowMovement(true); }} className="flex-1 flex items-center justify-center gap-1.5 bg-tonalli-black-card border border-subtle rounded-xl py-2.5 text-orange-400 text-xs font-medium hover:border-orange-500/30 transition-colors">
+              <FileText size={14} />
+              Gasto
+            </button>
+          </div>
+
+          {/* Movements list */}
+          {(register?.movements?.length ?? 0) > 0 && (
+            <>
+              <p className="text-gold-muted text-[10px] font-medium tracking-[2px] mb-3">MOVIMIENTOS</p>
+              <div className="space-y-1.5 mb-6">
+                {register!.movements!.map((m: CashMovement) => {
+                  const isDeposit = m.type === 'deposit';
+                  const isExpense = m.type === 'expense';
+                  return (
+                    <div key={m.id} className="flex items-center gap-2 bg-tonalli-black-card rounded-lg px-3 py-2.5">
+                      {isDeposit ? <TrendingUp size={14} className="text-jade" /> : isExpense ? <FileText size={14} className="text-orange-400" /> : <TrendingDown size={14} className="text-red-400" />}
+                      <span className={`text-[13px] font-medium ${isDeposit ? 'text-jade' : isExpense ? 'text-orange-400' : 'text-red-400'}`}>
+                        {isDeposit ? 'Fondeo' : isExpense ? 'Gasto' : 'Retiro'}
+                      </span>
+                      <span className="flex-1 text-silver-dark text-[11px] truncate">{m.description || ''}</span>
+                      <span className={`text-sm font-semibold ${isDeposit ? 'text-jade' : 'text-red-400'}`}>
+                        {isDeposit ? '+' : '-'}${Number(m.amount).toFixed(2)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          <button onClick={() => setShowHistory(true)} className="flex items-center gap-1.5 text-silver-muted hover:text-silver text-xs transition-colors mb-4">
+            <Clock size={12} />
+            Ver Historial de Turnos
+          </button>
 
           {(delivered?.orders?.length ?? 0) > 0 && (
             <>
@@ -303,17 +372,39 @@ export default function PosPage() {
               {closeResult.difference >= 0 ? '+' : ''}${closeResult.difference.toFixed(2)}
             </p>
             <p className="text-silver-dark text-xs mt-1">{closeResult.totalTransactions} transacciones | Total: ${closeResult.totalSales.toFixed(2)}</p>
+            <div className="flex justify-center gap-6 mt-2 text-xs text-silver-dark">
+              <span>Esperado: <span className="text-silver">${Number(closeResult.expectedAmount ?? 0).toFixed(2)}</span></span>
+              <span>Contado: <span className="text-silver">${Number(closeResult.closingAmount ?? 0).toFixed(2)}</span></span>
+            </div>
           </div>
           <BreakdownSection title="DESGLOSE POR METODO" data={closeResult.breakdown} />
           {Object.keys(closeResult.bySource).length > 0 && (
             <BreakdownSection title="DESGLOSE POR FUENTE" data={closeResult.bySource} />
+          )}
+          {(closeResult.movements?.length ?? 0) > 0 && (
+            <div className="mb-4">
+              <p className="text-gold-muted text-[10px] font-medium tracking-[2px] mb-2">MOVIMIENTOS DE CAJA</p>
+              <div className="space-y-1.5">
+                {closeResult.movements!.map((m: { id: string; type: string; amount: number | string; description?: string | null }) => (
+                  <div key={m.id} className="flex items-center justify-between bg-tonalli-black-card rounded-lg px-3 py-2">
+                    <span className={`text-sm ${m.type === 'deposit' ? 'text-jade' : m.type === 'expense' ? 'text-orange-400' : 'text-red-400'}`}>
+                      {m.type === 'deposit' ? 'Fondeo' : m.type === 'expense' ? 'Gasto' : 'Retiro'}
+                    </span>
+                    <span className="text-silver-dark text-xs flex-1 text-center truncate px-2">{m.description || ''}</span>
+                    <span className={`text-sm font-semibold ${m.type === 'deposit' ? 'text-jade' : 'text-red-400'}`}>
+                      {m.type === 'deposit' ? '+' : '-'}${Number(m.amount).toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
           <GoldButton onClick={() => setCloseResult(null)}>Cerrar</GoldButton>
         </Modal>
       )}
 
       {/* History View */}
-      {showHistory && !isOpen && (
+      {showHistory && (
         <Modal title="Historial de Turnos" onClose={() => setShowHistory(false)}>
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {(historyData?.registers ?? []).map((reg) => (
@@ -370,6 +461,24 @@ export default function PosPage() {
           {Object.keys(showSummary.bySource).length > 0 && (
             <BreakdownSection title="DESGLOSE POR FUENTE" data={showSummary.bySource} />
           )}
+          {(showSummary.register.movements?.length ?? 0) > 0 && (
+            <div className="mb-4">
+              <p className="text-gold-muted text-[10px] font-medium tracking-[2px] mb-2">MOVIMIENTOS DE CAJA</p>
+              <div className="space-y-1.5">
+                {showSummary.register.movements!.map((m: { id: string; type: string; amount: number | string; description?: string | null }) => (
+                  <div key={m.id} className="flex items-center justify-between bg-tonalli-black-card rounded-lg px-3 py-2">
+                    <span className={`text-sm ${m.type === 'deposit' ? 'text-jade' : m.type === 'expense' ? 'text-orange-400' : 'text-red-400'}`}>
+                      {m.type === 'deposit' ? 'Fondeo' : m.type === 'expense' ? 'Gasto' : 'Retiro'}
+                    </span>
+                    <span className="text-silver-dark text-xs flex-1 text-center truncate px-2">{m.description || ''}</span>
+                    <span className={`text-sm font-semibold ${m.type === 'deposit' ? 'text-jade' : 'text-red-400'}`}>
+                      {m.type === 'deposit' ? '+' : '-'}${Number(m.amount).toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <GoldButton onClick={() => setShowSummary(null)}>Cerrar</GoldButton>
         </Modal>
       )}
@@ -400,6 +509,20 @@ export default function PosPage() {
           </div>
           {payMethod !== 'cash' && <InputField label="REFERENCIA" value={payRef} onChange={setPayRef} placeholder="No. de voucher o referencia" />}
           <GoldButton loading={payMut.isPending} onClick={() => payMut.mutate({ orderId: selOrder.id, method: payMethod, amount: selOrder.total, ...(payRef.trim() ? { reference: payRef.trim() } : {}) })}>Cobrar</GoldButton>
+        </Modal>
+      )}
+
+      {/* Movement Modal */}
+      {showMovement && (
+        <Modal title={movType === 'deposit' ? 'Fondeo' : movType === 'withdrawal' ? 'Retiro' : 'Gasto'} onClose={() => setShowMovement(false)}>
+          <InputField label="MONTO" value={movAmt} onChange={setMovAmt} type="number" placeholder="0.00" />
+          <InputField label="DESCRIPCION (OPCIONAL)" value={movDesc} onChange={setMovDesc} placeholder={movType === 'deposit' ? 'Ej: Cambio para caja' : movType === 'withdrawal' ? 'Ej: Envío a banco' : 'Ej: Compra de servilletas'} />
+          <GoldButton
+            loading={movMut.isPending}
+            onClick={() => { const a = parseFloat(movAmt); if (!a || a <= 0) { toast.error('Ingresa un monto válido'); return; } movMut.mutate({ type: movType, amount: a, ...(movDesc.trim() ? { description: movDesc.trim() } : {}) }); }}
+          >
+            Registrar {movType === 'deposit' ? 'Fondeo' : movType === 'withdrawal' ? 'Retiro' : 'Gasto'}
+          </GoldButton>
         </Modal>
       )}
     </div>

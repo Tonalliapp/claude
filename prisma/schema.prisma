@@ -72,6 +72,12 @@ enum PaymentMethod {
   transfer
 }
 
+enum CashMovementType {
+  deposit
+  withdrawal
+  expense
+}
+
 enum OrderType {
   dine_in
   takeout
@@ -139,6 +145,7 @@ model User {
   inventoryMovements  InventoryMovement[]
   ingredientMovements IngredientMovement[]
   cashRegisters       CashRegister[]
+  cashMovements       CashMovement[]
   auditLogs           AuditLog[]
 
   @@unique([tenantId, username])
@@ -309,7 +316,8 @@ model CashRegister {
 
   tenant   Tenant    @relation(fields: [tenantId], references: [id])
   user     User      @relation(fields: [userId], references: [id])
-  payments Payment[]
+  payments  Payment[]
+  movements CashMovement[]
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -329,6 +337,22 @@ model Payment {
   cashRegister CashRegister? @relation(fields: [cashRegisterId], references: [id])
 
   @@map("payments")
+}
+
+model CashMovement {
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cashRegisterId String           @map("cash_register_id") @db.Uuid
+  userId         String           @map("user_id") @db.Uuid
+  type           CashMovementType
+  amount         Decimal          @db.Decimal(10, 2)
+  description    String?          @db.VarChar(255)
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz
+
+  cashRegister CashRegister @relation(fields: [cashRegisterId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@index([cashRegisterId])
+  @@map("cash_movements")
 }
 
 model AuditLog {

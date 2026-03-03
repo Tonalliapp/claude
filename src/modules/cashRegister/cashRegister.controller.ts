@@ -45,3 +45,12 @@ export async function summary(req: Request, res: Response, next: NextFunction) {
     next(error);
   }
 }
+
+export async function createMovement(req: Request, res: Response, next: NextFunction) {
+  try {
+    const movement = await cashRegisterService.createMovement(req.tenantId!, req.user!.userId, req.body);
+    res.status(201).json(movement);
+  } catch (error) {
+    next(error);
+  }
+}

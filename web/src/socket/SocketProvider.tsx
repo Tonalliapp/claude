@@ -83,6 +83,7 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['kitchen-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['delivered-orders'] });
       queryClient.invalidateQueries({ queryKey: ['tables'] });
     });
 
@@ -127,6 +128,21 @@ export function SocketProvider({ children }: { children: ReactNode }) {
         message: `${data.productName}: ${data.currentStock} unidades (min: ${data.minStock})`,
         timestamp: new Date().toISOString(),
       });
+    });
+
+    socket.on('payment:created', () => {
+      queryClient.invalidateQueries({ queryKey: ['cash-register'] });
+      queryClient.invalidateQueries({ queryKey: ['payments-today'] });
+      queryClient.invalidateQueries({ queryKey: ['delivered-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['kitchen-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['tables'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    });
+
+    socket.on('cash-register:updated', () => {
+      queryClient.invalidateQueries({ queryKey: ['cash-register'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-register-history'] });
     });
 
     socket.on('ingredient:alert', (data: { ingredientName: string; currentStock: number; minStock: number }) => {

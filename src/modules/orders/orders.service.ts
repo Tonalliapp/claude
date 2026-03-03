@@ -163,12 +163,11 @@ export async function createPosOrder(tenantId: string, data: CreatePosOrderInput
         userId,
         orderNumber,
         orderType: data.orderType,
-        status: data.payImmediately ? 'paid' : 'pending',
+        status: 'confirmed',
         subtotal: total,
         total,
         notes: data.notes,
         customerName: data.customerName,
-        paidAt: data.payImmediately ? new Date() : undefined,
         items: { create: items },
       } as any,
       include: orderInclude,
@@ -210,6 +209,7 @@ export async function createPosOrder(tenantId: string, data: CreatePosOrderInput
   // Emit WebSocket events
   const io = getIO();
   io.of('/staff').to(tenantRoom(tenantId)).emit('order:new', result);
+  io.of('/staff').to(kitchenRoom(tenantId)).emit('order:new', result);
 
   return result;
 }
@@ -241,14 +241,26 @@ export async function updateStatus(tenantId: string, id: string, status: OrderSt
   if (status === 'delivered') timestamps.completedAt = new Date();
   if (status === 'paid') timestamps.paidAt = new Date();
 
-  const updated = await prisma.order.update({
+  let updated = await prisma.order.update({
     where: { id },
     data: { status, ...timestamps },
     include: orderInclude,
   });
 
+  // Auto-paid: if delivered and payment already exists (POS pre-paid orders)
+  if (status === 'delivered') {
+    const payments = await prisma.payment.count({ where: { orderId: id } });
+    if (payments > 0) {
+      updated = await prisma.order.update({
+        where: { id },
+        data: { status: 'paid', paidAt: new Date() },
+        include: orderInclude,
+      });
+    }
+  }
+
   // If paid or cancelled, free the table (if no other active orders)
-  if ((status === 'paid' || status === 'cancelled') && order.tableId) {
+  if ((updated.status === 'paid' || updated.status === 'cancelled') && order.tableId) {
     const activeOrders = await prisma.order.count({
       where: {
         tenantId,
@@ -287,6 +299,23 @@ export async function cancelOrder(tenantId: string, id: string, reason: string) 
     data: { status: 'cancelled', cancelReason: reason },
     include: orderInclude,
   });
+
+  // Free table if no other active orders
+  if (order.tableId) {
+    const activeOrders = await prisma.order.count({
+      where: {
+        tenantId,
+        tableId: order.tableId,
+        status: { notIn: ['paid', 'cancelled'] },
+      },
+    });
+    if (activeOrders === 0) {
+      await prisma.table.update({
+        where: { id: order.tableId },
+        data: { status: 'free' },
+      });
+    }
+  }
 
   const io = getIO();
   io.of('/staff').to(tenantRoom(tenantId)).emit('order:updated', updated);

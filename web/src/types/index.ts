@@ -173,6 +173,7 @@ export interface CashRegister {
   openedAt: string;
   closedAt?: string | null;
   user: { id: string; name: string };
+  movements?: CashMovement[];
 }
 
 export interface Payment {
@@ -247,8 +248,20 @@ export interface CashRegisterHistoryResponse {
   limit: number;
 }
 
+export interface CashMovement {
+  id: string;
+  cashRegisterId: string;
+  userId: string;
+  type: 'deposit' | 'withdrawal' | 'expense';
+  amount: number;
+  description?: string | null;
+  createdAt: string;
+  user: { id: string; name: string };
+}
+
 export interface CashRegisterCloseResponse extends CashRegister {
   payments: Payment[];
+  movements?: CashMovement[];
   breakdown: Record<'cash' | 'card' | 'transfer', { count: number; total: number }>;
   bySource: Record<string, { count: number; total: number }>;
   difference: number;

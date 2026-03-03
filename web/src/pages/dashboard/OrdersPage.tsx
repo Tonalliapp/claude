@@ -1,10 +1,11 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Clock, ChevronRight, Loader2, Eye } from 'lucide-react';
+import { Clock, ChevronRight, Loader2, Eye, Banknote, CreditCard, ArrowRightLeft, DollarSign } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/config/api';
 import type { Order, OrderStatus, OrdersResponse } from '@/types';
 import Modal from '@/components/ui/Modal';
+import GoldButton from '@/components/ui/GoldButton';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 const TABS = [
@@ -50,11 +51,20 @@ const STATUS_BADGES: Record<string, { bg: string; text: string; label: string }>
   cancelled: { bg: 'bg-red-500/10', text: 'text-red-400', label: 'Cancelado' },
 };
 
+const PAY_METHODS = [
+  { key: 'cash' as const, icon: Banknote, label: 'Efectivo', color: 'text-jade' },
+  { key: 'card' as const, icon: CreditCard, label: 'Tarjeta', color: 'text-gold' },
+  { key: 'transfer' as const, icon: ArrowRightLeft, label: 'Transferencia', color: 'text-silver' },
+];
+
 export default function OrdersPage() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('pending');
   const [detailOrder, setDetailOrder] = useState<Order | null>(null);
   const [cancelId, setCancelId] = useState<string | null>(null);
+  const [payOrder, setPayOrder] = useState<Order | null>(null);
+  const [payMethod, setPayMethod] = useState<'cash' | 'card' | 'transfer'>('cash');
+  const [payRef, setPayRef] = useState('');
 
   const statusParam = TABS.find(t => t.key === activeTab)?.status;
   const queryStr = statusParam ? `?status=${statusParam}&limit=50` : '?limit=50';
@@ -76,6 +86,22 @@ export default function OrdersPage() {
     mutationFn: (orderId: string) =>
       apiFetch(`/orders/${orderId}/cancel`, { method: 'POST', body: { reason: 'Cancelado por staff' }, auth: true }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['orders'] }); setCancelId(null); toast.success('Pedido cancelado'); },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const payMut = useMutation({
+    mutationFn: (d: { orderId: string; method: string; amount: number; reference?: string }) =>
+      apiFetch('/payments', { method: 'POST', body: d, auth: true }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['cash-register'] });
+      queryClient.invalidateQueries({ queryKey: ['payments-today'] });
+      queryClient.invalidateQueries({ queryKey: ['delivered-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      setPayOrder(null);
+      setPayRef('');
+      toast.success('Pago registrado');
+    },
     onError: (err: Error) => toast.error(err.message),
   });
 
@@ -184,11 +210,24 @@ export default function OrdersPage() {
                     )}
                     {nextLabel && (
                       <button
-                        onClick={() => updateStatus.mutate({ orderId: order.id, status: NEXT_STATUS[order.status]! })}
-                        className="flex items-center gap-1 px-3.5 py-1.5 rounded-lg bg-gold text-tonalli-black text-xs font-semibold hover:bg-gold-light transition-colors"
+                        onClick={() => {
+                          if (order.status === 'delivered') {
+                            setPayOrder(order);
+                            setPayMethod('cash');
+                            setPayRef('');
+                          } else {
+                            updateStatus.mutate({ orderId: order.id, status: NEXT_STATUS[order.status]! });
+                          }
+                        }}
+                        className={`flex items-center gap-1 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                          order.status === 'delivered'
+                            ? 'bg-jade text-white hover:bg-jade-light'
+                            : 'bg-gold text-tonalli-black hover:bg-gold-light'
+                        }`}
                       >
+                        {order.status === 'delivered' && <DollarSign size={14} />}
                         {nextLabel}
-                        <ChevronRight size={14} />
+                        {order.status !== 'delivered' && <ChevronRight size={14} />}
                       </button>
                     )}
                   </div>
@@ -250,6 +289,56 @@ export default function OrdersPage() {
         onCancel={() => setCancelId(null)}
         loading={cancelOrder.isPending}
       />
+
+      {/* Payment Modal */}
+      {payOrder && (
+        <Modal title={`Cobrar #${String(payOrder.orderNumber).padStart(3, '0')}`} onClose={() => setPayOrder(null)}>
+          <div className="text-center mb-2">
+            <p className="text-silver-muted text-[10px] tracking-[2px]">TOTAL A COBRAR</p>
+            <p className="text-gold text-4xl font-semibold">${Number(payOrder.total).toFixed(2)}</p>
+            <p className="text-silver-dark text-xs mt-1">
+              {payOrder.table ? `Mesa ${payOrder.table.number}` : payOrder.orderType === 'takeout' ? 'Para Llevar' : payOrder.orderType === 'delivery' ? 'Domicilio' : 'Mostrador'}
+            </p>
+          </div>
+          <p className="text-gold-muted text-[10px] font-medium tracking-[2px]">METODO DE PAGO</p>
+          <div className="flex gap-2">
+            {PAY_METHODS.map(m => (
+              <button
+                key={m.key}
+                onClick={() => setPayMethod(m.key)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-3 rounded-lg border text-xs font-medium transition-colors ${
+                  payMethod === m.key
+                    ? 'border-gold bg-status-pending text-gold'
+                    : 'border-light-border bg-tonalli-black-card text-silver-dark'
+                }`}
+              >
+                <m.icon size={16} />
+                {m.label}
+              </button>
+            ))}
+          </div>
+          {payMethod !== 'cash' && (
+            <input
+              type="text"
+              value={payRef}
+              onChange={(e) => setPayRef(e.target.value)}
+              placeholder="Referencia (opcional)"
+              className="w-full px-3 py-2.5 bg-tonalli-black-card border border-subtle rounded-xl text-white text-sm placeholder:text-silver-dark focus:outline-none focus:border-gold-border"
+            />
+          )}
+          <GoldButton
+            loading={payMut.isPending}
+            onClick={() => payMut.mutate({
+              orderId: payOrder.id,
+              method: payMethod,
+              amount: payOrder.total,
+              ...(payRef.trim() ? { reference: payRef.trim() } : {}),
+            })}
+          >
+            Cobrar ${Number(payOrder.total).toFixed(2)}
+          </GoldButton>
+        </Modal>
+      )}
     </div>
   );
 }

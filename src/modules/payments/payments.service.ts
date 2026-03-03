@@ -1,6 +1,8 @@
 import { Decimal } from '@prisma/client/runtime/library';
 import { prisma } from '../../config/database';
 import { AppError } from '../../middleware/errorHandler';
+import { getIO } from '../../websocket/socket';
+import { tenantRoom } from '../../websocket/rooms';
 import type { CreatePaymentInput, ListPaymentsQuery } from './payments.schema';
 
 export async function create(tenantId: string, data: CreatePaymentInput) {
@@ -28,7 +30,7 @@ export async function create(tenantId: string, data: CreatePaymentInput) {
       amount: data.amount,
       reference: data.reference,
     },
-    include: { order: { select: { id: true, orderNumber: true } } },
+    include: { order: { select: { id: true, orderNumber: true, tableId: true } } },
   });
 
   // Update order to paid
@@ -48,6 +50,11 @@ export async function create(tenantId: string, data: CreatePaymentInput) {
     });
   }
 
+  // Emit WebSocket
+  const io = getIO();
+  io.of('/staff').to(tenantRoom(tenantId)).emit('payment:created', payment);
+  io.of('/staff').to(tenantRoom(tenantId)).emit('order:updated', { id: data.orderId, status: 'paid' });
+
   // Free table if no other active orders (only if order has a table)
   if (order.tableId) {
     const activeOrders = await prisma.order.count({
@@ -58,10 +65,11 @@ export async function create(tenantId: string, data: CreatePaymentInput) {
       },
     });
     if (activeOrders === 0) {
-      await prisma.table.update({
+      const freedTable = await prisma.table.update({
         where: { id: order.tableId },
         data: { status: 'free' },
       });
+      io.of('/staff').to(tenantRoom(tenantId)).emit('table:updated', freedTable);
     }
   }
 
