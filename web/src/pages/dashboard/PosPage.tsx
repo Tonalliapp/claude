@@ -111,7 +111,7 @@ export default function PosPage() {
 
   const { data: paymentsData } = useQuery({
     queryKey: ['payments-today'],
-    queryFn: () => { const d = new Date().toISOString().split('T')[0]; return apiFetch<PaymentsResponse>(`/payments?from=${d}&to=${d}`, { auth: true }).catch(() => ({ payments: [], total: 0, page: 1, limit: 50 })); },
+    queryFn: () => { const d = new Date().toISOString().split('T')[0]; return apiFetch<PaymentsResponse>(`/payments?from=${d}T00:00:00.000Z&to=${d}T23:59:59.999Z`, { auth: true }).catch(() => ({ payments: [], total: 0, page: 1, limit: 50 })); },
   });
 
   const { data: delivered } = useQuery({
@@ -148,13 +148,13 @@ export default function PosPage() {
 
   const isOpen = register && register.status === 'open';
   const payList = paymentsData?.payments ?? [];
-  const total = payList.reduce((s, p) => s + (p.amount ?? 0), 0);
+  const total = payList.reduce((s, p) => s + Number(p.amount ?? 0), 0);
 
   // Live breakdown from today's payments
   const liveBreakdown = payList.reduce((acc, p) => {
     if (!acc[p.method]) acc[p.method] = { count: 0, total: 0 };
     acc[p.method].count += 1;
-    acc[p.method].total += p.amount ?? 0;
+    acc[p.method].total += Number(p.amount ?? 0);
     return acc;
   }, {} as Record<string, { count: number; total: number }>);
 
@@ -197,7 +197,7 @@ export default function PosPage() {
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div className="bg-tonalli-black-card border border-subtle rounded-2xl p-4">
               <p className="text-silver-muted text-[9px] font-medium tracking-[1.5px] mb-1.5">APERTURA</p>
-              <p className="text-gold text-xl font-semibold">${(register!.openingAmount ?? 0).toFixed(2)}</p>
+              <p className="text-gold text-xl font-semibold">${Number(register!.openingAmount ?? 0).toFixed(2)}</p>
             </div>
             <div className="bg-tonalli-black-card border border-subtle rounded-2xl p-4">
               <p className="text-silver-muted text-[9px] font-medium tracking-[1.5px] mb-1.5">COBRADO HOY</p>
@@ -247,7 +247,7 @@ export default function PosPage() {
                       {o.customerName && <span className="text-silver-dark text-xs">{o.customerName}</span>}
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-gold text-base font-semibold">${o.total.toFixed(2)}</span>
+                      <span className="text-gold text-base font-semibold">${Number(o.total).toFixed(2)}</span>
                       <DollarSign size={16} className="text-gold" />
                     </div>
                   </button>
@@ -267,7 +267,7 @@ export default function PosPage() {
                       {M && <M.icon size={16} className={M.color} />}
                       <span className="text-silver text-[13px] font-medium">{M?.label ?? p.method}</span>
                       <span className="flex-1 text-right text-silver-dark text-[11px]">{p.reference ? `Ref: ${p.reference}` : ''}</span>
-                      <span className="text-gold text-sm font-semibold ml-2">${p.amount.toFixed(2)}</span>
+                      <span className="text-gold text-sm font-semibold ml-2">${Number(p.amount).toFixed(2)}</span>
                     </div>
                   );
                 })}
@@ -384,7 +384,7 @@ export default function PosPage() {
         <Modal title={`Cobrar #${String(selOrder.orderNumber).padStart(3, '0')}`} onClose={() => setShowPay(false)}>
           <div className="text-center mb-2">
             <p className="text-silver-muted text-[10px] tracking-[2px]">TOTAL A COBRAR</p>
-            <p className="text-gold text-4xl font-semibold">${selOrder.total.toFixed(2)}</p>
+            <p className="text-gold text-4xl font-semibold">${Number(selOrder.total).toFixed(2)}</p>
             <div className="mt-1"><SourceBadge order={selOrder} /></div>
             {selOrder.customerName && <p className="text-silver-dark text-xs mt-1">{selOrder.customerName}</p>}
             {selOrder.deliveryAddress && <p className="text-silver-dark text-xs">{selOrder.deliveryAddress}</p>}
