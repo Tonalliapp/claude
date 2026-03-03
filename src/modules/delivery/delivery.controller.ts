@@ -3,8 +3,10 @@ import * as deliveryService from './delivery.service';
 
 export async function createOrder(req: Request, res: Response, next: NextFunction) {
   try {
-    const result = await deliveryService.createDeliveryOrder(req.tenantId!, req.body);
-    res.status(201).json(result);
+    const result = await deliveryService.createDeliveryOrder(req.tenantId!, req.body) as any;
+    const status = result._isExisting ? 200 : 201;
+    const { _isExisting, ...response } = result;
+    res.status(status).json(response);
   } catch (error) {
     next(error);
   }

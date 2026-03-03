@@ -47,7 +47,7 @@ export async function createDeliveryOrder(tenantId: string, data: CreateDelivery
   });
 
   if (existing) {
-    return formatOrderResponse(existing);
+    return { ...formatOrderResponse(existing), _isExisting: true };
   }
 
   // Fetch products and validate
@@ -147,8 +147,9 @@ export async function processWebhook(tenantId: string, data: DeliveryWebhookInpu
   if (data.data.estimatedMinutes !== undefined) updatedMeta.estimatedMinutes = data.data.estimatedMinutes;
   if (data.data.reason) updatedMeta.cancelReason = data.data.reason;
 
-  // Track event timestamps
-  updatedMeta[`${data.event}At`] = new Date().toISOString();
+  // Track event timestamps (convert snake_case event to camelCase)
+  const eventCamel = data.event.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+  updatedMeta[`${eventCamel}At`] = new Date().toISOString();
 
   // Determine status transition based on event
   let newStatus = order.status;
