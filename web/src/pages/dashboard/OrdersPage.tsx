@@ -191,7 +191,7 @@ export default function OrdersPage() {
 
                 {/* Footer */}
                 <div className="flex justify-between items-center border-t border-light-border pt-3">
-                  <span className="text-gold text-base font-semibold">${order.total.toFixed(2)}</span>
+                  <span className="text-gold text-base font-semibold">${Number(order.total).toFixed(2)}</span>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setDetailOrder(order)}
@@ -261,7 +261,7 @@ export default function OrdersPage() {
                   <p className="text-white text-sm font-medium truncate">{item.product.name}</p>
                   {item.notes && <p className="text-silver-dark text-xs italic">{item.notes}</p>}
                 </div>
-                <span className="text-silver text-sm">${(item.unitPrice * item.quantity).toFixed(2)}</span>
+                <span className="text-silver text-sm">${(Number(item.unitPrice) * item.quantity).toFixed(2)}</span>
               </div>
             ))}
           </div>
@@ -274,7 +274,7 @@ export default function OrdersPage() {
 
           <div className="flex justify-between items-center border-t border-light-border pt-3">
             <span className="text-silver-muted text-sm">Total</span>
-            <span className="text-gold text-xl font-semibold">${detailOrder.total.toFixed(2)}</span>
+            <span className="text-gold text-xl font-semibold">${Number(detailOrder.total).toFixed(2)}</span>
           </div>
         </Modal>
       )}
