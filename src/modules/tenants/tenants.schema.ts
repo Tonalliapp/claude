@@ -6,3 +6,7 @@ export const updateTenantSchema = z.object({
 });
 
 export type UpdateTenantInput = z.infer<typeof updateTenantSchema>;
+
+export const toggleYessweraSchema = z.object({
+  enabled: z.boolean(),
+});

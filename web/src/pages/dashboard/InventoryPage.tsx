@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, Plus, Minus, Package, Loader2 } from 'lucide-react';
+import { AlertTriangle, Plus, Minus, Package, Loader2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/config/api';
 import type { InventoryItem, Ingredient, IngredientUnit } from '@/types';
@@ -21,6 +21,8 @@ const UNIT_LABELS: { value: IngredientUnit; label: string }[] = [
 export default function InventoryPage() {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<Tab>('products');
+
+  const [search, setSearch] = useState('');
 
   // ─── Products tab state ───
   const [showMove, setShowMove] = useState(false);
@@ -132,6 +134,18 @@ export default function InventoryPage() {
   const prodList = Array.isArray(inventory) ? inventory : [];
   const ingList = Array.isArray(ingredients) ? ingredients : [];
 
+  const filteredProds = useMemo(() => {
+    if (!search.trim()) return prodList;
+    const q = search.toLowerCase();
+    return prodList.filter(i => i.product.name.toLowerCase().includes(q));
+  }, [prodList, search]);
+
+  const filteredIngs = useMemo(() => {
+    if (!search.trim()) return ingList;
+    const q = search.toLowerCase();
+    return ingList.filter(i => i.name.toLowerCase().includes(q));
+  }, [ingList, search]);
+
   const openAddIng = () => {
     setIngName(''); setIngUnit(''); setIngCost(''); setIngMinStock(''); setIngCurrentStock('');
     setShowAddIng(true);
@@ -175,7 +189,7 @@ export default function InventoryPage() {
         {([['products', 'Productos'], ['ingredients', 'Ingredientes']] as const).map(([k, l]) => (
           <button
             key={k}
-            onClick={() => setTab(k)}
+            onClick={() => { setTab(k); setSearch(''); }}
             className={`flex-1 py-2.5 rounded-lg text-[13px] font-medium transition-colors ${tab === k ? 'bg-gold text-tonalli-black' : 'bg-tonalli-black-card text-silver-dark'}`}
           >
             {l}
@@ -183,12 +197,24 @@ export default function InventoryPage() {
         ))}
       </div>
 
+      {/* Search */}
+      <div className="relative mb-4">
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-silver-dark" />
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder={tab === 'products' ? 'Buscar producto...' : 'Buscar ingrediente...'}
+          className="w-full bg-tonalli-black-card border border-subtle rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-silver-dark focus:outline-none focus:border-gold-border transition-colors"
+        />
+      </div>
+
       {/* ─── Products Tab ─── */}
       {tab === 'products' && (
         <>
           {isLoading ? (
             <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 text-gold animate-spin" /></div>
-          ) : prodList.length === 0 ? (
+          ) : filteredProds.length === 0 ? (
             <div className="text-center py-20">
               <Package size={40} className="text-silver-dark mx-auto mb-3" />
               <p className="text-white font-medium">Sin inventario configurado</p>
@@ -196,7 +222,7 @@ export default function InventoryPage() {
             </div>
           ) : (
             <div className="space-y-2.5">
-              {prodList.map(item => {
+              {filteredProds.map(item => {
                 const level = getLevel(item.currentStock, item.minStock);
                 const pct = item.minStock > 0 ? Math.min((item.currentStock / (item.minStock * 3)) * 100, 100) : 50;
                 return (
@@ -235,7 +261,7 @@ export default function InventoryPage() {
         <>
           {ingLoading ? (
             <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 text-gold animate-spin" /></div>
-          ) : ingList.length === 0 ? (
+          ) : filteredIngs.length === 0 ? (
             <div className="text-center py-20">
               <Package size={40} className="text-silver-dark mx-auto mb-3" />
               <p className="text-white font-medium">Sin ingredientes</p>
@@ -243,7 +269,7 @@ export default function InventoryPage() {
             </div>
           ) : (
             <div className="space-y-2.5">
-              {ingList.map(ing => {
+              {filteredIngs.map(ing => {
                 const level = getLevel(Number(ing.currentStock), Number(ing.minStock));
                 const min = Number(ing.minStock);
                 const current = Number(ing.currentStock);

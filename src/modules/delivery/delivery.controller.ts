@@ -29,3 +29,12 @@ export async function webhook(req: Request, res: Response, next: NextFunction) {
     next(error);
   }
 }
+
+export async function confirmPickup(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await deliveryService.confirmPickup(req.tenantId!, req.params.id as string, req.body.driverCode);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}

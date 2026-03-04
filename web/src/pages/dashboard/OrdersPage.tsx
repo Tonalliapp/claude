@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Clock, ChevronRight, Loader2, Eye, Banknote, CreditCard, ArrowRightLeft, DollarSign } from 'lucide-react';
+import { Clock, ChevronRight, Loader2, Eye, Banknote, CreditCard, ArrowRightLeft, DollarSign, Bike, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/config/api';
 import type { Order, OrderStatus, OrdersResponse } from '@/types';
@@ -189,6 +189,15 @@ export default function OrdersPage() {
                   )}
                 </div>
 
+                {/* Delivery driver info */}
+                {order.orderType === 'delivery' && order.deliveryMeta?.driverName && (
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Bike size={12} className="text-orange-300" />
+                    <span className="text-orange-200 text-xs truncate">{order.deliveryMeta.driverName}</span>
+                    {order.deliveryMeta.pickupConfirmed && <ShieldCheck size={12} className="text-jade" />}
+                  </div>
+                )}
+
                 {/* Footer */}
                 <div className="flex justify-between items-center border-t border-light-border pt-3">
                   <span className="text-gold text-base font-semibold">${Number(order.total).toFixed(2)}</span>
@@ -269,6 +278,42 @@ export default function OrdersPage() {
           {detailOrder.notes && (
             <div className="bg-tonalli-black-soft rounded-lg px-3 py-2">
               <p className="text-silver-muted text-xs">📝 {detailOrder.notes}</p>
+            </div>
+          )}
+
+          {/* Delivery info */}
+          {detailOrder.orderType === 'delivery' && detailOrder.deliveryMeta && (
+            <div className="space-y-2">
+              <p className="text-gold-muted text-[10px] font-medium tracking-[2px]">DELIVERY</p>
+              <div className="bg-orange-500/10 border border-orange-400/20 rounded-lg px-3 py-2 space-y-1">
+                {detailOrder.deliveryMeta.driverName && (
+                  <div className="flex items-center gap-2">
+                    <Bike size={12} className="text-orange-300" />
+                    <span className="text-orange-200 text-xs font-medium">
+                      {detailOrder.deliveryMeta.driverName}
+                      {detailOrder.deliveryMeta.driverVehicle && ` (${detailOrder.deliveryMeta.driverVehicle})`}
+                    </span>
+                  </div>
+                )}
+                {detailOrder.deliveryMeta.driverPhone && (
+                  <p className="text-orange-200/70 text-xs ml-5">{detailOrder.deliveryMeta.driverPhone}</p>
+                )}
+                {detailOrder.deliveryAddress && (
+                  <p className="text-silver-muted text-xs mt-1">{detailOrder.deliveryAddress}</p>
+                )}
+                {detailOrder.deliveryMeta.pickupConfirmed && (
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <ShieldCheck size={12} className="text-jade" />
+                    <span className="text-jade-light text-xs">Pickup verificado</span>
+                  </div>
+                )}
+                {detailOrder.deliveryMeta.deliveryCodeUsed && (
+                  <div className="flex items-center gap-1.5">
+                    <ShieldCheck size={12} className="text-jade" />
+                    <span className="text-jade-light text-xs">Entrega verificada por cliente</span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

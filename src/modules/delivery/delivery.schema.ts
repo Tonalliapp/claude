@@ -35,11 +35,19 @@ export const deliveryWebhookSchema = z.object({
     estimatedMinutes: z.number().optional(),
     deliveredAt: z.string().optional(),
     reason: z.string().optional(),
+    driverCode: z.string().optional(),
+    pickupCode: z.string().optional(),
+    deliveryCodeUsed: z.boolean().optional(),
+    deliveryVerifiedAt: z.string().optional(),
   }).default({}),
 });
 
 export const getOrderParamSchema = z.object({
   id: z.string().uuid(),
+});
+
+export const confirmPickupSchema = z.object({
+  driverCode: z.string().min(1).max(10),
 });
 
 export type CreateDeliveryOrderInput = z.infer<typeof createDeliveryOrderSchema>;

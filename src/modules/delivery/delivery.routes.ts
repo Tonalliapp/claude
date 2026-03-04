@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { deliveryAuth, deliveryAuthGet } from '../../middleware/deliveryAuth';
+import { authenticate } from '../../middleware/authenticate';
 import { validate } from '../../middleware/validator';
-import { createDeliveryOrderSchema, deliveryWebhookSchema, getOrderParamSchema } from './delivery.schema';
+import { createDeliveryOrderSchema, deliveryWebhookSchema, getOrderParamSchema, confirmPickupSchema } from './delivery.schema';
 import * as ctrl from './delivery.controller';
 
 const router = Router();
@@ -12,5 +13,8 @@ router.post('/webhook', deliveryAuth(), validate({ body: deliveryWebhookSchema }
 
 // GET endpoints — HMAC auth from query params (slug in query)
 router.get('/orders/:id', deliveryAuthGet(), validate({ params: getOrderParamSchema }), ctrl.getOrderStatus);
+
+// Staff endpoints — JWT auth (restaurant staff confirms pickup)
+router.post('/orders/:id/confirm-pickup', authenticate, validate({ params: getOrderParamSchema, body: confirmPickupSchema }), ctrl.confirmPickup);
 
 export default router;

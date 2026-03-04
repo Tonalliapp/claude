@@ -31,3 +31,21 @@ export async function uploadLogo(req: Request, res: Response, next: NextFunction
     next(error);
   }
 }
+
+export async function getYessweraStatus(req: Request, res: Response, next: NextFunction) {
+  try {
+    const status = await tenantsService.getYessweraStatus(req.tenantId!);
+    res.json(status);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function toggleYesswera(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await tenantsService.toggleYesswera(req.tenantId!, req.body.enabled);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}

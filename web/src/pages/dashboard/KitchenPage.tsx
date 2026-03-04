@@ -13,6 +13,8 @@ import {
   AlertTriangle,
   ChefHat,
   Bike,
+  Phone,
+  ShieldCheck,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/config/api';
@@ -143,23 +145,106 @@ function KitchenItemRow({
 
 // ─── KitchenOrderCard ────────────────────────────────────
 
+// ─── DeliveryPickupVerification ─────────────────────────
+
+function DeliveryPickupVerification({
+  order,
+  onConfirmPickup,
+  isConfirming,
+}: {
+  order: Order;
+  onConfirmPickup: (orderId: string, code: string) => void;
+  isConfirming: boolean;
+}) {
+  const [code, setCode] = useState('');
+  const meta = order.deliveryMeta;
+
+  if (meta?.pickupConfirmed) {
+    return (
+      <div className="bg-jade/10 border border-jade/30 rounded-xl px-3 py-2.5 flex items-center gap-2">
+        <ShieldCheck size={16} className="text-jade shrink-0" />
+        <span className="text-jade-light text-sm font-medium">Entregado a repartidor</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {/* Driver info card */}
+      <div className="bg-orange-500/10 border border-orange-400/20 rounded-xl px-3 py-2.5 space-y-1.5">
+        <div className="flex items-center gap-2">
+          <Bike size={14} className="text-orange-300" />
+          <span className="text-orange-200 text-sm font-semibold">{meta?.driverName ?? 'Repartidor'}</span>
+          {meta?.driverVehicle && (
+            <span className="text-orange-300/60 text-xs">({meta.driverVehicle})</span>
+          )}
+        </div>
+        {meta?.driverPhone && (
+          <div className="flex items-center gap-1.5">
+            <Phone size={11} className="text-orange-300/60" />
+            <span className="text-orange-200/80 text-xs">{meta.driverPhone}</span>
+          </div>
+        )}
+        {meta?.driverCode && (
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-orange-300/60 text-[10px] uppercase tracking-wider">Código esperado:</span>
+            <span className="text-orange-100 text-lg font-bold tracking-[4px] font-mono">{meta.driverCode}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Code input + confirm button */}
+      <div className="flex gap-2">
+        <input
+          type="text"
+          maxLength={10}
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          placeholder="Código"
+          className="flex-1 px-3 py-2.5 bg-tonalli-black-soft border border-subtle rounded-xl text-white text-center text-lg font-bold tracking-[4px] font-mono uppercase placeholder:text-silver-dark placeholder:text-sm placeholder:tracking-normal placeholder:font-normal focus:outline-none focus:border-orange-400/50"
+        />
+        <button
+          onClick={() => code.trim() && onConfirmPickup(order.id, code.trim())}
+          disabled={!code.trim() || isConfirming}
+          className="px-4 py-2.5 rounded-xl bg-orange-500 text-white text-sm font-bold hover:bg-orange-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+        >
+          {isConfirming ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />}
+          Confirmar
+        </button>
+      </div>
+      {(meta?.pickupAttempts ?? 0) > 0 && (
+        <p className="text-red-400 text-[11px] text-center">
+          {3 - (meta?.pickupAttempts ?? 0)} intento(s) restante(s)
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── KitchenOrderCard ────────────────────────────────────
+
 function KitchenOrderCard({
   order,
   column,
   isNew,
   onAction,
   onItemToggle,
+  onConfirmPickup,
+  isConfirming,
 }: {
   order: Order;
   column: 'new' | 'preparing' | 'ready';
   isNew: boolean;
   onAction: (orderId: string, status: OrderStatus) => void;
   onItemToggle: (orderId: string, itemId: string, status: string) => void;
+  onConfirmPickup: (orderId: string, code: string) => void;
+  isConfirming: boolean;
 }) {
   const groups = useMemo(() => groupItemsByCategory(order.items), [order.items]);
   const readyCount = order.items.filter((i) => i.status === 'ready' || i.status === 'delivered').length;
   const totalCount = order.items.length;
   const progress = totalCount > 0 ? (readyCount / totalCount) * 100 : 0;
+  const isDelivery = order.orderType === 'delivery' && order.source === 'yesswera';
 
   const borderColors = {
     new: 'border-l-gold',
@@ -191,8 +276,8 @@ function KitchenOrderCard({
         <KitchenTimer createdAt={order.createdAt} />
       </div>
 
-      {/* Delivery info */}
-      {order.orderType === 'delivery' && order.deliveryMeta?.driverName && (
+      {/* Delivery info (non-ready columns) */}
+      {order.orderType === 'delivery' && order.deliveryMeta?.driverName && column !== 'ready' && (
         <div className="bg-orange-500/10 rounded-lg px-2.5 py-1.5 mb-2.5 flex items-center gap-1.5">
           <Bike size={12} className="text-orange-300 shrink-0" />
           <span className="text-orange-200 text-xs font-medium truncate">
@@ -261,7 +346,10 @@ function KitchenOrderCard({
           Listo
         </button>
       )}
-      {column === 'ready' && (
+      {column === 'ready' && isDelivery && (
+        <DeliveryPickupVerification order={order} onConfirmPickup={onConfirmPickup} isConfirming={isConfirming} />
+      )}
+      {column === 'ready' && !isDelivery && (
         <button
           onClick={() => onAction(order.id, 'delivered')}
           className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-tonalli-black-elevated border border-jade/30 text-jade-light text-sm font-bold uppercase tracking-wider hover:bg-jade/10 transition-colors"
@@ -285,6 +373,8 @@ function KitchenColumn({
   newOrderIds,
   onAction,
   onItemToggle,
+  onConfirmPickup,
+  isConfirming,
   isLoading,
 }: {
   title: string;
@@ -295,6 +385,8 @@ function KitchenColumn({
   newOrderIds: Set<string>;
   onAction: (orderId: string, status: OrderStatus) => void;
   onItemToggle: (orderId: string, itemId: string, status: string) => void;
+  onConfirmPickup: (orderId: string, code: string) => void;
+  isConfirming: boolean;
   isLoading: boolean;
 }) {
   const headerColors = {
@@ -333,6 +425,8 @@ function KitchenColumn({
               isNew={newOrderIds.has(order.id)}
               onAction={onAction}
               onItemToggle={onItemToggle}
+              onConfirmPickup={onConfirmPickup}
+              isConfirming={isConfirming}
             />
           ))
         )}
@@ -501,6 +595,17 @@ export default function KitchenPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const confirmPickup = useMutation({
+    mutationFn: ({ orderId, driverCode }: { orderId: string; driverCode: string }) =>
+      apiFetch<{ confirmed: boolean; message: string }>(`/delivery/orders/${orderId}/confirm-pickup`, { method: 'POST', body: { driverCode }, auth: true }),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['kitchen-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      toast.success(data.message);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const handleAction = useCallback(
     (orderId: string, status: OrderStatus) => updateOrder.mutate({ orderId, status }),
     [updateOrder],
@@ -509,6 +614,11 @@ export default function KitchenPage() {
   const handleItemToggle = useCallback(
     (orderId: string, itemId: string, status: string) => updateItem.mutate({ orderId, itemId, status }),
     [updateItem],
+  );
+
+  const handleConfirmPickup = useCallback(
+    (orderId: string, code: string) => confirmPickup.mutate({ orderId, driverCode: code }),
+    [confirmPickup],
   );
 
   const counts = {
@@ -537,10 +647,12 @@ export default function KitchenPage() {
           newOrderIds={newOrderIds}
           onAction={handleAction}
           onItemToggle={handleItemToggle}
+          onConfirmPickup={handleConfirmPickup}
+          isConfirming={confirmPickup.isPending}
           isLoading={confirmedQuery.isLoading}
         />
         <KitchenColumn
-          title="En Preparaci\u00f3n"
+          title="En Preparaci&#xF3;n"
           color="silver"
           count={counts.preparing}
           orders={preparingOrders}
@@ -548,6 +660,8 @@ export default function KitchenPage() {
           newOrderIds={newOrderIds}
           onAction={handleAction}
           onItemToggle={handleItemToggle}
+          onConfirmPickup={handleConfirmPickup}
+          isConfirming={confirmPickup.isPending}
           isLoading={preparingQuery.isLoading}
         />
         <KitchenColumn
@@ -559,6 +673,8 @@ export default function KitchenPage() {
           newOrderIds={newOrderIds}
           onAction={handleAction}
           onItemToggle={handleItemToggle}
+          onConfirmPickup={handleConfirmPickup}
+          isConfirming={confirmPickup.isPending}
           isLoading={readyQuery.isLoading}
         />
       </div>

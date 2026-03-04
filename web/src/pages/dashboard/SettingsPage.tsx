@@ -1,13 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Loader2, AlertTriangle, CreditCard } from 'lucide-react';
+import { Loader2, AlertTriangle, CreditCard, Bike } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/config/api';
 import type { Restaurant } from '@/types';
 import InputField from '@/components/ui/InputField';
 import GoldButton from '@/components/ui/GoldButton';
 import ImageUpload from '@/components/ui/ImageUpload';
+
+interface YessweraStatus {
+  enabled: boolean;
+  connectedAt?: string;
+}
 
 const MX_TIMEZONES = [
   { value: 'America/Mexico_City', label: 'Centro (CDMX, Guadalajara, Monterrey)' },
@@ -49,6 +54,23 @@ export default function SettingsPage() {
     mutationFn: (data: { name: string; config: Record<string, string> }) =>
       apiFetch('/tenants/me', { method: 'PUT', body: data, auth: true }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['tenant-settings'] }); toast.success('Configuracion guardada'); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
+
+  const { data: yessweraStatus } = useQuery({
+    queryKey: ['yesswera-status'],
+    queryFn: () => apiFetch<YessweraStatus>('/tenants/me/yesswera', { auth: true }),
+  });
+
+  const yessweraMut = useMutation({
+    mutationFn: (enabled: boolean) =>
+      apiFetch<YessweraStatus>('/tenants/me/yesswera', { method: 'POST', body: { enabled }, auth: true }),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['yesswera-status'] });
+      toast.success(data.enabled ? 'Delivery con Yesswera activado' : 'Delivery con Yesswera desactivado');
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -151,6 +173,91 @@ export default function SettingsPage() {
               menu.tonalli.app/{tenant.slug}
             </a>
             <p className="text-silver-dark text-[11px] mt-1">Este es el link que veran tus clientes al escanear el QR</p>
+          </div>
+        )}
+
+        {/* Yesswera Delivery */}
+        <div className="bg-tonalli-black-card border border-subtle rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                <Bike size={16} className="text-orange-400" />
+              </div>
+              <div>
+                <p className="text-white text-sm font-medium">Delivery con Yesswera</p>
+                {yessweraStatus?.enabled && yessweraStatus.connectedAt && (
+                  <p className="text-silver-dark text-[10px]">
+                    Conectado desde {new Date(yessweraStatus.connectedAt).toLocaleDateString('es-MX')}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {yessweraStatus?.enabled && (
+                <span className="text-[10px] font-medium text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full">
+                  Conectado
+                </span>
+              )}
+              <button
+                type="button"
+                role="switch"
+                aria-checked={yessweraStatus?.enabled ?? false}
+                disabled={yessweraMut.isPending}
+                onClick={() => {
+                  if (yessweraStatus?.enabled) {
+                    setShowDeactivateConfirm(true);
+                  } else {
+                    yessweraMut.mutate(true);
+                  }
+                }}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                  yessweraStatus?.enabled ? 'bg-orange-500' : 'bg-white/10'
+                } ${yessweraMut.isPending ? 'opacity-50' : ''}`}
+              >
+                <span
+                  className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${
+                    yessweraStatus?.enabled ? 'translate-x-[18px]' : 'translate-x-[3px]'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+          {!yessweraStatus?.enabled && (
+            <p className="text-silver-dark text-[11px] leading-relaxed">
+              Muestra tu menu en la app de delivery Yesswera y recibe pedidos a domicilio directamente en tu cocina.
+            </p>
+          )}
+        </div>
+
+        {/* Deactivate confirmation */}
+        {showDeactivateConfirm && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setShowDeactivateConfirm(false)}>
+            <div className="bg-tonalli-black-card border border-subtle rounded-2xl p-6 max-w-sm w-full space-y-4" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center gap-2">
+                <AlertTriangle size={18} className="text-orange-400" />
+                <p className="text-white font-medium">Desactivar delivery</p>
+              </div>
+              <p className="text-silver-muted text-sm leading-relaxed">
+                Tu restaurante dejara de aparecer en Yesswera y no recibiras mas pedidos de delivery. Puedes reactivarlo en cualquier momento.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeactivateConfirm(false)}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-light-border text-silver-muted text-sm hover:text-white transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDeactivateConfirm(false);
+                    yessweraMut.mutate(false);
+                  }}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-orange-500/20 text-orange-400 text-sm font-medium hover:bg-orange-500/30 transition-colors"
+                >
+                  Desactivar
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

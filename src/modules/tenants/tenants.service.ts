@@ -1,9 +1,15 @@
+import crypto from 'crypto';
 import { prisma } from '../../config/database';
 import { AppError } from '../../middleware/errorHandler';
 import { processImage } from '../../utils/imageProcessor';
 import { uploadToStorage } from '../../utils/uploadFile';
 import type { Prisma } from '@prisma/client';
 import type { UpdateTenantInput } from './tenants.schema';
+
+const YESSWERA_REGISTER_URL =
+  'https://jdvundwewwobkznxwkvj.supabase.co/functions/v1/register-tonalli-business';
+const YESSWERA_WEBHOOK_URL =
+  'https://jdvundwewwobkznxwkvj.supabase.co/functions/v1/tonalli-webhook';
 
 export async function getMyTenant(tenantId: string) {
   const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
@@ -33,6 +39,139 @@ export async function uploadLogo(tenantId: string, imageBuffer: Buffer) {
   });
 
   return tenant;
+}
+
+export async function getYessweraStatus(tenantId: string) {
+  const integration = await prisma.tenantIntegration.findFirst({
+    where: { tenantId, platform: 'yesswera' },
+    select: { active: true, createdAt: true },
+  });
+
+  if (!integration || !integration.active) {
+    return { enabled: false };
+  }
+
+  return { enabled: true, connectedAt: integration.createdAt };
+}
+
+export async function toggleYesswera(tenantId: string, enabled: boolean) {
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { id: true, name: true, slug: true, logoUrl: true, config: true },
+  });
+  if (!tenant) throw new AppError(404, 'Tenant not found', 'NOT_FOUND');
+
+  if (enabled) {
+    // Create or reactivate integration
+    const existing = await prisma.tenantIntegration.findFirst({
+      where: { tenantId, platform: 'yesswera' },
+    });
+
+    let apiKey: string;
+
+    if (existing) {
+      if (existing.active) {
+        return { enabled: true, connectedAt: existing.createdAt };
+      }
+      apiKey = existing.apiKey;
+      await prisma.tenantIntegration.update({
+        where: { id: existing.id },
+        data: {
+          active: true,
+          config: { ...(existing.config as Record<string, unknown>), webhookUrl: YESSWERA_WEBHOOK_URL },
+        },
+      });
+    } else {
+      apiKey = crypto.randomBytes(32).toString('hex');
+      await prisma.tenantIntegration.create({
+        data: {
+          tenantId,
+          platform: 'yesswera',
+          externalId: tenant.slug,
+          apiKey,
+          config: { webhookUrl: YESSWERA_WEBHOOK_URL },
+          active: true,
+        },
+      });
+    }
+
+    // Fire-and-forget: notify Yesswera
+    const cfg = (tenant.config ?? {}) as Record<string, string>;
+    notifyYessweraRegistration({
+      slug: tenant.slug,
+      name: tenant.name,
+      logoUrl: tenant.logoUrl,
+      address: cfg.address || null,
+      phone: cfg.phone || null,
+      apiKey,
+      event: 'activated',
+    }).catch(() => {});
+
+    const integration = await prisma.tenantIntegration.findFirst({
+      where: { tenantId, platform: 'yesswera' },
+      select: { createdAt: true },
+    });
+    return { enabled: true, connectedAt: integration!.createdAt };
+  } else {
+    // Deactivate
+    const existing = await prisma.tenantIntegration.findFirst({
+      where: { tenantId, platform: 'yesswera', active: true },
+    });
+
+    if (!existing) {
+      return { enabled: false };
+    }
+
+    await prisma.tenantIntegration.update({
+      where: { id: existing.id },
+      data: { active: false },
+    });
+
+    // Fire-and-forget: notify Yesswera
+    notifyYessweraRegistration({
+      slug: tenant.slug,
+      name: tenant.name,
+      logoUrl: tenant.logoUrl,
+      address: null,
+      phone: null,
+      apiKey: existing.apiKey,
+      event: 'deactivated',
+    }).catch(() => {});
+
+    return { enabled: false };
+  }
+}
+
+async function notifyYessweraRegistration(payload: {
+  slug: string;
+  name: string;
+  logoUrl: string | null;
+  address: string | null;
+  phone: string | null;
+  apiKey: string;
+  event: 'activated' | 'deactivated';
+}) {
+  const registrationKey = process.env.YESSWERA_REGISTRATION_KEY;
+  if (!registrationKey) return;
+
+  const body = JSON.stringify(payload);
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const sigPayload = `${timestamp}.${body}`;
+  const signature = crypto
+    .createHmac('sha256', registrationKey)
+    .update(sigPayload)
+    .digest('hex');
+
+  await fetch(YESSWERA_REGISTER_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Tonalli-Timestamp': timestamp,
+      'X-Tonalli-Signature': signature,
+    },
+    body,
+    signal: AbortSignal.timeout(5000),
+  });
 }
 
 export async function getLogoBuffer(tenantId: string): Promise<Buffer | null> {

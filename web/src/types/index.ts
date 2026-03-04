@@ -88,9 +88,17 @@ export interface Order {
   deliveryMeta?: {
     driverName?: string;
     driverPhone?: string;
+    driverVehicle?: string;
     estimatedMinutes?: number;
     yessweraOrderId?: string;
     deliveredAt?: string;
+    driverCode?: string;
+    pickupCode?: string;
+    pickupConfirmed?: boolean;
+    pickupConfirmedAt?: string;
+    pickupAttempts?: number;
+    deliveryCodeUsed?: boolean;
+    deliveryVerifiedAt?: string;
   } | null;
   source?: 'tonalli' | 'yesswera';
   createdAt: string;
