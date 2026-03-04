@@ -10,7 +10,13 @@ import GoldButton from '@/components/ui/GoldButton';
 
 type Tab = 'products' | 'ingredients';
 
-const UNIT_OPTIONS: IngredientUnit[] = ['piezas', 'kg', 'g', 'lt', 'ml'];
+const UNIT_LABELS: { value: IngredientUnit; label: string }[] = [
+  { value: 'kg', label: 'Kilogramos (kg) — carnes, quesos, verduras' },
+  { value: 'g', label: 'Gramos (g) — especias, porciones chicas' },
+  { value: 'lt', label: 'Litros (lt) — aceite, leche, salsas' },
+  { value: 'ml', label: 'Mililitros (ml) — extractos, esencias' },
+  { value: 'piezas', label: 'Piezas — huevos, tortillas, limones' },
+];
 
 export default function InventoryPage() {
   const queryClient = useQueryClient();
@@ -33,7 +39,7 @@ export default function InventoryPage() {
   const [showIngMove, setShowIngMove] = useState(false);
   const [selectedIng, setSelectedIng] = useState<Ingredient | null>(null);
   const [ingName, setIngName] = useState('');
-  const [ingUnit, setIngUnit] = useState<IngredientUnit>('piezas');
+  const [ingUnit, setIngUnit] = useState<IngredientUnit | ''>('');
   const [ingCost, setIngCost] = useState('');
   const [ingMinStock, setIngMinStock] = useState('');
   const [ingCurrentStock, setIngCurrentStock] = useState('');
@@ -127,7 +133,7 @@ export default function InventoryPage() {
   const ingList = Array.isArray(ingredients) ? ingredients : [];
 
   const openAddIng = () => {
-    setIngName(''); setIngUnit('piezas'); setIngCost(''); setIngMinStock(''); setIngCurrentStock('');
+    setIngName(''); setIngUnit(''); setIngCost(''); setIngMinStock(''); setIngCurrentStock('');
     setShowAddIng(true);
   };
 
@@ -300,19 +306,20 @@ export default function InventoryPage() {
       {/* ─── Ingredient Modals ─── */}
       {showAddIng && (
         <Modal title="Nuevo Ingrediente" onClose={() => setShowAddIng(false)}>
-          <InputField label="NOMBRE" placeholder="Ej: Pollo" value={ingName} onChange={setIngName} required />
+          <InputField label="NOMBRE" placeholder="Ej: Pollo, Aguacate, Aceite..." value={ingName} onChange={setIngName} required />
           <div>
-            <label className="text-gold-muted text-[10px] font-medium tracking-[2px] block mb-1.5">UNIDAD</label>
+            <label className="text-gold-muted text-[10px] font-medium tracking-[2px] block mb-1.5">UNIDAD DE MEDIDA</label>
             <select value={ingUnit} onChange={e => setIngUnit(e.target.value as IngredientUnit)} className="w-full bg-tonalli-black-card border border-light-border rounded-xl px-4 py-3.5 text-white text-sm focus:outline-none focus:border-gold-border">
-              {UNIT_OPTIONS.map(u => <option key={u} value={u}>{u}</option>)}
+              <option value="" disabled>Selecciona como compras este ingrediente...</option>
+              {UNIT_LABELS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
             </select>
           </div>
-          <InputField label="COSTO POR UNIDAD" placeholder="0.00" value={ingCost} onChange={setIngCost} type="number" required />
+          <InputField label={`COSTO POR ${ingUnit ? UNIT_LABELS.find(u => u.value === ingUnit)?.value.toUpperCase() || 'UNIDAD' : 'UNIDAD'}`} placeholder="0.00" value={ingCost} onChange={setIngCost} type="number" required />
           <InputField label="STOCK ACTUAL" placeholder="0" value={ingCurrentStock} onChange={setIngCurrentStock} type="number" />
-          <InputField label="STOCK MINIMO" placeholder="0" value={ingMinStock} onChange={setIngMinStock} type="number" />
-          <GoldButton loading={addIngMut.isPending} disabled={!ingName.trim() || !ingCost.trim()} onClick={() => addIngMut.mutate({
+          <InputField label="STOCK MINIMO (alerta)" placeholder="0" value={ingMinStock} onChange={setIngMinStock} type="number" />
+          <GoldButton loading={addIngMut.isPending} disabled={!ingName.trim() || !ingUnit || !ingCost.trim()} onClick={() => addIngMut.mutate({
             name: ingName.trim(),
-            unit: ingUnit,
+            unit: ingUnit as IngredientUnit,
             costPerUnit: parseFloat(ingCost) || 0,
             currentStock: parseFloat(ingCurrentStock) || 0,
             minStock: parseFloat(ingMinStock) || 0,
@@ -326,9 +333,9 @@ export default function InventoryPage() {
         <Modal title="Editar Ingrediente" onClose={() => setShowEditIng(false)}>
           <InputField label="NOMBRE" value={ingName} onChange={setIngName} required />
           <div>
-            <label className="text-gold-muted text-[10px] font-medium tracking-[2px] block mb-1.5">UNIDAD</label>
+            <label className="text-gold-muted text-[10px] font-medium tracking-[2px] block mb-1.5">UNIDAD DE MEDIDA</label>
             <select value={ingUnit} onChange={e => setIngUnit(e.target.value as IngredientUnit)} className="w-full bg-tonalli-black-card border border-light-border rounded-xl px-4 py-3.5 text-white text-sm focus:outline-none focus:border-gold-border">
-              {UNIT_OPTIONS.map(u => <option key={u} value={u}>{u}</option>)}
+              {UNIT_LABELS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
             </select>
           </div>
           <InputField label="COSTO POR UNIDAD" value={ingCost} onChange={setIngCost} type="number" />
@@ -340,7 +347,7 @@ export default function InventoryPage() {
             <GoldButton loading={editIngMut.isPending} disabled={!ingName.trim()} onClick={() => editIngMut.mutate({
               id: selectedIng.id,
               name: ingName.trim(),
-              unit: ingUnit,
+              unit: ingUnit as IngredientUnit,
               costPerUnit: parseFloat(ingCost) || 0,
               minStock: parseFloat(ingMinStock) || 0,
             })} className="flex-1">

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Search, Plus, Minus, Trash2, X, Banknote, CreditCard, ArrowRightLeft, ShoppingBag, Store, Truck, Loader2, AlertTriangle } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, X, Banknote, CreditCard, ArrowRightLeft, ShoppingBag, Store, Truck, Loader2, AlertTriangle, Flame } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/config/api';
 import type { Product, Category, PosOrderInput, InventoryItem } from '@/types';
@@ -61,9 +61,9 @@ export default function PosNewSale({ onClose, onSuccess }: Props) {
     queryFn: () => apiFetch<Category[]>('/categories', { auth: true }),
   });
 
-  const { data: productsData } = useQuery({
+  const { data: products = [] } = useQuery({
     queryKey: ['products-all'],
-    queryFn: () => apiFetch<{ products: Product[]; total: number }>('/products?limit=500', { auth: true }),
+    queryFn: () => apiFetch<Product[]>('/products', { auth: true }),
   });
 
   const { data: inventoryData } = useQuery({
@@ -71,7 +71,13 @@ export default function PosNewSale({ onClose, onSuccess }: Props) {
     queryFn: () => apiFetch<InventoryItem[]>('/inventory', { auth: true }),
   });
 
-  const products = productsData?.products ?? [];
+  const { data: topProducts } = useQuery({
+    queryKey: ['top-products-pos'],
+    queryFn: () => apiFetch<{ product: { id: string }; totalQuantity: number }[]>('/reports/top-products?limit=10', { auth: true }),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const topProductIds = useMemo(() => new Set((topProducts ?? []).map(t => t.product.id)), [topProducts]);
   const stockMap = useMemo(() => {
     const map = new Map<string, InventoryItem>();
     for (const item of inventoryData ?? []) {
@@ -82,13 +88,20 @@ export default function PosNewSale({ onClose, onSuccess }: Props) {
 
   const filtered = useMemo(() => {
     let list = products.filter((p) => p.available);
-    if (selectedCat) list = list.filter((p) => p.categoryId === selectedCat);
+    if (selectedCat === '__top__') {
+      list = list.filter((p) => topProductIds.has(p.id));
+      // Sort by popularity order
+      const order = (topProducts ?? []).map(t => t.product.id);
+      list.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+    } else if (selectedCat) {
+      list = list.filter((p) => p.categoryId === selectedCat);
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter((p) => p.name.toLowerCase().includes(q));
     }
     return list;
-  }, [products, selectedCat, search]);
+  }, [products, selectedCat, search, topProductIds, topProducts]);
 
   const cartTotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
 
@@ -169,6 +182,15 @@ export default function PosNewSale({ onClose, onSuccess }: Props) {
               >
                 Todos
               </button>
+              {topProductIds.size > 0 && (
+                <button
+                  onClick={() => setSelectedCat('__top__')}
+                  className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 ${selectedCat === '__top__' ? 'bg-gold text-tonalli-black' : 'bg-tonalli-black-card text-silver-dark'}`}
+                >
+                  <Flame size={12} />
+                  Popular
+                </button>
+              )}
               {(categories ?? []).filter((c) => c.active).map((cat) => (
                 <button
                   key={cat.id}

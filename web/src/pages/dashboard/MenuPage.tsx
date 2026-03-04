@@ -104,8 +104,14 @@ export default function MenuPage() {
   // Product mutations
   const addProdMut = useMutation({
     mutationFn: (d: { categoryId: string; name: string; description: string; price: number }) =>
-      apiFetch('/products', { method: 'POST', body: { ...d, available: true }, auth: true }),
-    onSuccess: () => { inv(); setShowAddProd(false); toast.success('Producto creado'); },
+      apiFetch<Product>('/products', { method: 'POST', body: { ...d, available: true }, auth: true }),
+    onSuccess: (newProduct) => {
+      inv();
+      setShowAddProd(false);
+      toast.success('Producto creado');
+      // Auto-open recipe modal for the new product
+      setRecipeProd(newProduct);
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -259,8 +265,9 @@ export default function MenuPage() {
                             <p className="text-gold text-[13px] font-semibold mt-0.5">${Number(p.price).toFixed(2)}</p>
                           </div>
                           <div className="flex items-center gap-2">
-                            <button onClick={() => setRecipeProd(p)} className="p-1.5 text-silver-dark hover:text-jade transition-colors" aria-label="Receta">
-                              <BookOpen size={13} />
+                            <button onClick={() => setRecipeProd(p)} className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium border border-jade/30 text-jade hover:bg-jade/10 transition-colors" aria-label="Receta">
+                              <BookOpen size={12} />
+                              Receta
                             </button>
                             <button onClick={() => openEditProd(p)} className="p-1.5 text-silver-dark hover:text-gold transition-colors" aria-label="Editar producto">
                               <Pencil size={13} />
@@ -353,6 +360,13 @@ export default function MenuPage() {
           <InputField label="NOMBRE" value={prodName} onChange={setProdName} required />
           <InputField label="DESCRIPCION" value={prodDesc} onChange={setProdDesc} textarea />
           <InputField label="PRECIO (MXN)" value={prodPrice} onChange={setProdPrice} type="number" required />
+          <button
+            onClick={() => { setShowEditProd(false); setRecipeProd(editProd); }}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-jade/30 text-jade text-sm font-medium hover:bg-jade/10 transition-colors"
+          >
+            <BookOpen size={16} />
+            Configurar Ingredientes / Receta
+          </button>
           <GoldButton loading={editProdMut.isPending} disabled={!prodName.trim() || !prodPrice.trim()} onClick={() => editProdMut.mutate({ id: editProd.id, name: prodName, description: prodDesc, price: parseFloat(prodPrice) || 0 })}>
             Guardar
           </GoldButton>

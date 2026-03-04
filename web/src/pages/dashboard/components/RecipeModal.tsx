@@ -73,9 +73,10 @@ export default function RecipeModal({ productId, productName, productPrice, onCl
     setRows(prev => prev.map((r, i) => {
       if (i !== idx) return r;
       if (field === 'ingredientId') {
-        // Auto-set unit to ingredient's default unit
+        // Auto-set unit to recipe-friendly unit (g instead of kg, ml instead of lt)
         const ing = ingList.find(x => x.id === value);
-        return { ...r, ingredientId: value, unit: ing?.unit ?? r.unit };
+        const recipeUnit = ing?.unit === 'kg' ? 'g' : ing?.unit === 'lt' ? 'ml' : ing?.unit ?? r.unit;
+        return { ...r, ingredientId: value, unit: recipeUnit };
       }
       return { ...r, [field]: value };
     }));
@@ -127,35 +128,52 @@ export default function RecipeModal({ productId, productName, productPrice, onCl
       ) : (
         <>
           <div className="space-y-2.5 max-h-64 overflow-y-auto">
-            {rows.map((row, idx) => (
-              <div key={idx} className="flex items-center gap-2">
-                <select
-                  value={row.ingredientId}
-                  onChange={e => updateRow(idx, 'ingredientId', e.target.value)}
-                  className="flex-1 bg-tonalli-black-card border border-light-border rounded-lg px-2 py-2 text-white text-sm focus:outline-none focus:border-gold-border"
-                >
-                  <option value="">Seleccionar...</option>
-                  {ingList.map(ing => <option key={ing.id} value={ing.id}>{ing.name}</option>)}
-                </select>
-                <input
-                  type="number"
-                  value={row.quantity}
-                  onChange={e => updateRow(idx, 'quantity', e.target.value)}
-                  placeholder="Cant."
-                  className="w-20 bg-tonalli-black-card border border-light-border rounded-lg px-2 py-2 text-white text-sm focus:outline-none focus:border-gold-border"
-                />
-                <select
-                  value={row.unit}
-                  onChange={e => updateRow(idx, 'unit', e.target.value)}
-                  className="w-20 bg-tonalli-black-card border border-light-border rounded-lg px-2 py-2 text-white text-sm focus:outline-none focus:border-gold-border"
-                >
-                  {UNIT_OPTIONS.map(u => <option key={u} value={u}>{u}</option>)}
-                </select>
-                <button onClick={() => removeRow(idx)} className="p-1.5 text-silver-dark hover:text-red-400 transition-colors">
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
+            {rows.map((row, idx) => {
+              const ing = ingList.find(x => x.id === row.ingredientId);
+              const qty = parseFloat(row.quantity) || 0;
+              // Show deduction hint in ingredient's storage unit
+              let deductHint = '';
+              if (ing && qty > 0 && row.unit !== ing.unit) {
+                let factor = 1;
+                if ((row.unit === 'g' && ing.unit === 'kg') || (row.unit === 'ml' && ing.unit === 'lt')) factor = 1 / 1000;
+                else if ((row.unit === 'kg' && ing.unit === 'g') || (row.unit === 'lt' && ing.unit === 'ml')) factor = 1000;
+                deductHint = `= ${(qty * factor).toFixed(3)} ${ing.unit} (stock: ${Number(ing.currentStock).toFixed(1)} ${ing.unit})`;
+              } else if (ing && qty > 0) {
+                deductHint = `stock: ${Number(ing.currentStock).toFixed(1)} ${ing.unit}`;
+              }
+              return (
+                <div key={idx}>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={row.ingredientId}
+                      onChange={e => updateRow(idx, 'ingredientId', e.target.value)}
+                      className="flex-1 bg-tonalli-black-card border border-light-border rounded-lg px-2 py-2 text-white text-sm focus:outline-none focus:border-gold-border"
+                    >
+                      <option value="">Seleccionar...</option>
+                      {ingList.map(i => <option key={i.id} value={i.id}>{i.name} ({Number(i.currentStock).toFixed(1)} {i.unit})</option>)}
+                    </select>
+                    <input
+                      type="number"
+                      value={row.quantity}
+                      onChange={e => updateRow(idx, 'quantity', e.target.value)}
+                      placeholder="Cant."
+                      className="w-20 bg-tonalli-black-card border border-light-border rounded-lg px-2 py-2 text-white text-sm focus:outline-none focus:border-gold-border"
+                    />
+                    <select
+                      value={row.unit}
+                      onChange={e => updateRow(idx, 'unit', e.target.value)}
+                      className="w-20 bg-tonalli-black-card border border-light-border rounded-lg px-2 py-2 text-white text-sm focus:outline-none focus:border-gold-border"
+                    >
+                      {UNIT_OPTIONS.map(u => <option key={u} value={u}>{u}</option>)}
+                    </select>
+                    <button onClick={() => removeRow(idx)} className="p-1.5 text-silver-dark hover:text-red-400 transition-colors">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                  {deductHint && <p className="text-silver-dark text-[10px] ml-1 mt-0.5">{deductHint}</p>}
+                </div>
+              );
+            })}
           </div>
 
           <button
