@@ -95,23 +95,27 @@ export async function toggleYesswera(tenantId: string, enabled: boolean) {
       });
     }
 
-    // Fire-and-forget: notify Yesswera
+    // Notify Yesswera and get coverage response
     const cfg = (tenant.config ?? {}) as Record<string, string>;
-    notifyYessweraRegistration({
-      slug: tenant.slug,
-      name: tenant.name,
-      logoUrl: tenant.logoUrl,
-      address: cfg.address || null,
-      phone: cfg.phone || null,
-      apiKey,
-      event: 'activated',
-    }).catch(() => {});
+    let coverage = null;
+    try {
+      const response = await notifyYessweraRegistration({
+        slug: tenant.slug,
+        name: tenant.name,
+        logoUrl: tenant.logoUrl,
+        address: cfg.address || null,
+        phone: cfg.phone || null,
+        apiKey,
+        event: 'activated',
+      });
+      if (response) coverage = response;
+    } catch { /* ignore */ }
 
     const integration = await prisma.tenantIntegration.findFirst({
       where: { tenantId, platform: 'yesswera' },
       select: { createdAt: true },
     });
-    return { enabled: true, connectedAt: integration!.createdAt };
+    return { enabled: true, connectedAt: integration!.createdAt, coverage };
   } else {
     // Deactivate
     const existing = await prisma.tenantIntegration.findFirst({
@@ -150,9 +154,9 @@ async function notifyYessweraRegistration(payload: {
   phone: string | null;
   apiKey: string;
   event: 'activated' | 'deactivated';
-}) {
+}): Promise<{ coverage: boolean; driversInZone: number; message: string } | null> {
   const registrationKey = process.env.YESSWERA_REGISTRATION_KEY;
-  if (!registrationKey) return;
+  if (!registrationKey) return null;
 
   const body = JSON.stringify(payload);
   const timestamp = Math.floor(Date.now() / 1000).toString();
@@ -162,7 +166,7 @@ async function notifyYessweraRegistration(payload: {
     .update(sigPayload)
     .digest('hex');
 
-  await fetch(YESSWERA_REGISTER_URL, {
+  const res = await fetch(YESSWERA_REGISTER_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -172,6 +176,16 @@ async function notifyYessweraRegistration(payload: {
     body,
     signal: AbortSignal.timeout(5000),
   });
+
+  if (res.ok) {
+    try {
+      const json = await res.json() as Record<string, unknown>;
+      if (json && typeof json.coverage === 'boolean') {
+        return { coverage: json.coverage as boolean, driversInZone: (json.driversInZone as number) ?? 0, message: (json.message as string) ?? '' };
+      }
+    } catch { /* non-JSON response */ }
+  }
+  return null;
 }
 
 export async function getLogoBuffer(tenantId: string): Promise<Buffer | null> {

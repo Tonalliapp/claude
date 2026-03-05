@@ -38,3 +38,30 @@ export async function confirmPickup(req: Request, res: Response, next: NextFunct
     next(error);
   }
 }
+
+export async function listDebts(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await deliveryService.listDebts(req.tenantId!);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getDebtsSummary(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await deliveryService.getDebtsSummary(req.tenantId!);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function confirmDebtPayment(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await deliveryService.confirmDebtPayment(req.tenantId!, req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}

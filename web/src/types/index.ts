@@ -345,3 +345,24 @@ export interface IngredientConsumptionReport {
   ingredients: IngredientConsumption[];
   totalCostOfGoods: number;
 }
+
+// ─── Delivery Debts ─────────────────────────────────
+
+export interface DeliveryDebtDriver {
+  driverName: string;
+  driverPhone: string;
+  trustTier: 'new' | 'trusted' | 'verified' | 'blocked';
+  totalDebt: number;
+  orders: {
+    orderId: string;
+    orderNumber: number;
+    foodAmount: number;
+    createdAt: string;
+  }[];
+}
+
+export interface DeliveryDebtsSummary {
+  totalDebt: number;
+  driversWithDebt: number;
+  pendingOrders: number;
+}

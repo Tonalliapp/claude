@@ -9,9 +9,16 @@ import InputField from '@/components/ui/InputField';
 import GoldButton from '@/components/ui/GoldButton';
 import ImageUpload from '@/components/ui/ImageUpload';
 
+interface YessweraCoverage {
+  coverage: boolean;
+  driversInZone: number;
+  message: string;
+}
+
 interface YessweraStatus {
   enabled: boolean;
   connectedAt?: string;
+  coverage?: YessweraCoverage | null;
 }
 
 const MX_TIMEZONES = [
@@ -58,6 +65,7 @@ export default function SettingsPage() {
   });
 
   const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
+  const [coverageInfo, setCoverageInfo] = useState<YessweraCoverage | null>(null);
 
   const { data: yessweraStatus } = useQuery({
     queryKey: ['yesswera-status'],
@@ -69,6 +77,8 @@ export default function SettingsPage() {
       apiFetch<YessweraStatus>('/tenants/me/yesswera', { method: 'POST', body: { enabled }, auth: true }),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['yesswera-status'] });
+      if (data.coverage) setCoverageInfo(data.coverage);
+      else setCoverageInfo(null);
       toast.success(data.enabled ? 'Delivery con Yesswera activado' : 'Delivery con Yesswera desactivado');
     },
     onError: (e: Error) => toast.error(e.message),
@@ -226,6 +236,20 @@ export default function SettingsPage() {
             <p className="text-silver-dark text-[11px] leading-relaxed">
               Muestra tu menu en la app de delivery Yesswera y recibe pedidos a domicilio directamente en tu cocina.
             </p>
+          )}
+          {coverageInfo && yessweraStatus?.enabled && (
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] ${
+              coverageInfo.driversInZone > 0
+                ? 'bg-emerald-500/10 text-emerald-400'
+                : 'bg-amber-500/10 text-amber-400'
+            }`}>
+              <Bike size={14} />
+              <span>
+                {coverageInfo.driversInZone > 0
+                  ? `${coverageInfo.driversInZone} repartidor(es) disponible(s) en tu zona`
+                  : coverageInfo.message || 'No hay repartidores disponibles aun en tu zona'}
+              </span>
+            </div>
           )}
         </div>
 

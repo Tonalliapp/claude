@@ -26,8 +26,10 @@ export const deliveryWebhookSchema = z.object({
     'arrived',
     'delivered',
     'cancelled',
+    'debt_created',
+    'debt_settled',
   ]),
-  externalOrderId: z.string().uuid(),
+  externalOrderId: z.string(),
   data: z.object({
     driverName: z.string().optional(),
     driverPhone: z.string().optional(),
@@ -39,6 +41,14 @@ export const deliveryWebhookSchema = z.object({
     pickupCode: z.string().optional(),
     deliveryCodeUsed: z.boolean().optional(),
     deliveryVerifiedAt: z.string().optional(),
+    orderId: z.string().optional(),
+    foodAmount: z.number().optional(),
+    totalAccumulatedDebt: z.number().optional(),
+    trustTier: z.string().optional(),
+    amountSettled: z.number().optional(),
+    paymentMethod: z.string().optional(),
+    remainingDebt: z.number().optional(),
+    ordersCount: z.number().optional(),
   }).default({}),
 });
 
@@ -50,5 +60,13 @@ export const confirmPickupSchema = z.object({
   driverCode: z.string().min(1).max(10),
 });
 
+export const confirmDebtPaymentSchema = z.object({
+  driverName: z.string().min(1),
+  driverPhone: z.string().min(1),
+  amount: z.number().positive(),
+  paymentMethod: z.enum(['cash', 'transfer']).optional().default('cash'),
+});
+
 export type CreateDeliveryOrderInput = z.infer<typeof createDeliveryOrderSchema>;
 export type DeliveryWebhookInput = z.infer<typeof deliveryWebhookSchema>;
+export type ConfirmDebtPaymentInput = z.infer<typeof confirmDebtPaymentSchema>;

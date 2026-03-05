@@ -1,13 +1,13 @@
 import crypto from 'crypto';
 import { Decimal } from '@prisma/client/runtime/library';
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../config/database';
 import { AppError } from '../../middleware/errorHandler';
 import { getIO } from '../../websocket/socket';
 import { tenantRoom, kitchenRoom } from '../../websocket/rooms';
 import { generateOrderNumber } from '../../utils/generateOrderNumber';
 import { deductInventory } from '../../utils/inventoryDeduction';
-import type { CreateDeliveryOrderInput, DeliveryWebhookInput } from './delivery.schema';
+import type { CreateDeliveryOrderInput, DeliveryWebhookInput, ConfirmDebtPaymentInput } from './delivery.schema';
 
 const orderInclude = {
   items: {
@@ -133,6 +133,50 @@ export async function getOrderStatus(tenantId: string, orderId: string) {
 }
 
 export async function processWebhook(tenantId: string, data: DeliveryWebhookInput) {
+  // debt_settled has no associated order — handle separately
+  if (data.event === 'debt_settled') {
+    const io = getIO();
+    io.of('/staff').to(tenantRoom(tenantId)).emit('delivery:debt-settled', {
+      driverName: data.data.driverName,
+      amountSettled: data.data.amountSettled,
+      remainingDebt: data.data.remainingDebt,
+    });
+    return { received: true };
+  }
+
+  // debt_created references an order via data.orderId (the yesswera order id)
+  if (data.event === 'debt_created') {
+    const orderId = data.data.orderId || data.externalOrderId;
+    const order = orderId
+      ? await prisma.order.findFirst({ where: { externalOrderId: orderId, tenantId } })
+      : null;
+
+    if (order) {
+      const currentMeta = (order.deliveryMeta ?? {}) as Record<string, Prisma.JsonValue>;
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          deliveryMeta: {
+            ...currentMeta,
+            debtAmount: data.data.foodAmount ?? 0,
+            driverName: data.data.driverName ?? currentMeta.driverName,
+            driverPhone: data.data.driverPhone ?? currentMeta.driverPhone,
+            trustTier: data.data.trustTier ?? 'new',
+          },
+        },
+      });
+    }
+
+    const io = getIO();
+    io.of('/staff').to(tenantRoom(tenantId)).emit('delivery:debt-created', {
+      driverName: data.data.driverName,
+      foodAmount: data.data.foodAmount,
+      totalAccumulatedDebt: data.data.totalAccumulatedDebt,
+    });
+    return { received: true, tonalliOrderId: order?.id ?? null };
+  }
+
+  // All other events require an existing order
   const order = await prisma.order.findFirst({
     where: { externalOrderId: data.externalOrderId, tenantId },
   });
@@ -302,6 +346,98 @@ export async function confirmPickup(tenantId: string, orderId: string, driverCod
   return { confirmed: true, message: 'Entrega confirmada al repartidor' };
 }
 
+export async function listDebts(tenantId: string) {
+  const orders = await prisma.order.findMany({
+    where: {
+      tenantId,
+      source: 'yesswera',
+      deliveryMeta: { path: ['debtAmount'], not: Prisma.DbNull },
+    },
+    select: {
+      id: true,
+      orderNumber: true,
+      total: true,
+      deliveryMeta: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  // Group by driverName
+  const driverMap = new Map<string, {
+    driverName: string;
+    driverPhone: string;
+    trustTier: string;
+    totalDebt: number;
+    orders: { orderId: string; orderNumber: number; foodAmount: number; createdAt: string }[];
+  }>();
+
+  for (const order of orders) {
+    const meta = (order.deliveryMeta ?? {}) as Record<string, any>;
+    const driverName = (meta.driverName as string) || 'Desconocido';
+    const debtAmount = Number(meta.debtAmount) || 0;
+    if (debtAmount <= 0) continue;
+
+    const existing = driverMap.get(driverName);
+    const orderEntry = {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      foodAmount: debtAmount,
+      createdAt: order.createdAt.toISOString(),
+    };
+
+    if (existing) {
+      existing.totalDebt += debtAmount;
+      existing.orders.push(orderEntry);
+    } else {
+      driverMap.set(driverName, {
+        driverName,
+        driverPhone: (meta.driverPhone as string) || '',
+        trustTier: (meta.trustTier as string) || 'new',
+        totalDebt: debtAmount,
+        orders: [orderEntry],
+      });
+    }
+  }
+
+  return Array.from(driverMap.values());
+}
+
+export async function getDebtsSummary(tenantId: string) {
+  const debts = await listDebts(tenantId);
+  const totalDebt = debts.reduce((sum, d) => sum + d.totalDebt, 0);
+  const pendingOrders = debts.reduce((sum, d) => sum + d.orders.length, 0);
+
+  return {
+    totalDebt,
+    driversWithDebt: debts.length,
+    pendingOrders,
+  };
+}
+
+export async function confirmDebtPayment(tenantId: string, input: ConfirmDebtPaymentInput) {
+  // Notify Yesswera about the confirmed payment
+  notifyYessweraCustom(tenantId, {
+    event: 'debt_payment_confirmed',
+    data: {
+      driverName: input.driverName,
+      driverPhone: input.driverPhone,
+      amountConfirmed: input.amount,
+      paymentMethod: input.paymentMethod,
+      confirmedAt: new Date().toISOString(),
+    },
+  }).catch(() => {});
+
+  // Emit WebSocket for real-time update
+  const io = getIO();
+  io.of('/staff').to(tenantRoom(tenantId)).emit('delivery:debt-updated', {
+    driverName: input.driverName,
+    amountConfirmed: input.amount,
+  });
+
+  return { confirmed: true, message: 'Pago confirmado y notificado a Yesswera' };
+}
+
 export async function notifyYesswera(
   tenantId: string,
   externalOrderId: string,
@@ -318,6 +454,40 @@ export async function notifyYesswera(
   if (!webhookUrl) return;
 
   const body = JSON.stringify({ externalOrderId, event, data });
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const payload = `${timestamp}.${body}`;
+  const signature = crypto
+    .createHmac('sha256', integration.apiKey)
+    .update(payload)
+    .digest('hex');
+
+  await fetch(webhookUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Tonalli-Timestamp': timestamp,
+      'X-Tonalli-Signature': signature,
+    },
+    body,
+    signal: AbortSignal.timeout(5000),
+  });
+}
+
+export async function notifyYessweraCustom(
+  tenantId: string,
+  eventBody: Record<string, unknown>,
+) {
+  const integration = await prisma.tenantIntegration.findFirst({
+    where: { tenantId, platform: 'yesswera', active: true },
+  });
+
+  if (!integration) return;
+
+  const webhookUrl = (integration.config as Record<string, string>)?.webhookUrl;
+  if (!webhookUrl) return;
+
+  const slug = integration.externalId;
+  const body = JSON.stringify({ slug, externalOrderId: '', ...eventBody });
   const timestamp = Math.floor(Date.now() / 1000).toString();
   const payload = `${timestamp}.${body}`;
   const signature = crypto

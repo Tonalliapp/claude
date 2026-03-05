@@ -22,6 +22,7 @@ import UsersPage from '@/pages/dashboard/UsersPage';
 import SettingsPage from '@/pages/dashboard/SettingsPage';
 import BillingPage from '@/pages/dashboard/BillingPage';
 import ProfilePage from '@/pages/dashboard/ProfilePage';
+import DeliveryDebtsPage from '@/pages/dashboard/DeliveryDebtsPage';
 import OnboardingPage from '@/pages/onboarding/OnboardingPage';
 
 export default function App() {
@@ -55,6 +56,7 @@ export default function App() {
             <Route path="dashboard/kitchen" element={<KitchenPage />} />
             <Route path="dashboard/pos" element={<PosPage />} />
             <Route path="dashboard/inventory" element={<InventoryPage />} />
+            <Route path="dashboard/delivery-debts" element={<DeliveryDebtsPage />} />
             <Route path="dashboard/reports" element={<ReportsPage />} />
             <Route path="dashboard/users" element={<UsersPage />} />
             <Route path="dashboard/settings" element={<SettingsPage />} />

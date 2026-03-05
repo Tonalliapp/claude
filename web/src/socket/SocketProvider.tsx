@@ -156,6 +156,27 @@ export function SocketProvider({ children }: { children: ReactNode }) {
       });
     });
 
+    socket.on('delivery:debt-created', (data: { driverName?: string; foodAmount?: number }) => {
+      queryClient.invalidateQueries({ queryKey: ['delivery-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['delivery-debts-summary'] });
+      addNotification({
+        type: 'order_updated',
+        title: 'Nueva Deuda',
+        message: `${data.driverName ?? 'Repartidor'} acumulo deuda${data.foodAmount ? ` de $${data.foodAmount.toFixed(2)}` : ''}`,
+        timestamp: new Date().toISOString(),
+      });
+    });
+
+    socket.on('delivery:debt-settled', () => {
+      queryClient.invalidateQueries({ queryKey: ['delivery-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['delivery-debts-summary'] });
+    });
+
+    socket.on('delivery:debt-updated', () => {
+      queryClient.invalidateQueries({ queryKey: ['delivery-debts'] });
+      queryClient.invalidateQueries({ queryKey: ['delivery-debts-summary'] });
+    });
+
     socketRef.current = socket;
 
     return () => {

@@ -18,6 +18,7 @@ import {
   Wifi,
   WifiOff,
   Bell,
+  Receipt,
 } from 'lucide-react';
 import { useAuth } from '@/auth/AuthProvider';
 import { useSocket } from '@/socket/SocketProvider';
@@ -31,6 +32,7 @@ const NAV_ITEMS = [
   { to: '/dashboard/kitchen', icon: ChefHat, label: 'Cocina', roles: ['owner', 'admin', 'kitchen'] },
   { to: '/dashboard/pos', icon: DollarSign, label: 'Caja', roles: ['owner', 'admin', 'cashier'] },
   { to: '/dashboard/inventory', icon: Package, label: 'Inventario', roles: ['owner', 'admin'] },
+  { to: '/dashboard/delivery-debts', icon: Receipt, label: 'Deudas', roles: ['owner', 'admin'] },
   { to: '/dashboard/reports', icon: BarChart3, label: 'Reportes', roles: ['owner', 'admin'] },
   { to: '/dashboard/users', icon: Users, label: 'Usuarios', roles: ['owner', 'admin'] },
   { to: '/dashboard/settings', icon: Settings, label: 'Config', roles: ['owner', 'admin'] },
