@@ -58,8 +58,11 @@ export function deliveryAuth() {
       }
 
       // Verify HMAC signature: HMAC-SHA256(apiKey, "{timestamp}.{rawBody}")
-      // Use the raw JSON body string to avoid re-serialization key-order issues
-      const rawBody = JSON.stringify(req.body);
+      // Use the raw body captured during parsing to avoid re-serialization key-order issues
+      const rawBody = (req as any).rawBody as string | undefined;
+      if (!rawBody) {
+        throw new AppError(400, 'Missing request body', 'BODY_REQUIRED');
+      }
       const payload = `${timestamp}.${rawBody}`;
       const expected = crypto
         .createHmac('sha256', integration.apiKey)

@@ -45,7 +45,12 @@ app.use(
 app.use(compression());
 // Stripe webhook needs raw body — must be before json parser
 app.use('/api/v1/subscriptions/webhook', express.raw({ type: 'application/json' }));
-app.use(express.json({ limit: '5mb' }));
+app.use(express.json({
+  limit: '5mb',
+  verify: (req, _res, buf) => {
+    (req as any).rawBody = buf.toString('utf8');
+  },
+}));
 app.use(express.urlencoded({ extended: true }));
 
 if (env.NODE_ENV === 'development') {
