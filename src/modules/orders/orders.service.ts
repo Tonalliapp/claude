@@ -6,6 +6,7 @@ import { getIO } from '../../websocket/socket';
 import { tenantRoom, kitchenRoom, tableRoom } from '../../websocket/rooms';
 import { generateOrderNumber } from '../../utils/generateOrderNumber';
 import { deductInventory } from '../../utils/inventoryDeduction';
+import { notifyYesswera } from '../delivery/delivery.service';
 import type { CreateOrderInput, CreatePosOrderInput, ListQuery } from './orders.schema';
 
 const orderInclude = {
@@ -15,6 +16,24 @@ const orderInclude = {
   table: { select: { id: true, number: true } },
   user: { select: { id: true, name: true, role: true } },
 } as const;
+
+/** Notify Yesswera when a delivery order is ready for pickup */
+function notifyYessweraOrderReady(order: {
+  tenantId: string;
+  source: string | null;
+  externalOrderId: string | null;
+  deliveryMeta: unknown;
+  confirmedAt: Date | null;
+}) {
+  if (order.source !== 'yesswera' || !order.externalOrderId) return;
+  const prepTimeMinutes = order.confirmedAt
+    ? Math.round((Date.now() - order.confirmedAt.getTime()) / 60000)
+    : undefined;
+  notifyYesswera(order.tenantId, order.externalOrderId, 'order_ready', {
+    readyAt: new Date().toISOString(),
+    ...(prepTimeMinutes !== undefined ? { prepTimeMinutes } : {}),
+  }).catch(() => {});
+}
 
 export async function list(tenantId: string, query: ListQuery) {
   const where: Record<string, unknown> = { tenantId };
@@ -248,6 +267,11 @@ export async function updateStatus(tenantId: string, id: string, status: OrderSt
     include: orderInclude,
   });
 
+  // Notify Yesswera when delivery order is ready
+  if (status === 'ready') {
+    notifyYessweraOrderReady(order);
+  }
+
   // Auto-paid: if delivered and payment already exists (POS pre-paid orders)
   if (status === 'delivered') {
     const payments = await prisma.payment.count({ where: { orderId: id } });
@@ -365,6 +389,8 @@ export async function updateItemStatus(
       if (order.tableId) {
         io.of('/client').to(tableRoom(tenantId, order.tableId)).emit('order:updated', readyOrder);
       }
+      // Notify Yesswera when delivery order is ready
+      notifyYessweraOrderReady(order);
     }
   }
 
