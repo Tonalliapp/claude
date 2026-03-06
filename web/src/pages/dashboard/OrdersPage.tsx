@@ -10,6 +10,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 const TABS = [
   { key: 'pending', label: 'Pendientes', status: 'pending' },
+  { key: 'confirmed', label: 'Confirmados', status: 'confirmed' },
   { key: 'preparing', label: 'Preparando', status: 'preparing' },
   { key: 'ready', label: 'Listos', status: 'ready' },
   { key: 'all', label: 'Todos', status: undefined },
