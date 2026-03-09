@@ -18,7 +18,17 @@ vi.mock('../src/config/database', () => ({
 
 // Mock redis
 vi.mock('../src/config/redis', () => ({
-  redis: { set: vi.fn(), get: vi.fn(), del: vi.fn() },
+  redis: {
+    set: vi.fn().mockResolvedValue('OK'),
+    get: vi.fn().mockResolvedValue(null),
+    del: vi.fn().mockResolvedValue(1),
+    incr: vi.fn().mockResolvedValue(1),
+    expire: vi.fn().mockResolvedValue(1),
+    ttl: vi.fn().mockResolvedValue(-2),
+    sadd: vi.fn().mockResolvedValue(1),
+    smembers: vi.fn().mockResolvedValue([]),
+    pipeline: vi.fn(() => ({ del: vi.fn().mockReturnThis(), exec: vi.fn().mockResolvedValue([]) })),
+  },
   disconnectRedis: vi.fn(),
 }));
 

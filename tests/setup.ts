@@ -15,3 +15,8 @@ process.env.MINIO_BUCKET = 'test-bucket';
 process.env.CORS_ORIGINS = 'http://localhost:3000';
 process.env.MENU_BASE_URL = 'http://localhost:5174';
 process.env.API_BASE_URL = 'http://localhost:3001';
+process.env.RESEND_API_KEY = 'test-resend-key';
+process.env.STRIPE_SECRET_KEY = 'sk_test_fake';
+process.env.STRIPE_PUBLISHABLE_KEY = 'pk_test_fake';
+process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_fake';
+// SENTRY_DSN omitted — optional in env schema
