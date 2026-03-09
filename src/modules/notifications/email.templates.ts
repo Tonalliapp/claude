@@ -93,6 +93,43 @@ export function paymentFailed(restaurantName: string): { subject: string; html: 
   };
 }
 
+export function lowStockAlert(
+  restaurantName: string,
+  items: { name: string; current: number; min: number; unit: string }[],
+): { subject: string; html: string } {
+  const rows = items
+    .map(
+      (i) =>
+        `<tr>
+          <td style="padding: 8px 12px; border-bottom: 1px solid #333;">${i.name}</td>
+          <td style="padding: 8px 12px; border-bottom: 1px solid #333; color: #e74c3c; font-weight: 600;">${i.current} ${i.unit}</td>
+          <td style="padding: 8px 12px; border-bottom: 1px solid #333; color: #888;">${i.min} ${i.unit}</td>
+        </tr>`,
+    )
+    .join('');
+
+  return {
+    subject: `Alerta: ${items.length} ingrediente(s) con stock bajo — Tonalli`,
+    html: wrap(`
+      <h2 style="color: #daa520; margin: 0 0 16px;">Stock bajo detectado</h2>
+      <p style="line-height: 1.6;">
+        <strong>${restaurantName}</strong> tiene <strong style="color: #e74c3c;">${items.length} ingrediente(s)</strong> por debajo del minimo configurado:
+      </p>
+      <table style="width: 100%; border-collapse: collapse; background: #1a1a1a; border-radius: 8px; overflow: hidden; margin: 20px 0;">
+        <thead>
+          <tr style="background: #222;">
+            <th style="padding: 10px 12px; text-align: left; color: #888; font-size: 12px;">Ingrediente</th>
+            <th style="padding: 10px 12px; text-align: left; color: #888; font-size: 12px;">Actual</th>
+            <th style="padding: 10px 12px; text-align: left; color: #888; font-size: 12px;">Minimo</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      ${button('Ver inventario', `${APP_URL}/dashboard/inventory`)}
+    `),
+  };
+}
+
 export function weeklyActivityDigest(
   restaurantName: string,
   stats: { orders: number; revenue: number; topProduct: string },

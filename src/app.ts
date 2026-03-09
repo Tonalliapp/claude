@@ -70,8 +70,29 @@ app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 app.get('/api/docs.json', (_req, res) => res.json(swaggerSpec));
 
 // ─── Health Check ─────────────────────────────────
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/health', async (_req, res) => {
+  const checks: Record<string, 'ok' | 'error'> = {};
+
+  // Database
+  try {
+    const { prisma } = await import('./config/database');
+    await prisma.$queryRawUnsafe('SELECT 1');
+    checks.database = 'ok';
+  } catch { checks.database = 'error'; }
+
+  // Redis
+  try {
+    const { redis } = await import('./config/redis');
+    await redis.ping();
+    checks.redis = 'ok';
+  } catch { checks.redis = 'error'; }
+
+  const allOk = Object.values(checks).every((v) => v === 'ok');
+  res.status(allOk ? 200 : 503).json({
+    status: allOk ? 'ok' : 'degraded',
+    timestamp: new Date().toISOString(),
+    checks,
+  });
 });
 
 // ─── API Routes ───────────────────────────────────

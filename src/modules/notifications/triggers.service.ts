@@ -87,6 +87,108 @@ export async function checkPlanExpiring() {
   }
 }
 
+export async function checkLowStockAlerts() {
+  const tenants = await prisma.tenant.findMany({
+    where: { status: 'active' },
+    select: { id: true, name: true },
+  });
+
+  for (const tenant of tenants) {
+    if (await hasRecentNotification(tenant.id, 'low_stock', 1)) continue;
+
+    const lowIngredients = await prisma.$queryRaw<
+      { name: string; current_stock: string; min_stock: string; unit: string }[]
+    >`
+      SELECT name, current_stock, min_stock, unit
+      FROM ingredients
+      WHERE tenant_id = ${tenant.id}::uuid
+        AND active = true
+        AND min_stock > 0
+        AND current_stock <= min_stock
+    `;
+
+    if (lowIngredients.length === 0) continue;
+
+    const owner = await getOwnerEmail(tenant.id);
+    if (!owner) continue;
+
+    const { subject, html } = templates.lowStockAlert(
+      tenant.name,
+      lowIngredients.map((i) => ({
+        name: i.name,
+        current: Number(i.current_stock),
+        min: Number(i.min_stock),
+        unit: i.unit,
+      })),
+    );
+
+    try {
+      await resend.emails.send({ from: FROM_EMAIL, to: owner.email, subject, html });
+      await recordNotification(tenant.id, 'low_stock', { count: lowIngredients.length });
+    } catch (err) {
+      console.error(`[Notifications] Failed to send low stock alert for ${tenant.name}:`, err);
+    }
+  }
+}
+
+export async function checkWeeklyDigest() {
+  const dayOfWeek = new Date().getDay();
+  if (dayOfWeek !== 1) return; // Only on Mondays
+
+  const tenants = await prisma.tenant.findMany({
+    where: { status: 'active' },
+    select: { id: true, name: true },
+  });
+
+  const weekAgo = new Date(Date.now() - 7 * ONE_DAY);
+
+  for (const tenant of tenants) {
+    if (await hasRecentNotification(tenant.id, 'weekly_digest', 6)) continue;
+
+    const owner = await getOwnerEmail(tenant.id);
+    if (!owner) continue;
+
+    const orders = await prisma.order.findMany({
+      where: { tenantId: tenant.id, status: 'paid', paidAt: { gte: weekAgo } },
+      select: { total: true },
+    });
+
+    if (orders.length === 0) continue;
+
+    const revenue = orders.reduce((sum, o) => sum + Number(o.total), 0);
+
+    const topItem = await prisma.orderItem.groupBy({
+      by: ['productId'],
+      where: { order: { tenantId: tenant.id, status: 'paid', paidAt: { gte: weekAgo } } },
+      _sum: { quantity: true },
+      orderBy: { _sum: { quantity: 'desc' } },
+      take: 1,
+    });
+
+    let topProduct = 'N/A';
+    if (topItem.length > 0) {
+      const product = await prisma.product.findUnique({
+        where: { id: topItem[0].productId },
+        select: { name: true },
+      });
+      topProduct = product?.name ?? 'N/A';
+    }
+
+    const { subject, html } = templates.weeklyActivityDigest(tenant.name, {
+      orders: orders.length,
+      revenue,
+      topProduct,
+    });
+
+    try {
+      await resend.emails.send({ from: FROM_EMAIL, to: owner.email, subject, html });
+      await recordNotification(tenant.id, 'weekly_digest', { orders: orders.length, revenue });
+    } catch (err) {
+      console.error(`[Notifications] Failed to send weekly digest for ${tenant.name}:`, err);
+    }
+  }
+}
+
 export async function sendPaymentFailedEmail(tenantId: string) {
   const tenant = await prisma.tenant.findUnique({
     where: { id: tenantId },
@@ -132,6 +234,8 @@ async function runAllChecks() {
   try {
     await checkTrialExpiring();
     await checkPlanExpiring();
+    await checkLowStockAlerts();
+    await checkWeeklyDigest();
     console.log('[Notifications] Auto-checks completed');
   } catch (err) {
     console.error('[Notifications] Auto-check error:', err);
