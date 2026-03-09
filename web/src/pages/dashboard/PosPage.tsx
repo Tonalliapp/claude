@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   DollarSign, CreditCard, Banknote, ArrowRightLeft, Lock, Unlock,
   Plus, Truck, Store, ShoppingBag, UtensilsCrossed, Clock, ChevronRight, X,
-  TrendingUp, TrendingDown, FileText, Loader2,
+  TrendingUp, TrendingDown, FileText, Loader2, Download, ShieldCheck, AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/config/api';
@@ -108,6 +108,7 @@ export default function PosPage() {
   const [movType, setMovType] = useState<'deposit' | 'withdrawal' | 'expense'>('deposit');
   const [movAmt, setMovAmt] = useState('');
   const [movDesc, setMovDesc] = useState('');
+  const [reportGenerating, setReportGenerating] = useState(false);
 
   const { data: register } = useQuery({
     queryKey: ['cash-register'],
@@ -363,9 +364,9 @@ export default function PosPage() {
         </Modal>
       )}
 
-      {/* Close Result Modal — breakdown */}
+      {/* Close Result Modal — preview + digital signature */}
       {closeResult && (
-        <Modal title="Turno Cerrado" onClose={() => setCloseResult(null)}>
+        <Modal title="Reporte de Cierre" onClose={() => setCloseResult(null)}>
           <div className="text-center mb-4">
             <p className="text-silver-muted text-[10px] tracking-[2px] mb-1">DIFERENCIA</p>
             <p className={`text-3xl font-semibold ${closeResult.difference === 0 ? 'text-jade' : closeResult.difference > 0 ? 'text-jade' : 'text-red-400'}`}>
@@ -399,7 +400,52 @@ export default function PosPage() {
               </div>
             </div>
           )}
-          <GoldButton onClick={() => setCloseResult(null)}>Cerrar</GoldButton>
+
+          {/* Digital Signature Section */}
+          <div className="border border-gold-border rounded-xl p-4 mb-4 bg-status-pending">
+            <div className="flex items-start gap-2 mb-2">
+              <AlertTriangle size={16} className="text-gold mt-0.5 shrink-0" />
+              <p className="text-silver text-xs leading-relaxed">
+                Este reporte lleva tu <span className="text-gold font-semibold">firma digital</span>. Al aceptar, confirmas que los datos presentados son correctos y que estas de acuerdo con el cierre.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 mt-3">
+              <ShieldCheck size={14} className="text-jade" />
+              <p className="text-silver-dark text-[11px]">
+                Firmado por: <span className="text-silver font-medium">{closeResult.user.name}</span> — {new Date().toLocaleString('es-MX', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <button onClick={() => setCloseResult(null)} className="flex-1 border border-subtle text-silver py-3 rounded-xl font-semibold hover:bg-tonalli-black-card transition-colors">
+              Cerrar sin firmar
+            </button>
+            <button
+              disabled={reportGenerating}
+              onClick={async () => {
+                setReportGenerating(true);
+                try {
+                  const result = await apiFetch<{ reportUrl: string }>(`/cash-register/${closeResult.id}/generate-report`, {
+                    method: 'POST',
+                    body: { signedBy: closeResult.user.name },
+                    auth: true,
+                  });
+                  toast.success('Reporte generado y firmado');
+                  window.open(result.reportUrl, '_blank');
+                  setCloseResult(null);
+                } catch (e: unknown) {
+                  toast.error(e instanceof Error ? e.message : 'Error al generar reporte');
+                } finally {
+                  setReportGenerating(false);
+                }
+              }}
+              className="flex-1 flex items-center justify-center gap-2 bg-jade hover:bg-jade-light text-white py-3 rounded-xl font-semibold transition-colors disabled:opacity-50"
+            >
+              {reportGenerating ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}
+              Acepto y Firmar
+            </button>
+          </div>
         </Modal>
       )}
 
@@ -479,7 +525,35 @@ export default function PosPage() {
               </div>
             </div>
           )}
-          <GoldButton onClick={() => setShowSummary(null)}>Cerrar</GoldButton>
+
+          {/* Signature info + PDF download */}
+          {showSummary.register.signedBy && (
+            <div className="border border-jade/20 rounded-xl p-3 mb-4 bg-jade-glow">
+              <div className="flex items-center gap-2 mb-1">
+                <ShieldCheck size={14} className="text-jade" />
+                <span className="text-jade text-xs font-medium">Reporte firmado</span>
+              </div>
+              <p className="text-silver-dark text-[11px]">
+                Firmado por: <span className="text-silver">{showSummary.register.signedBy}</span>
+                {showSummary.register.signedAt && (
+                  <> — {new Date(showSummary.register.signedAt).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</>
+                )}
+              </p>
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            {showSummary.register.reportUrl && (
+              <button
+                onClick={() => window.open(showSummary.register.reportUrl!, '_blank')}
+                className="flex-1 flex items-center justify-center gap-2 border border-gold text-gold py-3 rounded-xl font-semibold hover:bg-gold/10 transition-colors"
+              >
+                <Download size={16} />
+                Descargar PDF
+              </button>
+            )}
+            <GoldButton onClick={() => setShowSummary(null)}>Cerrar</GoldButton>
+          </div>
         </Modal>
       )}
 

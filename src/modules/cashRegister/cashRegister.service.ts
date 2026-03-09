@@ -3,6 +3,8 @@ import { prisma } from '../../config/database';
 import { AppError } from '../../middleware/errorHandler';
 import { getIO } from '../../websocket/socket';
 import { tenantRoom } from '../../websocket/rooms';
+import { generateCashReport } from '../../utils/generateCashReport';
+import { uploadToStorage } from '../../utils/uploadFile';
 import type { OpenCashRegisterInput, CloseCashRegisterInput, HistoryQuery, CreateMovementInput } from './cashRegister.schema';
 
 function buildBreakdown(payments: { method: string; amount: unknown; order: { source: string } | null }[]) {
@@ -199,4 +201,62 @@ export async function createMovement(tenantId: string, userId: string, data: Cre
   io.of('/staff').to(tenantRoom(tenantId)).emit('cash-register:updated', { type: 'movement', id: movement.id });
 
   return movement;
+}
+
+export async function generateReport(tenantId: string, registerId: string, signedByName: string) {
+  const register = await prisma.cashRegister.findFirst({
+    where: { id: registerId, tenantId, status: 'closed' },
+    include: {
+      user: { select: { id: true, name: true } },
+      payments: { include: { order: { select: { id: true, orderNumber: true, source: true } } } },
+      movements: { include: { user: { select: { id: true, name: true } } }, orderBy: { createdAt: 'asc' } },
+    },
+  });
+
+  if (!register) {
+    throw new AppError(404, 'Turno cerrado no encontrado', 'NOT_FOUND');
+  }
+
+  if (register.reportUrl) {
+    throw new AppError(409, 'Este turno ya tiene un reporte generado', 'REPORT_EXISTS');
+  }
+
+  const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { name: true } });
+  const { breakdown, bySource, totalTransactions, totalSales } = buildBreakdown(register.payments);
+  const difference = Number(register.closingAmount ?? 0) - Number(register.expectedAmount ?? 0);
+  const signedAt = new Date();
+
+  const pdfBuffer = await generateCashReport({
+    restaurantName: tenant?.name ?? 'Restaurante',
+    employeeName: register.user.name,
+    openedAt: register.openedAt.toISOString(),
+    closedAt: register.closedAt!.toISOString(),
+    openingAmount: Number(register.openingAmount),
+    closingAmount: Number(register.closingAmount ?? 0),
+    expectedAmount: Number(register.expectedAmount ?? 0),
+    salesTotal: Number(register.salesTotal),
+    difference,
+    totalTransactions,
+    breakdown,
+    bySource,
+    movements: register.movements.map((m) => ({
+      type: m.type,
+      amount: Number(m.amount),
+      description: m.description,
+      user: m.user,
+      createdAt: m.createdAt.toISOString(),
+    })),
+    signedBy: signedByName,
+    signedAt: signedAt.toISOString(),
+    notes: register.notes,
+  });
+
+  const reportUrl = await uploadToStorage(pdfBuffer, 'cash-reports', 'application/pdf', 'pdf');
+
+  await prisma.cashRegister.update({
+    where: { id: registerId },
+    data: { reportUrl, signedBy: signedByName, signedAt },
+  });
+
+  return { reportUrl };
 }

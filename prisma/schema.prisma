@@ -313,6 +313,9 @@ model CashRegister {
   transactions   Int                @default(0)
   status         CashRegisterStatus @default(open)
   notes          String?
+  reportUrl      String?            @map("report_url")
+  signedBy       String?            @map("signed_by")
+  signedAt       DateTime?          @map("signed_at") @db.Timestamptz
 
   tenant   Tenant    @relation(fields: [tenantId], references: [id])
   user     User      @relation(fields: [userId], references: [id])

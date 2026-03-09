@@ -54,3 +54,12 @@ export async function createMovement(req: Request, res: Response, next: NextFunc
     next(error);
   }
 }
+
+export async function generateReport(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await cashRegisterService.generateReport(req.tenantId!, req.params.id as string, req.body.signedBy as string);
+    res.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+}

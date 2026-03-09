@@ -178,6 +178,9 @@ export interface CashRegister {
   salesTotal: number;
   transactions: number;
   notes?: string | null;
+  reportUrl?: string | null;
+  signedBy?: string | null;
+  signedAt?: string | null;
   openedAt: string;
   closedAt?: string | null;
   user: { id: string; name: string };

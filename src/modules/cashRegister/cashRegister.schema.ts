@@ -25,6 +25,10 @@ export const createMovementSchema = z.object({
   description: z.string().max(255).optional(),
 });
 
+export const generateReportSchema = z.object({
+  signedBy: z.string().min(2).max(100),
+});
+
 export type OpenCashRegisterInput = z.infer<typeof openCashRegisterSchema>;
 export type CloseCashRegisterInput = z.infer<typeof closeCashRegisterSchema>;
 export type HistoryQuery = z.infer<typeof historyQuerySchema>;
