@@ -9,6 +9,8 @@ import {
   updateProfileSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  verifyEmailSchema,
+  resendVerificationSchema,
 } from './auth.schema';
 import * as authController from './auth.controller';
 
@@ -21,6 +23,8 @@ router.post('/refresh', authLimiter, validate({ body: refreshSchema }), authCont
 router.post('/logout', authLimiter, validate({ body: refreshSchema }), authController.logout);
 router.post('/forgot-password', authLimiter, validate({ body: forgotPasswordSchema }), authController.forgotPassword);
 router.post('/reset-password', authLimiter, validate({ body: resetPasswordSchema }), authController.resetPassword);
+router.post('/verify-email', authLimiter, validate({ body: verifyEmailSchema }), authController.verifyEmail);
+router.post('/resend-verification', authLimiter, validate({ body: resendVerificationSchema }), authController.resendVerification);
 
 // Protected
 router.put('/profile', authenticate, validate({ body: updateProfileSchema }), authController.updateProfile);

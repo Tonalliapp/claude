@@ -5,11 +5,22 @@ import { prisma } from '../../config/database';
 import { redis } from '../../config/redis';
 import { authConfig } from '../../config/auth';
 import { AppError } from '../../middleware/errorHandler';
-import { sendPasswordResetEmail, sendWelcomeEmail } from '../../config/email';
+import { sendPasswordResetEmail, sendWelcomeEmail, sendVerificationEmail } from '../../config/email';
 import { generateUniqueSlug } from '../../utils/generateSlug';
 import type { JwtPayload } from '../../middleware/authenticate';
 import { isLocked, recordFailedAttempt, clearAttempts, getRemainingLockoutSeconds } from '../../middleware/accountLockout';
-import type { LoginInput, RegisterInput, UpdateProfileInput, ResetPasswordInput } from './auth.schema';
+import type { LoginInput, RegisterInput, UpdateProfileInput, ResetPasswordInput, VerifyEmailInput } from './auth.schema';
+
+const VERIFY_CODE_TTL = 86400; // 24 hours
+
+function generateVerificationCode(): string {
+  return String(crypto.randomInt(100000, 999999));
+}
+
+async function storeVerificationCode(email: string, code: string) {
+  const hash = crypto.createHash('sha256').update(code).digest('hex');
+  await redis.set(`email-verify:${email}`, hash, 'EX', VERIFY_CODE_TTL);
+}
 
 function generateTokens(payload: JwtPayload) {
   const accessToken = jwt.sign(
@@ -98,9 +109,11 @@ export async function register(input: RegisterInput) {
     data: { lastLogin: new Date() },
   });
 
-  // Send welcome email (non-blocking)
-  sendWelcomeEmail(input.email, input.ownerName, input.restaurantName).catch((err) =>
-    console.error('[Register] Failed to send welcome email:', err)
+  // Send verification code email (non-blocking)
+  const verifyCode = generateVerificationCode();
+  storeVerificationCode(input.email, verifyCode).catch(() => {});
+  sendVerificationEmail(input.email, input.ownerName, verifyCode).catch((err) =>
+    console.error('[Register] Failed to send verification email:', err)
   );
 
   return {
@@ -112,6 +125,7 @@ export async function register(input: RegisterInput) {
       username: result.user.username,
       email: result.user.email,
       role: result.user.role,
+      emailVerified: result.user.emailVerified,
     },
     tenant: {
       id: result.tenant.id,
@@ -192,6 +206,7 @@ export async function login(input: LoginInput, clientIp?: string) {
       username: user.username,
       email: user.email,
       role: user.role,
+      emailVerified: user.emailVerified,
     },
     tenant: {
       id: owner.tenant!.id,
@@ -317,4 +332,53 @@ export async function resetPassword(input: ResetPasswordInput) {
   await invalidateUserRefreshTokens(userId);
 
   return { message: 'Contraseña actualizada correctamente' };
+}
+
+export async function verifyEmail(input: VerifyEmailInput) {
+  const key = `email-verify:${input.email}`;
+  const storedHash = await redis.get(key);
+
+  if (!storedHash) {
+    throw new AppError(400, 'Código expirado o inválido', 'INVALID_CODE');
+  }
+
+  const inputHash = crypto.createHash('sha256').update(input.code).digest('hex');
+  if (!crypto.timingSafeEqual(Buffer.from(storedHash), Buffer.from(inputHash))) {
+    throw new AppError(400, 'Código incorrecto', 'INVALID_CODE');
+  }
+
+  await redis.del(key);
+
+  const user = await prisma.user.findFirst({ where: { email: input.email, active: true } });
+  if (!user) {
+    throw new AppError(404, 'Usuario no encontrado', 'NOT_FOUND');
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { emailVerified: true },
+  });
+
+  // Send welcome email now that email is verified
+  sendWelcomeEmail(input.email, user.name, '').catch(() => {});
+
+  return { message: 'Email verificado correctamente', verified: true };
+}
+
+export async function resendVerification(email: string) {
+  const user = await prisma.user.findFirst({ where: { email, active: true } });
+
+  // Don't reveal whether email exists
+  if (!user || user.emailVerified) {
+    return { message: 'Si el email existe y no está verificado, recibirás un nuevo código' };
+  }
+
+  const code = generateVerificationCode();
+  await storeVerificationCode(email, code);
+
+  sendVerificationEmail(email, user.name, code).catch((err) =>
+    console.error('[Resend Verification] Failed:', err),
+  );
+
+  return { message: 'Si el email existe y no está verificado, recibirás un nuevo código' };
 }

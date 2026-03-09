@@ -44,6 +44,40 @@ export async function sendPasswordResetEmail(to: string, token: string, userName
   });
 }
 
+export async function sendVerificationEmail(to: string, userName: string, code: string) {
+  await resend.emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject: 'Verifica tu email — Tonalli',
+    html: `
+      <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0a0a0a; color: #e5e5e5; border-radius: 12px; overflow: hidden;">
+        <div style="background: linear-gradient(135deg, #b8860b, #daa520); padding: 32px; text-align: center;">
+          <h1 style="margin: 0; color: #0a0a0a; font-size: 28px; font-weight: 700;">Tonalli</h1>
+          <p style="margin: 8px 0 0; color: #1a1a1a; font-size: 14px;">Verificacion de email</p>
+        </div>
+        <div style="padding: 32px;">
+          <h2 style="color: #daa520; margin: 0 0 16px; font-size: 20px;">Hola ${userName},</h2>
+          <p style="line-height: 1.6; margin: 0 0 24px;">
+            Usa el siguiente codigo para verificar tu cuenta:
+          </p>
+          <div style="text-align: center; margin: 32px 0;">
+            <div style="background: #1a1a1a; border: 2px solid #daa520; border-radius: 12px; padding: 20px 40px; display: inline-block;">
+              <span style="font-size: 36px; font-weight: 700; color: #daa520; letter-spacing: 8px; font-family: monospace;">${code}</span>
+            </div>
+          </div>
+          <p style="line-height: 1.6; color: #888; font-size: 14px;">
+            Este codigo expira en <strong>24 horas</strong>. Si no creaste esta cuenta, ignora este correo.
+          </p>
+          <hr style="border: none; border-top: 1px solid #333; margin: 24px 0;">
+          <p style="color: #666; font-size: 12px; text-align: center;">
+            &copy; ${new Date().getFullYear()} Tonalli — tonalli.app
+          </p>
+        </div>
+      </div>
+    `,
+  });
+}
+
 export async function sendWelcomeEmail(to: string, userName: string, restaurantName: string) {
   await resend.emails.send({
     from: FROM_EMAIL,

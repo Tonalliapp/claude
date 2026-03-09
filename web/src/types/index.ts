@@ -124,6 +124,7 @@ export interface User {
   email: string | null;
   role: 'owner' | 'admin' | 'cashier' | 'waiter' | 'kitchen';
   active?: boolean;
+  emailVerified?: boolean;
   lastLogin?: string | null;
   createdAt?: string;
 }

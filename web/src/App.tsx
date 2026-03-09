@@ -9,6 +9,7 @@ import LoginPage from '@/pages/auth/LoginPage';
 import RegisterPage from '@/pages/auth/RegisterPage';
 import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage';
+import VerifyEmailPage from '@/pages/auth/VerifyEmailPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import DashboardPage from '@/pages/dashboard/DashboardPage';
 import OrdersPage from '@/pages/dashboard/OrdersPage';
@@ -47,6 +48,7 @@ export default function App() {
           <Route path="reset-password" element={<ResetPasswordPage />} />
         </Route>
         <Route element={<ProtectedRoute />}>
+          <Route path="verify-email" element={<VerifyEmailPage />} />
           <Route path="onboarding" element={<OnboardingPage />} />
           <Route element={<DashboardLayout />}>
             <Route path="dashboard" element={<DashboardPage />} />

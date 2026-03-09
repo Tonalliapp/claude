@@ -136,9 +136,10 @@ model User {
   passwordHash String    @map("password_hash")
   role         UserRole
   permissions  Json      @default("{}")
-  active       Boolean   @default(true)
-  lastLogin    DateTime? @map("last_login") @db.Timestamptz
-  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  active        Boolean   @default(true)
+  emailVerified Boolean   @default(false) @map("email_verified")
+  lastLogin     DateTime? @map("last_login") @db.Timestamptz
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   tenant              Tenant?              @relation(fields: [tenantId], references: [id])
   orders              Order[]

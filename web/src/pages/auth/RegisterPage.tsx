@@ -32,7 +32,7 @@ export default function RegisterPage() {
         ...(phone.trim() ? { phone: phone.trim() } : {}),
         ...(address.trim() ? { address: address.trim() } : {}),
       });
-      navigate('/onboarding', { replace: true });
+      navigate('/verify-email', { replace: true, state: { email: email.trim() } });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al registrar');
     }

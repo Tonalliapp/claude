@@ -63,3 +63,21 @@ export async function resetPassword(req: Request, res: Response, next: NextFunct
     next(error);
   }
 }
+
+export async function verifyEmail(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await authService.verifyEmail(req.body);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function resendVerification(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await authService.resendVerification(req.body.email);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
