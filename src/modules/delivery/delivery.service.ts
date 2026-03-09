@@ -448,10 +448,16 @@ export async function notifyYesswera(
     where: { tenantId, platform: 'yesswera', active: true },
   });
 
-  if (!integration) return;
+  if (!integration) {
+    console.warn(`[notifyYesswera] No integration found for tenant ${tenantId}`);
+    return;
+  }
 
   const webhookUrl = (integration.config as Record<string, string>)?.webhookUrl;
-  if (!webhookUrl) return;
+  if (!webhookUrl) {
+    console.warn(`[notifyYesswera] No webhookUrl in config for tenant ${tenantId}`);
+    return;
+  }
 
   const body = JSON.stringify({ externalOrderId, event, data });
   const timestamp = Math.floor(Date.now() / 1000).toString();
@@ -461,7 +467,9 @@ export async function notifyYesswera(
     .update(payload)
     .digest('hex');
 
-  await fetch(webhookUrl, {
+  console.log(`[notifyYesswera] Sending ${event} for ${externalOrderId} to ${webhookUrl}`);
+
+  const res = await fetch(webhookUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -471,6 +479,8 @@ export async function notifyYesswera(
     body,
     signal: AbortSignal.timeout(5000),
   });
+
+  console.log(`[notifyYesswera] ${event} response: ${res.status}`);
 }
 
 export async function notifyYessweraCustom(

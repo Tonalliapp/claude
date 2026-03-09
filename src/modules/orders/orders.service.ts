@@ -25,14 +25,20 @@ function notifyYessweraOrderReady(order: {
   deliveryMeta: unknown;
   confirmedAt: Date | null;
 }) {
-  if (order.source !== 'yesswera' || !order.externalOrderId) return;
+  if (order.source !== 'yesswera' || !order.externalOrderId) {
+    console.log(`[order_ready] Skipped: source=${order.source}, externalOrderId=${order.externalOrderId}`);
+    return;
+  }
+  console.log(`[order_ready] Firing webhook for order ${order.externalOrderId}`);
   const prepTimeMinutes = order.confirmedAt
     ? Math.round((Date.now() - order.confirmedAt.getTime()) / 60000)
     : undefined;
   notifyYesswera(order.tenantId, order.externalOrderId, 'order_ready', {
     readyAt: new Date().toISOString(),
     ...(prepTimeMinutes !== undefined ? { prepTimeMinutes } : {}),
-  }).catch(() => {});
+  }).catch((err) => {
+    console.error('[order_ready webhook] Failed to notify Yesswera:', err?.message || err);
+  });
 }
 
 export async function list(tenantId: string, query: ListQuery) {
@@ -254,6 +260,18 @@ export async function updateStatus(tenantId: string, id: string, status: OrderSt
       `No se puede cambiar de "${order.status}" a "${status}"`,
       'INVALID_TRANSITION',
     );
+  }
+
+  // Block ready → delivered for delivery orders with driverCode — must use confirm-pickup endpoint
+  if (status === 'delivered' && order.status === 'ready' && order.source === 'yesswera') {
+    const meta = (order.deliveryMeta ?? {}) as Record<string, unknown>;
+    if (meta.driverCode && !meta.pickupConfirmed) {
+      throw new AppError(
+        400,
+        'Órdenes delivery deben confirmarse con el código del repartidor. Usa el flujo de verificación en Cocina.',
+        'PICKUP_VERIFICATION_REQUIRED',
+      );
+    }
   }
 
   const timestamps: Record<string, unknown> = {};

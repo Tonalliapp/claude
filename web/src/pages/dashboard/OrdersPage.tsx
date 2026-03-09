@@ -218,7 +218,7 @@ export default function OrdersPage() {
                         Cancelar
                       </button>
                     )}
-                    {nextLabel && (
+                    {nextLabel && !(order.status === 'ready' && order.source === 'yesswera' && order.deliveryMeta?.driverCode) && (
                       <button
                         onClick={() => {
                           if (order.status === 'delivered') {
@@ -239,6 +239,11 @@ export default function OrdersPage() {
                         {nextLabel}
                         {order.status !== 'delivered' && <ChevronRight size={14} />}
                       </button>
+                    )}
+                    {order.status === 'ready' && order.source === 'yesswera' && order.deliveryMeta?.driverCode && (
+                      <span className="flex items-center gap-1 px-3.5 py-1.5 rounded-lg bg-orange-500/10 border border-orange-400/30 text-orange-300 text-xs font-medium">
+                        Verificar en Cocina
+                      </span>
                     )}
                   </div>
                 </div>
