@@ -17,8 +17,8 @@ const router = Router();
 // Public (rate limited: 5 req/min per IP)
 router.post('/register', authLimiter, validate({ body: registerSchema }), authController.register);
 router.post('/login', authLimiter, validate({ body: loginSchema }), authController.login);
-router.post('/refresh', validate({ body: refreshSchema }), authController.refresh);
-router.post('/logout', validate({ body: refreshSchema }), authController.logout);
+router.post('/refresh', authLimiter, validate({ body: refreshSchema }), authController.refresh);
+router.post('/logout', authLimiter, validate({ body: refreshSchema }), authController.logout);
 router.post('/forgot-password', authLimiter, validate({ body: forgotPasswordSchema }), authController.forgotPassword);
 router.post('/reset-password', authLimiter, validate({ body: resetPasswordSchema }), authController.resetPassword);
 

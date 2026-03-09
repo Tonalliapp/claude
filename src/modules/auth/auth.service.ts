@@ -26,6 +26,20 @@ function generateTokens(payload: JwtPayload) {
 async function storeRefreshToken(token: string, payload: JwtPayload) {
   const key = `refresh:${token}`;
   await redis.set(key, JSON.stringify(payload), 'EX', authConfig.refreshToken.ttl);
+  // Track token per user for invalidation on password reset
+  await redis.sadd(`user-tokens:${payload.userId}`, key);
+  await redis.expire(`user-tokens:${payload.userId}`, authConfig.refreshToken.ttl);
+}
+
+async function invalidateUserRefreshTokens(userId: string) {
+  const setKey = `user-tokens:${userId}`;
+  const tokenKeys = await redis.smembers(setKey);
+  if (tokenKeys.length > 0) {
+    const pipeline = redis.pipeline();
+    for (const tk of tokenKeys) pipeline.del(tk);
+    pipeline.del(setKey);
+    await pipeline.exec();
+  }
 }
 
 export async function register(input: RegisterInput) {
@@ -108,9 +122,11 @@ export async function register(input: RegisterInput) {
 }
 
 export async function login(input: LoginInput, clientIp?: string) {
-  // Check account lockout (5 failed attempts → 15 min ban)
-  if (clientIp && isLocked(clientIp)) {
-    const remaining = getRemainingLockoutSeconds(clientIp);
+  const { email, username } = input;
+
+  // Check account lockout — dual key: per-IP AND per-account (blocks distributed attacks)
+  if (clientIp && await isLocked(clientIp, email, username)) {
+    const remaining = await getRemainingLockoutSeconds(clientIp, email, username);
     throw new AppError(
       429,
       `Demasiados intentos fallidos. Intenta de nuevo en ${Math.ceil(remaining / 60)} minuto(s).`,
@@ -120,12 +136,12 @@ export async function login(input: LoginInput, clientIp?: string) {
 
   // Step 1: Find the owner by email to identify the tenant
   const owner = await prisma.user.findFirst({
-    where: { email: input.email, role: 'owner', active: true },
+    where: { email, role: 'owner', active: true },
     include: { tenant: { select: { id: true, status: true, slug: true, name: true } } },
   });
 
   if (!owner) {
-    if (clientIp) recordFailedAttempt(clientIp);
+    if (clientIp) await recordFailedAttempt(clientIp, email, username);
     throw new AppError(401, 'Credenciales inválidas', 'INVALID_CREDENTIALS');
   }
 
@@ -135,23 +151,23 @@ export async function login(input: LoginInput, clientIp?: string) {
 
   // Step 2: Find the user by (tenantId, username)
   const user = await prisma.user.findUnique({
-    where: { tenantId_username: { tenantId: owner.tenantId!, username: input.username } },
+    where: { tenantId_username: { tenantId: owner.tenantId!, username } },
   });
 
   if (!user || !user.active) {
-    if (clientIp) recordFailedAttempt(clientIp);
+    if (clientIp) await recordFailedAttempt(clientIp, email, username);
     throw new AppError(401, 'Credenciales inválidas', 'INVALID_CREDENTIALS');
   }
 
   // Step 3: Verify password
   const validPassword = await bcrypt.compare(input.password, user.passwordHash);
   if (!validPassword) {
-    if (clientIp) recordFailedAttempt(clientIp);
+    if (clientIp) await recordFailedAttempt(clientIp, email, username);
     throw new AppError(401, 'Credenciales inválidas', 'INVALID_CREDENTIALS');
   }
 
-  // Successful login — clear lockout attempts
-  if (clientIp) clearAttempts(clientIp);
+  // Successful login — clear lockout attempts for both IP and account
+  if (clientIp) await clearAttempts(clientIp, email, username);
 
   const jwtPayload: JwtPayload = {
     userId: user.id,
@@ -298,7 +314,7 @@ export async function resetPassword(input: ResetPasswordInput) {
   });
 
   // Invalidate all existing refresh tokens for this user
-  // (scan Redis for matching tokens would be complex, so we skip for now)
+  await invalidateUserRefreshTokens(userId);
 
   return { message: 'Contraseña actualizada correctamente' };
 }
