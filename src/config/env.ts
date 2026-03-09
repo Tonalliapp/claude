@@ -51,6 +51,11 @@ const envSchema = z.object({
   // Storage
   STORAGE_PUBLIC_URL: z.string().url().optional(),
 
+  // Web Push (VAPID)
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_EMAIL: z.string().email().default('valenzuela.carloseduardo@gmail.com'),
+
   // Sentry
   SENTRY_DSN: z.string().url().optional(),
 });

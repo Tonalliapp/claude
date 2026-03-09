@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/auth/AuthProvider';
 import { useSocket } from '@/socket/SocketProvider';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 const NAV_ITEMS = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: null },
@@ -46,6 +47,15 @@ export default function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
+  const { permission, requestPermission } = usePushNotifications();
+
+  useEffect(() => {
+    if (permission === 'default') {
+      // Auto-request after a short delay so user sees the dashboard first
+      const timer = setTimeout(() => requestPermission(), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [permission]);
 
   const handleLogout = async () => {
     await logout();

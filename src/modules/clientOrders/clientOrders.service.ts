@@ -2,6 +2,7 @@ import { prisma } from '../../config/database';
 import { AppError } from '../../middleware/errorHandler';
 import { getIO } from '../../websocket/socket';
 import { tenantRoom, tableRoom } from '../../websocket/rooms';
+import { notifyTenant } from '../notifications/push.service';
 import * as ordersService from '../orders/orders.service';
 import type { CreateClientOrderInput, RequestBillInput, CallWaiterInput } from './clientOrders.schema';
 
@@ -103,6 +104,13 @@ export async function requestBill(data: RequestBillInput) {
 
   io.of('/staff').to(tenantRoom(tenant.id)).emit('table:bill-requested', payload);
 
+  notifyTenant(tenant.id, {
+    title: 'Cuenta solicitada',
+    body: `Mesa ${table.number} solicita la cuenta`,
+    tag: `bill-${table.id}`,
+    url: '/dashboard/orders',
+  }).catch(() => {});
+
   return { message: 'Cuenta solicitada. Un mesero se acercará a tu mesa.', tableNumber: table.number };
 }
 
@@ -119,6 +127,13 @@ export async function callWaiter(data: CallWaiterInput) {
   };
 
   io.of('/staff').to(tenantRoom(tenant.id)).emit('table:waiter-called', payload);
+
+  notifyTenant(tenant.id, {
+    title: 'Mesero solicitado',
+    body: `Mesa ${table.number}: ${data.reason || 'Asistencia solicitada'}`,
+    tag: `waiter-${table.id}`,
+    url: '/dashboard/orders',
+  }).catch(() => {});
 
   return { message: 'Un mesero se acercará a tu mesa.', tableNumber: table.number };
 }

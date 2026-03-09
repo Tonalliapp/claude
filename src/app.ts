@@ -28,6 +28,7 @@ import subscriptionsRoutes from './modules/subscriptions/subscriptions.routes';
 import adminRoutes from './modules/admin/admin.routes';
 import deliveryRoutes from './modules/delivery/delivery.routes';
 import ingredientsRoutes from './modules/ingredients/ingredients.routes';
+import pushRoutes from './modules/notifications/push.routes';
 
 const app = express();
 
@@ -97,6 +98,7 @@ app.use('/api/v1/cash-register', cashRegisterRoutes);
 app.use('/api/v1/payments', paymentsRoutes);
 app.use('/api/v1/reports', reportsRoutes);
 app.use('/api/v1/subscriptions', subscriptionsRoutes);
+app.use('/api/v1/push', pushRoutes);
 
 // Admin (superadmin only)
 app.use('/api/v1/admin', adminRoutes);

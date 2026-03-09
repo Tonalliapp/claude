@@ -7,6 +7,7 @@ import { tenantRoom, kitchenRoom, tableRoom } from '../../websocket/rooms';
 import { generateOrderNumber } from '../../utils/generateOrderNumber';
 import { deductInventory } from '../../utils/inventoryDeduction';
 import { notifyYesswera } from '../delivery/delivery.service';
+import { notifyTenant } from '../notifications/push.service';
 import type { CreateOrderInput, CreatePosOrderInput, ListQuery } from './orders.schema';
 
 /** Apply IVA/tax from tenant config. Returns total = subtotal * (1 + rate). */
@@ -159,6 +160,13 @@ export async function create(tenantId: string, data: CreateOrderInput, userId?: 
   if (data.tableId) {
     io.of('/client').to(tableRoom(tenantId, data.tableId)).emit('order:updated', order);
   }
+
+  notifyTenant(tenantId, {
+    title: 'Nuevo pedido',
+    body: `Pedido #${String(order.orderNumber).padStart(3, '0')} — $${Number(order.total).toFixed(2)}`,
+    tag: `order-${order.id}`,
+    url: '/dashboard/orders',
+  }).catch(() => {});
 
   return order;
 }

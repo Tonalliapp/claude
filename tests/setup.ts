@@ -19,4 +19,5 @@ process.env.RESEND_API_KEY = 'test-resend-key';
 process.env.STRIPE_SECRET_KEY = 'sk_test_fake';
 process.env.STRIPE_PUBLISHABLE_KEY = 'pk_test_fake';
 process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_fake';
+// VAPID keys omitted — optional in env schema
 // SENTRY_DSN omitted — optional in env schema
