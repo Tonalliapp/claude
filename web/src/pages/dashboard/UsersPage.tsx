@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Shield, Loader2 } from 'lucide-react';
+import { Plus, Shield, Loader2, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/config/api';
 import type { User } from '@/types';
@@ -21,6 +21,7 @@ const AVAILABLE = ['admin', 'cashier', 'waiter', 'kitchen'] as const;
 export default function UsersPage() {
   const queryClient = useQueryClient();
   const [showAdd, setShowAdd] = useState(false);
+  const [editUser, setEditUser] = useState<User | null>(null);
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -33,7 +34,13 @@ export default function UsersPage() {
 
   const addMut = useMutation({
     mutationFn: (d: { name: string; username: string; password: string; role: string }) => apiFetch('/users', { method: 'POST', body: d, auth: true }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['users'] }); setShowAdd(false); setName(''); setUsername(''); setPassword(''); setRole('waiter'); toast.success('Usuario creado'); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['users'] }); setShowAdd(false); resetForm(); toast.success('Usuario creado'); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const editMut = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) => apiFetch(`/users/${id}`, { method: 'PUT', body: data, auth: true }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['users'] }); setEditUser(null); resetForm(); toast.success('Usuario actualizado'); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -43,13 +50,36 @@ export default function UsersPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  function resetForm() {
+    setName(''); setUsername(''); setPassword(''); setRole('waiter');
+  }
+
+  function openEdit(u: User) {
+    setEditUser(u);
+    setName(u.name);
+    setUsername(u.username);
+    setPassword('');
+    setRole(u.role);
+  }
+
+  function handleEdit() {
+    if (!editUser) return;
+    const data: Record<string, unknown> = {};
+    if (name.trim() && name !== editUser.name) data.name = name.trim();
+    if (username.trim() && username !== editUser.username) data.username = username.trim();
+    if (role !== editUser.role) data.role = role;
+    if (password.trim()) data.password = password.trim();
+    if (Object.keys(data).length === 0) { toast.info('Sin cambios'); return; }
+    editMut.mutate({ id: editUser.id, data });
+  }
+
   const list = Array.isArray(users) ? users : [];
 
   return (
     <div className="p-6 lg:p-8 max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-white text-xl font-light tracking-wide">Usuarios</h2>
-        <button onClick={() => setShowAdd(true)} className="w-9 h-9 rounded-full border border-gold flex items-center justify-center text-gold hover:bg-gold/10 transition-colors">
+        <button onClick={() => { resetForm(); setShowAdd(true); }} className="w-9 h-9 rounded-full border border-gold flex items-center justify-center text-gold hover:bg-gold/10 transition-colors">
           <Plus size={16} />
         </button>
       </div>
@@ -75,13 +105,18 @@ export default function UsersPage() {
                   <p className="text-white text-[15px] font-medium">{u.name}</p>
                   <p className="text-silver-dark text-xs mt-0.5">@{u.username}</p>
                 </div>
-                <div className="flex flex-col items-end gap-1.5">
+                <div className="flex items-center gap-2">
                   <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wide ${cfg.color} ${cfg.bg}`}>{cfg.label}</span>
                   {!isOwner && (
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" checked={u.active !== false} onChange={e => toggleMut.mutate({ id: u.id, active: e.target.checked })} className="sr-only peer" />
-                      <div className="w-9 h-5 bg-tonalli-black-elevated peer-checked:bg-jade-dark rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-silver-dark peer-checked:after:bg-jade-bright after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
-                    </label>
+                    <>
+                      <button onClick={() => openEdit(u)} className="w-7 h-7 rounded-lg border border-light-border flex items-center justify-center text-silver-dark hover:text-gold hover:border-gold/50 transition-colors">
+                        <Pencil size={12} />
+                      </button>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" checked={u.active !== false} onChange={e => toggleMut.mutate({ id: u.id, active: e.target.checked })} className="sr-only peer" />
+                        <div className="w-9 h-5 bg-tonalli-black-elevated peer-checked:bg-jade-dark rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-silver-dark peer-checked:after:bg-jade-bright after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+                      </label>
+                    </>
                   )}
                 </div>
               </div>
@@ -90,6 +125,7 @@ export default function UsersPage() {
         </div>
       )}
 
+      {/* Add User Modal */}
       {showAdd && (
         <Modal title="Nuevo Usuario" onClose={() => setShowAdd(false)}>
           <InputField label="NOMBRE" value={name} onChange={setName} placeholder="Ana Garcia" required />
@@ -111,6 +147,32 @@ export default function UsersPage() {
           </div>
           <GoldButton loading={addMut.isPending} disabled={!name.trim() || !username.trim() || !password.trim()} onClick={() => addMut.mutate({ name, username, password, role })}>
             Crear Usuario
+          </GoldButton>
+        </Modal>
+      )}
+
+      {/* Edit User Modal */}
+      {editUser && (
+        <Modal title="Editar Usuario" onClose={() => { setEditUser(null); resetForm(); }}>
+          <InputField label="NOMBRE" value={name} onChange={setName} placeholder="Ana Garcia" required />
+          <InputField label="USUARIO" value={username} onChange={setUsername} placeholder="ana" required />
+          <InputField label="NUEVA CONTRASENA" value={password} onChange={setPassword} placeholder="Dejar vacio para no cambiar" type="password" />
+          <div className="space-y-1.5">
+            <label className="text-gold-muted text-[10px] font-medium tracking-[2px]">ROL</label>
+            <div className="flex flex-wrap gap-2">
+              {AVAILABLE.map(r => {
+                const c = ROLES[r];
+                const active = role === r;
+                return (
+                  <button key={r} onClick={() => setRole(r)} className={`px-3.5 py-2.5 rounded-lg border text-[13px] font-medium transition-colors ${active ? `border-gold ${c.bg} ${c.color}` : 'border-light-border bg-tonalli-black-card text-silver-dark'}`}>
+                    {c.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <GoldButton loading={editMut.isPending} disabled={!name.trim() || !username.trim()} onClick={handleEdit}>
+            Guardar Cambios
           </GoldButton>
         </Modal>
       )}

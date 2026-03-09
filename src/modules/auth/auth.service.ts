@@ -8,6 +8,7 @@ import { AppError } from '../../middleware/errorHandler';
 import { sendPasswordResetEmail, sendWelcomeEmail } from '../../config/email';
 import { generateUniqueSlug } from '../../utils/generateSlug';
 import type { JwtPayload } from '../../middleware/authenticate';
+import { isLocked, recordFailedAttempt, clearAttempts, getRemainingLockoutSeconds } from '../../middleware/accountLockout';
 import type { LoginInput, RegisterInput, UpdateProfileInput, ResetPasswordInput } from './auth.schema';
 
 function generateTokens(payload: JwtPayload) {
@@ -106,7 +107,17 @@ export async function register(input: RegisterInput) {
   };
 }
 
-export async function login(input: LoginInput) {
+export async function login(input: LoginInput, clientIp?: string) {
+  // Check account lockout (5 failed attempts → 15 min ban)
+  if (clientIp && isLocked(clientIp)) {
+    const remaining = getRemainingLockoutSeconds(clientIp);
+    throw new AppError(
+      429,
+      `Demasiados intentos fallidos. Intenta de nuevo en ${Math.ceil(remaining / 60)} minuto(s).`,
+      'ACCOUNT_LOCKED',
+    );
+  }
+
   // Step 1: Find the owner by email to identify the tenant
   const owner = await prisma.user.findFirst({
     where: { email: input.email, role: 'owner', active: true },
@@ -114,6 +125,7 @@ export async function login(input: LoginInput) {
   });
 
   if (!owner) {
+    if (clientIp) recordFailedAttempt(clientIp);
     throw new AppError(401, 'Credenciales inválidas', 'INVALID_CREDENTIALS');
   }
 
@@ -127,14 +139,19 @@ export async function login(input: LoginInput) {
   });
 
   if (!user || !user.active) {
+    if (clientIp) recordFailedAttempt(clientIp);
     throw new AppError(401, 'Credenciales inválidas', 'INVALID_CREDENTIALS');
   }
 
   // Step 3: Verify password
   const validPassword = await bcrypt.compare(input.password, user.passwordHash);
   if (!validPassword) {
+    if (clientIp) recordFailedAttempt(clientIp);
     throw new AppError(401, 'Credenciales inválidas', 'INVALID_CREDENTIALS');
   }
+
+  // Successful login — clear lockout attempts
+  if (clientIp) clearAttempts(clientIp);
 
   const jwtPayload: JwtPayload = {
     userId: user.id,

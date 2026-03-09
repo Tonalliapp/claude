@@ -38,6 +38,8 @@ export default function SettingsPage() {
   const [openTime, setOpenTime] = useState('09:00');
   const [closeTime, setCloseTime] = useState('22:00');
   const [timezone, setTimezone] = useState('America/Mexico_City');
+  const [ivaEnabled, setIvaEnabled] = useState(false);
+  const [ivaRate, setIvaRate] = useState('16');
 
   const { data: tenant, isLoading } = useQuery({
     queryKey: ['tenant-settings'],
@@ -46,19 +48,21 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (tenant) {
-      const cfg = (tenant.config ?? {}) as Record<string, string>;
+      const cfg = (tenant.config ?? {}) as Record<string, unknown>;
       setName(tenant.name || '');
-      setAddress(cfg.address || '');
-      setPhone(cfg.phone || '');
-      setCurrency(cfg.currency || 'MXN');
-      setOpenTime(cfg.openTime || '09:00');
-      setCloseTime(cfg.closeTime || '22:00');
-      setTimezone(cfg.timezone || 'America/Mexico_City');
+      setAddress((cfg.address as string) || '');
+      setPhone((cfg.phone as string) || '');
+      setCurrency((cfg.currency as string) || 'MXN');
+      setOpenTime((cfg.openTime as string) || '09:00');
+      setCloseTime((cfg.closeTime as string) || '22:00');
+      setTimezone((cfg.timezone as string) || 'America/Mexico_City');
+      setIvaEnabled(cfg.ivaEnabled === true);
+      setIvaRate(String(cfg.ivaRate ?? '16'));
     }
   }, [tenant]);
 
   const updateMut = useMutation({
-    mutationFn: (data: { name: string; config: Record<string, string> }) =>
+    mutationFn: (data: { name: string; config: Record<string, unknown> }) =>
       apiFetch('/tenants/me', { method: 'PUT', body: data, auth: true }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['tenant-settings'] }); toast.success('Configuracion guardada'); },
     onError: (e: Error) => toast.error(e.message),
@@ -93,6 +97,7 @@ export default function SettingsPage() {
   };
 
   const handleSave = () => {
+    const parsedRate = parseFloat(ivaRate);
     updateMut.mutate({
       name: name.trim(),
       config: {
@@ -102,6 +107,8 @@ export default function SettingsPage() {
         openTime,
         closeTime,
         timezone,
+        ivaEnabled,
+        ivaRate: isNaN(parsedRate) ? 16 : parsedRate,
       },
     });
   };
@@ -169,6 +176,46 @@ export default function SettingsPage() {
               <option key={tz.value} value={tz.value}>{tz.label}</option>
             ))}
           </select>
+        </div>
+
+        {/* IVA / Tax */}
+        <div className="bg-tonalli-black-card border border-subtle rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gold-muted text-[10px] font-medium tracking-[2px]">IVA / IMPUESTOS</p>
+              <p className="text-silver-dark text-[11px] mt-1">Aplica impuesto automaticamente al total de cada pedido</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={ivaEnabled}
+              onClick={() => setIvaEnabled(!ivaEnabled)}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                ivaEnabled ? 'bg-jade-dark' : 'bg-white/10'
+              }`}
+            >
+              <span
+                className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${
+                  ivaEnabled ? 'translate-x-[18px]' : 'translate-x-[3px]'
+                }`}
+              />
+            </button>
+          </div>
+          {ivaEnabled && (
+            <div className="space-y-1.5">
+              <label className="text-silver-muted text-[10px]">Porcentaje de IVA (%)</label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                value={ivaRate}
+                onChange={e => setIvaRate(e.target.value)}
+                className="w-32 bg-tonalli-black border border-light-border rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-gold/30 transition-colors"
+              />
+              <p className="text-silver-dark text-[10px]">IVA en Mexico: 16%</p>
+            </div>
+          )}
         </div>
 
         {tenant?.slug && (

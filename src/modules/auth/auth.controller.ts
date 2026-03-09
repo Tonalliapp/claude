@@ -12,7 +12,7 @@ export async function register(req: Request, res: Response, next: NextFunction) 
 
 export async function login(req: Request, res: Response, next: NextFunction) {
   try {
-    const result = await authService.login(req.body);
+    const result = await authService.login(req.body, req.ip);
     res.json(result);
   } catch (error) {
     next(error);

@@ -9,6 +9,17 @@ import { deductInventory } from '../../utils/inventoryDeduction';
 import { notifyYesswera } from '../delivery/delivery.service';
 import type { CreateOrderInput, CreatePosOrderInput, ListQuery } from './orders.schema';
 
+/** Apply IVA/tax from tenant config. Returns total = subtotal * (1 + rate). */
+async function applyTax(tenantId: string, subtotal: Decimal): Promise<Decimal> {
+  const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { config: true } });
+  const cfg = (tenant?.config ?? {}) as Record<string, unknown>;
+  if (cfg.ivaEnabled && typeof cfg.ivaRate === 'number' && cfg.ivaRate > 0) {
+    const rate = new Decimal(cfg.ivaRate).div(100);
+    return subtotal.add(subtotal.mul(rate));
+  }
+  return subtotal;
+}
+
 const orderInclude = {
   items: {
     include: { product: { select: { id: true, name: true, imageUrl: true, category: { select: { id: true, name: true } } } } },
@@ -110,7 +121,8 @@ export async function create(tenantId: string, data: CreateOrderInput, userId?: 
     };
   });
 
-  const total = items.reduce((sum, i) => sum.add(i.subtotal), new Decimal(0));
+  const subtotal = items.reduce((sum, i) => sum.add(i.subtotal), new Decimal(0));
+  const total = await applyTax(tenantId, subtotal);
   const orderNumber = await generateOrderNumber(tenantId);
 
   const order = await prisma.order.create({
@@ -120,7 +132,7 @@ export async function create(tenantId: string, data: CreateOrderInput, userId?: 
       userId,
       orderNumber,
       orderType: (data as { orderType?: string }).orderType ?? 'dine_in',
-      subtotal: total,
+      subtotal,
       total,
       notes: data.notes,
       customerName: (data as { customerName?: string }).customerName,
@@ -177,7 +189,8 @@ export async function createPosOrder(tenantId: string, data: CreatePosOrderInput
     };
   });
 
-  const total = items.reduce((sum, i) => sum.add(i.subtotal), new Decimal(0));
+  const subtotal = items.reduce((sum, i) => sum.add(i.subtotal), new Decimal(0));
+  const total = await applyTax(tenantId, subtotal);
   const orderNumber = await generateOrderNumber(tenantId);
 
   // Atomic transaction: create order + payment + update cash register
@@ -189,7 +202,7 @@ export async function createPosOrder(tenantId: string, data: CreatePosOrderInput
         orderNumber,
         orderType: data.orderType,
         status: data.payImmediately ? 'paid' : 'confirmed',
-        subtotal: total,
+        subtotal,
         total,
         paidAt: data.payImmediately ? new Date() : undefined,
         notes: data.notes,
