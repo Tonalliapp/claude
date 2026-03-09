@@ -7,13 +7,17 @@ interface Props {
   quantity: number;
   onAdd: () => void;
   onUpdateQuantity: (qty: number) => void;
+  onTap?: () => void;
 }
 
-export default function ProductCard({ product, quantity, onAdd, onUpdateQuantity }: Props) {
+export default function ProductCard({ product, quantity, onAdd, onUpdateQuantity, onTap }: Props) {
   const unavailable = !product.available;
 
   return (
-    <div className={`flex gap-3 p-3 rounded-xl border border-light-border bg-tonalli-black-card ${unavailable ? 'opacity-50' : ''}`}>
+    <div
+      className={`flex gap-3 p-3 rounded-xl border border-light-border bg-tonalli-black-card ${unavailable ? 'opacity-50' : ''} ${onTap ? 'cursor-pointer active:bg-tonalli-black-soft' : ''}`}
+      onClick={onTap}
+    >
       {product.imageUrl && (
         <img
           src={product.imageUrl}
@@ -29,7 +33,7 @@ export default function ProductCard({ product, quantity, onAdd, onUpdateQuantity
         )}
         <p className="text-gold font-semibold text-sm mt-1.5">${Number(product.price).toFixed(2)}</p>
       </div>
-      <div className="flex items-end shrink-0">
+      <div className="flex items-end shrink-0" onClick={e => e.stopPropagation()}>
         {unavailable ? (
           <span className="text-silver-dark text-xs">No disponible</span>
         ) : quantity > 0 ? (

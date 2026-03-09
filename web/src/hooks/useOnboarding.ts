@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { apiFetch } from '@/config/api';
 
 const COMPLETE_KEY = 'tonalli_onboarding_complete';
 const STEP_KEY = 'tonalli_onboarding_step';
@@ -19,6 +20,12 @@ export function useOnboarding() {
   const complete = useCallback(() => {
     localStorage.setItem(COMPLETE_KEY, 'true');
     localStorage.removeItem(STEP_KEY);
+    // Persist to backend so it survives across devices/browsers
+    apiFetch('/tenants/me', {
+      method: 'PUT',
+      body: { config: { onboardingComplete: true } },
+      auth: true,
+    }).catch(() => {});
   }, []);
 
   const reset = useCallback(() => {

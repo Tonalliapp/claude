@@ -55,6 +55,15 @@ const config: Config = {
         'status-ready': 'rgba(74, 140, 111, 0.15)',
         'table-jade': 'rgba(74, 140, 111, 0.06)',
       },
+      keyframes: {
+        'slide-up': {
+          from: { transform: 'translateY(100%)' },
+          to: { transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'slide-up': 'slide-up 0.3s ease-out',
+      },
     },
   },
   plugins: [],

@@ -17,23 +17,42 @@ import { apiFetch } from '@/config/api';
 import type { DashboardData, Category } from '@/types';
 import { useOnboarding } from '@/hooks/useOnboarding';
 
+interface TenantConfig {
+  onboardingComplete?: boolean;
+  [key: string]: unknown;
+}
+
 export default function DashboardPage() {
   const { user, tenant } = useAuth();
-  const { isComplete: onboardingComplete } = useOnboarding();
+  const { isComplete: onboardingComplete, complete } = useOnboarding();
 
   const canViewDashboard = user?.role === 'owner' || user?.role === 'admin';
+
+  // Sync onboarding state from backend (covers device/browser change)
+  const { data: tenantSettings } = useQuery({
+    queryKey: ['tenant-settings'],
+    queryFn: () => apiFetch<{ config: TenantConfig }>('/tenants/me', { auth: true }),
+    enabled: canViewDashboard && user?.role === 'owner' && !onboardingComplete,
+  });
+
+  // If backend says onboarding is complete, sync to localStorage
+  if (tenantSettings?.config?.onboardingComplete && !onboardingComplete) {
+    complete();
+  }
+
+  const effectiveOnboardingComplete = onboardingComplete || tenantSettings?.config?.onboardingComplete;
 
   // Check if owner needs onboarding
   const { data: categories } = useQuery({
     queryKey: ['categories'],
     queryFn: () => apiFetch<Category[]>('/categories', { auth: true }),
-    enabled: canViewDashboard && user?.role === 'owner' && !onboardingComplete,
+    enabled: canViewDashboard && user?.role === 'owner' && !effectiveOnboardingComplete,
   });
 
   if (
     canViewDashboard &&
     user?.role === 'owner' &&
-    !onboardingComplete &&
+    !effectiveOnboardingComplete &&
     categories !== undefined &&
     categories.length === 0
   ) {
