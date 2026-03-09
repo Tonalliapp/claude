@@ -2,19 +2,25 @@ import { Router } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { roleGuard } from '../../middleware/roleGuard';
 import { validate } from '../../middleware/validator';
+import { checkFeature } from '../../middleware/planLimits';
 import { periodQuerySchema, topProductsQuerySchema } from './reports.schema';
 import * as ctrl from './reports.controller';
 
 const router = Router();
 router.use(authenticate, roleGuard('owner', 'admin'));
 
-router.get('/export/sales', validate({ query: periodQuerySchema }), ctrl.exportSalesCsv);
-router.get('/payment-breakdown', validate({ query: periodQuerySchema }), ctrl.paymentBreakdown);
+// Basic plan: sales, top-products, dashboard
 router.get('/sales', validate({ query: periodQuerySchema }), ctrl.sales);
 router.get('/top-products', validate({ query: topProductsQuerySchema }), ctrl.topProducts);
-router.get('/by-waiter', validate({ query: periodQuerySchema }), ctrl.byWaiter);
 router.get('/dashboard', ctrl.dashboard);
-router.get('/product-costs', ctrl.productCosts);
-router.get('/ingredient-consumption', validate({ query: periodQuerySchema }), ctrl.ingredientConsumption);
+
+// Professional+: full reports
+router.get('/payment-breakdown', checkFeature('full_reports'), validate({ query: periodQuerySchema }), ctrl.paymentBreakdown);
+router.get('/by-waiter', checkFeature('full_reports'), validate({ query: periodQuerySchema }), ctrl.byWaiter);
+router.get('/product-costs', checkFeature('full_reports'), ctrl.productCosts);
+router.get('/ingredient-consumption', checkFeature('full_reports'), validate({ query: periodQuerySchema }), ctrl.ingredientConsumption);
+
+// Premium: export
+router.get('/export/sales', checkFeature('export_reports'), validate({ query: periodQuerySchema }), ctrl.exportSalesCsv);
 
 export default router;

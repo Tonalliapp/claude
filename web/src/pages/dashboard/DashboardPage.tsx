@@ -9,7 +9,9 @@ import {
   Grid3X3,
   UtensilsCrossed,
   Loader2,
+  Award,
 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '@/auth/AuthProvider';
 import { apiFetch } from '@/config/api';
 import type { DashboardData, Category } from '@/types';
@@ -109,6 +111,61 @@ export default function DashboardPage() {
               <p className="text-jade-light text-3xl font-semibold">{data.occupiedTables}</p>
               <p className="text-silver-muted text-xs mt-1">de {data.totalTables} mesas</p>
             </div>
+          </div>
+
+          {/* Sales Trend + Top Products */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            {/* 7-day sales trend */}
+            {data.salesTrend && data.salesTrend.length > 0 && (
+              <div className="bg-tonalli-black-card border border-subtle rounded-2xl p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <TrendingUp size={14} className="text-gold" />
+                  <p className="text-silver-muted text-[10px] font-medium tracking-[1.5px]">VENTAS ÚLTIMOS 7 DÍAS</p>
+                </div>
+                <ResponsiveContainer width="100%" height={160}>
+                  <BarChart data={data.salesTrend} barSize={20}>
+                    <XAxis dataKey="day" tick={{ fill: '#9CA3AF', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: '#9CA3AF', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v >= 1000 ? `${(v/1000).toFixed(0)}k` : v}`} width={45} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '8px', fontSize: '12px' }}
+                      labelStyle={{ color: '#C9A84C' }}
+                      formatter={(value: number) => [`$${value.toFixed(0)}`, 'Ventas']}
+                    />
+                    <Bar dataKey="sales" fill="#C9A84C" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {/* Top products today */}
+            {data.topProducts && data.topProducts.length > 0 && (
+              <div className="bg-tonalli-black-card border border-subtle rounded-2xl p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <Award size={14} className="text-jade" />
+                  <p className="text-silver-muted text-[10px] font-medium tracking-[1.5px]">TOP PRODUCTOS HOY</p>
+                </div>
+                <div className="space-y-3">
+                  {data.topProducts.map((p, i) => {
+                    const maxQty = data.topProducts![0].quantity;
+                    const pct = maxQty > 0 ? (p.quantity / maxQty) * 100 : 0;
+                    return (
+                      <div key={i}>
+                        <div className="flex justify-between mb-1">
+                          <span className="text-silver text-sm truncate mr-2">{p.name}</span>
+                          <span className="text-gold text-sm font-medium flex-shrink-0">{p.quantity}</span>
+                        </div>
+                        <div className="h-1.5 bg-tonalli-black-soft rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-jade rounded-full transition-all duration-500"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Quick actions */}

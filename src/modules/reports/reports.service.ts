@@ -185,7 +185,10 @@ export async function dashboard(tenantId: string) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const [todayOrders, activeOrders, totalProducts, tables] = await Promise.all([
+  const weekAgo = new Date(today);
+  weekAgo.setDate(weekAgo.getDate() - 6);
+
+  const [todayOrders, activeOrders, totalProducts, tables, weekOrders, topItems] = await Promise.all([
     prisma.order.findMany({
       where: { tenantId, status: 'paid', paidAt: { gte: today } },
       select: { total: true },
@@ -198,6 +201,21 @@ export async function dashboard(tenantId: string) {
       where: { tenantId, active: true },
       select: { status: true },
     }),
+    // Last 7 days for trend chart
+    prisma.order.findMany({
+      where: { tenantId, status: 'paid', paidAt: { gte: weekAgo } },
+      select: { total: true, paidAt: true },
+    }),
+    // Top 5 products today
+    prisma.orderItem.groupBy({
+      by: ['productId'],
+      where: {
+        order: { tenantId, status: 'paid', paidAt: { gte: today } },
+      },
+      _sum: { quantity: true },
+      orderBy: { _sum: { quantity: 'desc' } },
+      take: 5,
+    }),
   ]);
 
   const todaySales = todayOrders.reduce(
@@ -207,6 +225,48 @@ export async function dashboard(tenantId: string) {
 
   const occupiedTables = tables.filter((t) => t.status !== 'free').length;
 
+  // Build 7-day trend: [{day: 'Lun', sales: 1234, orders: 5}, ...]
+  const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const trendMap = new Map<string, { sales: Decimal; orders: number }>();
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekAgo);
+    d.setDate(d.getDate() + i);
+    const key = d.toISOString().slice(0, 10);
+    trendMap.set(key, { sales: new Decimal(0), orders: 0 });
+  }
+
+  for (const o of weekOrders) {
+    if (!o.paidAt) continue;
+    const key = o.paidAt.toISOString().slice(0, 10);
+    const entry = trendMap.get(key);
+    if (entry) {
+      entry.sales = entry.sales.add(o.total.toString());
+      entry.orders++;
+    }
+  }
+
+  const salesTrend = Array.from(trendMap.entries()).map(([dateStr, v]) => ({
+    day: dayNames[new Date(dateStr + 'T12:00:00').getDay()],
+    sales: v.sales.toNumber(),
+    orders: v.orders,
+  }));
+
+  // Resolve product names for top items
+  const productIds = topItems.map((item) => item.productId);
+  const products = productIds.length > 0
+    ? await prisma.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, name: true },
+      })
+    : [];
+  const nameMap = new Map(products.map((p) => [p.id, p.name]));
+
+  const topProducts = topItems.map((item) => ({
+    name: nameMap.get(item.productId) ?? 'Desconocido',
+    quantity: item._sum?.quantity ?? 0,
+  }));
+
   return {
     todaySales: todaySales.toNumber(),
     todayOrders: todayOrders.length,
@@ -215,6 +275,8 @@ export async function dashboard(tenantId: string) {
     totalProducts,
     totalTables: tables.length,
     occupiedTables,
+    salesTrend,
+    topProducts,
   };
 }
 

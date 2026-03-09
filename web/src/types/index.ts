@@ -148,6 +148,8 @@ export interface DashboardData {
   totalProducts: number;
   totalTables: number;
   occupiedTables: number;
+  salesTrend?: { day: string; sales: number; orders: number }[];
+  topProducts?: { name: string; quantity: number }[];
 }
 
 export interface SalesReport {
