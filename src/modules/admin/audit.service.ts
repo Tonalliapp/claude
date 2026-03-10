@@ -3,6 +3,7 @@ import { prisma } from '../../config/database';
 import type { ListQueryInput } from './admin.schema';
 
 interface CreateAuditLogInput {
+  tenantId?: string;
   userId: string;
   action: string;
   targetType: string;
@@ -12,8 +13,13 @@ interface CreateAuditLogInput {
 }
 
 export async function createAuditLog(input: CreateAuditLogInput) {
+  // For admin actions, use targetId as tenantId fallback (target tenant being modified)
+  const tenantId = input.tenantId || input.targetId;
+  if (!tenantId) return; // skip if no tenant context
+
   return prisma.auditLog.create({
     data: {
+      tenantId,
       userId: input.userId,
       action: input.action,
       targetType: input.targetType,

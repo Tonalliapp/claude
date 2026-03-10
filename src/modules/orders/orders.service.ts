@@ -8,6 +8,7 @@ import { generateOrderNumber } from '../../utils/generateOrderNumber';
 import { deductInventory } from '../../utils/inventoryDeduction';
 import { notifyYesswera } from '../delivery/delivery.service';
 import { notifyTenant } from '../notifications/push.service';
+import { logAudit } from '../audit/audit.service';
 import type { CreateOrderInput, CreatePosOrderInput, ListQuery } from './orders.schema';
 
 /** Apply IVA/tax from tenant config. Returns total = subtotal * (1 + rate). */
@@ -314,6 +315,7 @@ export async function updateStatus(tenantId: string, id: string, status: OrderSt
 
   const timestamps: Record<string, unknown> = {};
   if (status === 'confirmed') timestamps.confirmedAt = new Date();
+  if (status === 'ready') timestamps.readyAt = new Date();
   if (status === 'delivered') timestamps.completedAt = new Date();
   if (status === 'paid') timestamps.paidAt = new Date();
 

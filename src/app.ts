@@ -29,6 +29,7 @@ import adminRoutes from './modules/admin/admin.routes';
 import deliveryRoutes from './modules/delivery/delivery.routes';
 import ingredientsRoutes from './modules/ingredients/ingredients.routes';
 import pushRoutes from './modules/notifications/push.routes';
+import auditRoutes from './modules/audit/audit.routes';
 
 const app = express();
 
@@ -120,6 +121,7 @@ app.use('/api/v1/payments', paymentsRoutes);
 app.use('/api/v1/reports', reportsRoutes);
 app.use('/api/v1/subscriptions', subscriptionsRoutes);
 app.use('/api/v1/push', pushRoutes);
+app.use('/api/v1/audit', auditRoutes);
 
 // Admin (superadmin only)
 app.use('/api/v1/admin', adminRoutes);

@@ -67,9 +67,27 @@ export async function productCosts(req: Request, res: Response, next: NextFuncti
   }
 }
 
+export async function tipsByWaiter(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await reportsService.tipsByWaiter(req.tenantId!, req.query as unknown as PeriodQuery);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function ingredientConsumption(req: Request, res: Response, next: NextFunction) {
   try {
     const result = await reportsService.ingredientConsumption(req.tenantId!, req.query as unknown as PeriodQuery);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function prepTimeStats(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await reportsService.prepTimeStats(req.tenantId!);
     res.json(result);
   } catch (error) {
     next(error);

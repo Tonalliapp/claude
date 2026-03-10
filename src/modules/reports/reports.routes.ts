@@ -17,8 +17,10 @@ router.get('/dashboard', ctrl.dashboard);
 // Professional+: full reports
 router.get('/payment-breakdown', checkFeature('full_reports'), validate({ query: periodQuerySchema }), ctrl.paymentBreakdown);
 router.get('/by-waiter', checkFeature('full_reports'), validate({ query: periodQuerySchema }), ctrl.byWaiter);
+router.get('/tips', validate({ query: periodQuerySchema }), ctrl.tipsByWaiter);
 router.get('/product-costs', checkFeature('full_reports'), ctrl.productCosts);
 router.get('/ingredient-consumption', checkFeature('full_reports'), validate({ query: periodQuerySchema }), ctrl.ingredientConsumption);
+router.get('/prep-time', ctrl.prepTimeStats);
 
 // Premium: export
 router.get('/export/sales', checkFeature('export_reports'), validate({ query: periodQuerySchema }), ctrl.exportSalesCsv);

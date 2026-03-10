@@ -123,6 +123,7 @@ model Tenant {
   cashRegisters CashRegister[]
   integrations  TenantIntegration[]
   ingredients   Ingredient[]
+  auditLogs     AuditLog[]
 
   @@map("tenants")
 }
@@ -235,6 +236,7 @@ model Order {
   source          String      @default("tonalli") @db.VarChar(20)
   createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz
   confirmedAt     DateTime?   @map("confirmed_at") @db.Timestamptz
+  readyAt         DateTime?   @map("ready_at") @db.Timestamptz
   completedAt     DateTime?   @map("completed_at") @db.Timestamptz
   paidAt          DateTime?   @map("paid_at") @db.Timestamptz
 
@@ -363,6 +365,7 @@ model CashMovement {
 
 model AuditLog {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
   userId     String   @map("user_id") @db.Uuid
   action     String   @db.VarChar(100)
   targetType String   @map("target_type") @db.VarChar(50)
@@ -371,11 +374,12 @@ model AuditLog {
   ipAddress  String?  @map("ip_address") @db.VarChar(45)
   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  user User @relation(fields: [userId], references: [id])
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 
+  @@index([tenantId, createdAt])
   @@index([userId])
   @@index([action])
-  @@index([createdAt])
   @@map("audit_logs")
 }
 

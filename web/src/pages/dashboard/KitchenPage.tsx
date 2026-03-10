@@ -109,28 +109,28 @@ function KitchenItemRow({
     <button
       disabled={!canToggle || done}
       onClick={onToggle}
-      className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-colors ${
+      className={`w-full flex items-center gap-2.5 px-3 py-3 md:py-2.5 rounded-lg text-left transition-colors ${
         done
           ? 'opacity-40'
           : canToggle
-            ? 'hover:bg-tonalli-black-elevated cursor-pointer'
+            ? 'hover:bg-tonalli-black-elevated active:bg-tonalli-black-elevated cursor-pointer'
             : ''
       }`}
     >
       <div
-        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+        className={`w-6 h-6 md:w-5 md:h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
           done ? 'bg-jade border-jade' : 'border-silver-dark'
         }`}
       >
-        {done && <Check size={11} className="text-tonalli-black" />}
+        {done && <Check size={12} className="text-tonalli-black" />}
       </div>
       <span
-        className={`text-gold text-sm font-bold min-w-[24px] ${done ? 'line-through text-silver-dark' : ''}`}
+        className={`text-gold text-[15px] md:text-sm font-bold min-w-[24px] ${done ? 'line-through text-silver-dark' : ''}`}
       >
         {item.quantity}x
       </span>
       <span
-        className={`text-white text-sm font-medium flex-1 ${done ? 'line-through text-silver-dark' : ''}`}
+        className={`text-white text-[15px] md:text-sm font-medium flex-1 ${done ? 'line-through text-silver-dark' : ''}`}
       >
         {item.product.name}
       </span>
@@ -254,7 +254,7 @@ function KitchenOrderCard({
 
   return (
     <div
-      className={`bg-tonalli-black-card border border-subtle rounded-xl p-3.5 border-l-4 ${borderColors[column]} ${
+      className={`bg-tonalli-black-card border border-subtle rounded-xl p-4 md:p-3.5 border-l-4 ${borderColors[column]} ${
         isNew ? 'animate-pulse-once' : ''
       }`}
     >
@@ -332,7 +332,7 @@ function KitchenOrderCard({
       {column === 'new' && (
         <button
           onClick={() => onAction(order.id, 'preparing')}
-          className="w-full py-3 rounded-xl bg-gold text-tonalli-black text-sm font-bold uppercase tracking-wider hover:bg-gold-light transition-colors"
+          className="w-full py-4 md:py-3 rounded-xl bg-gold text-tonalli-black text-base md:text-sm font-bold uppercase tracking-wider hover:bg-gold-light active:bg-gold-light transition-colors"
         >
           Preparar
         </button>
@@ -340,9 +340,9 @@ function KitchenOrderCard({
       {column === 'preparing' && (
         <button
           onClick={() => onAction(order.id, 'ready')}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-jade text-white text-sm font-bold uppercase tracking-[2px] hover:bg-jade-light transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-4 md:py-3 rounded-xl bg-jade text-white text-base md:text-sm font-bold uppercase tracking-[2px] hover:bg-jade-light active:bg-jade-light transition-colors"
         >
-          <Check size={16} />
+          <Check size={18} className="md:w-4 md:h-4" />
           Listo
         </button>
       )}
@@ -352,9 +352,9 @@ function KitchenOrderCard({
       {column === 'ready' && !isDelivery && (
         <button
           onClick={() => onAction(order.id, 'delivered')}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-tonalli-black-elevated border border-jade/30 text-jade-light text-sm font-bold uppercase tracking-wider hover:bg-jade/10 transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-4 md:py-3 rounded-xl bg-tonalli-black-elevated border border-jade/30 text-jade-light text-base md:text-sm font-bold uppercase tracking-wider hover:bg-jade/10 active:bg-jade/10 transition-colors"
         >
-          <Check size={16} />
+          <Check size={18} className="md:w-4 md:h-4" />
           Entregado
         </button>
       )}
@@ -443,12 +443,14 @@ function KitchenHeader({
   onTestSound,
   isFullscreen,
   onToggleFullscreen,
+  avgPrepMinutes,
 }: {
   counts: { new: number; preparing: number; ready: number };
   isConnected: boolean;
   onTestSound: () => void;
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
+  avgPrepMinutes: number | null;
 }) {
   const [clock, setClock] = useState('');
 
@@ -474,6 +476,14 @@ function KitchenHeader({
         <span className="px-2 py-0.5 rounded-md bg-silver/15 text-silver text-xs font-bold">{counts.preparing}</span>
         <span className="px-2 py-0.5 rounded-md bg-jade/15 text-jade-light text-xs font-bold">{counts.ready}</span>
       </div>
+
+      {/* Avg prep time */}
+      {avgPrepMinutes != null && (
+        <div className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-md bg-tonalli-black-soft">
+          <Clock size={12} className="text-silver-muted" />
+          <span className="text-silver text-xs font-medium">~{avgPrepMinutes} min</span>
+        </div>
+      )}
 
       {/* Clock */}
       <span className="text-silver-muted text-sm font-mono tabular-nums">{clock}</span>
@@ -508,6 +518,14 @@ export default function KitchenPage() {
   const { isConnected } = useSocket();
   const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
   useWakeLock();
+
+  // Prep time stats
+  const { data: prepTimeData } = useQuery({
+    queryKey: ['prep-time-stats'],
+    queryFn: () => apiFetch<{ globalAvgMinutes: number | null }>('/reports/prep-time', { auth: true }).catch(() => null),
+    refetchInterval: 300000, // every 5 min
+    staleTime: 300000,
+  });
 
   // Track known order IDs to detect new arrivals
   const knownIdsRef = useRef<Set<string>>(new Set());
@@ -635,6 +653,7 @@ export default function KitchenPage() {
         onTestSound={() => playSound('kitchen')}
         isFullscreen={isFullscreen}
         onToggleFullscreen={toggleFullscreen}
+        avgPrepMinutes={prepTimeData?.globalAvgMinutes ?? null}
       />
 
       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2 p-2 min-h-0 overflow-hidden">

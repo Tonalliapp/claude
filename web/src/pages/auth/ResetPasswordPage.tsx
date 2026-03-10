@@ -29,7 +29,7 @@ export default function ResetPasswordPage() {
       });
       setSuccess(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al restablecer la contrasena');
+      setError(err instanceof Error ? err.message : 'Error al restablecer la contraseña');
     } finally {
       setLoading(false);
     }
@@ -47,7 +47,7 @@ export default function ResetPasswordPage() {
 
         {!token ? (
           <div className="text-center">
-            <p className="text-red-400 text-sm mb-4">Enlace invalido o expirado.</p>
+            <p className="text-red-400 text-sm mb-4">Enlace inválido o expirado.</p>
             <Link to="/forgot-password" className="text-gold text-sm font-medium hover:text-gold-light transition-colors">
               Solicitar nuevo enlace
             </Link>
@@ -57,22 +57,22 @@ export default function ResetPasswordPage() {
             <div className="w-16 h-16 rounded-full bg-jade-glow flex items-center justify-center mx-auto mb-5">
               <CheckCircle size={28} className="text-jade" />
             </div>
-            <h2 className="text-white text-xl font-medium mb-2">Contrasena actualizada</h2>
+            <h2 className="text-white text-xl font-medium mb-2">Contraseña actualizada</h2>
             <p className="text-silver-muted text-sm mb-6">
-              Tu contrasena ha sido restablecida exitosamente.
+              Tu contraseña ha sido restablecida exitosamente.
             </p>
             <button
               onClick={() => navigate('/login')}
               className="w-full bg-gold hover:bg-gold-light text-tonalli-black py-3.5 rounded-xl font-semibold transition-colors"
             >
-              Iniciar sesion
+              Iniciar sesión
             </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
-            <h2 className="text-white text-2xl font-light tracking-wide">Nueva Contrasena</h2>
+            <h2 className="text-white text-2xl font-light tracking-wide">Nueva Contraseña</h2>
             <p className="text-silver-muted text-sm">
-              Ingresa tu nueva contrasena. Debe tener al menos 8 caracteres.
+              Ingresa tu nueva contraseña. Debe tener al menos 8 caracteres.
             </p>
 
             {error && (
@@ -86,7 +86,7 @@ export default function ResetPasswordPage() {
               <div className="relative">
                 <input
                   type={showPass ? 'text' : 'password'}
-                  placeholder="Minimo 8 caracteres"
+                  placeholder="Mínimo 8 caracteres"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   autoComplete="new-password"
@@ -106,7 +106,7 @@ export default function ResetPasswordPage() {
               <label className="text-gold-muted text-[10px] font-medium tracking-[2px]">CONFIRMAR CONTRASENA</label>
               <input
                 type="password"
-                placeholder="Repite la contrasena"
+                placeholder="Repite la contraseña"
                 value={confirm}
                 onChange={e => setConfirm(e.target.value)}
                 autoComplete="new-password"
@@ -115,7 +115,7 @@ export default function ResetPasswordPage() {
                 }`}
               />
               {confirm && confirm !== password && (
-                <p className="text-red-400 text-xs">Las contrasenas no coinciden</p>
+                <p className="text-red-400 text-xs">Las contraseñas no coinciden</p>
               )}
             </div>
 
@@ -126,12 +126,12 @@ export default function ResetPasswordPage() {
             >
               {loading ? (
                 <div className="h-5 w-5 border-2 border-tonalli-black/30 border-t-tonalli-black rounded-full animate-spin" />
-              ) : 'Restablecer contrasena'}
+              ) : 'Restablecer contraseña'}
             </button>
 
             <Link to="/login" className="flex items-center justify-center gap-1.5 text-silver-muted text-[13px] hover:text-silver transition-colors">
               <ArrowLeft size={14} />
-              Volver al inicio de sesion
+              Volver al inicio de sesión
             </Link>
           </form>
         )}

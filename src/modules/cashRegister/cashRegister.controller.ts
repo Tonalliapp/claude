@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as cashRegisterService from './cashRegister.service';
+import { logAudit } from '../audit/audit.service';
 
 export async function getCurrent(req: Request, res: Response, next: NextFunction) {
   try {
@@ -13,6 +14,15 @@ export async function getCurrent(req: Request, res: Response, next: NextFunction
 export async function open(req: Request, res: Response, next: NextFunction) {
   try {
     const register = await cashRegisterService.open(req.tenantId!, req.user!.userId, req.body);
+    logAudit({
+      tenantId: req.tenantId!,
+      userId: req.user!.userId,
+      action: 'cash_register.open',
+      targetType: 'cash_register',
+      targetId: register.id,
+      details: { openingAmount: req.body.openingAmount },
+      ipAddress: req.ip,
+    });
     res.status(201).json(register);
   } catch (error) {
     next(error);
@@ -22,6 +32,15 @@ export async function open(req: Request, res: Response, next: NextFunction) {
 export async function close(req: Request, res: Response, next: NextFunction) {
   try {
     const register = await cashRegisterService.close(req.tenantId!, req.body);
+    logAudit({
+      tenantId: req.tenantId!,
+      userId: req.user!.userId,
+      action: 'cash_register.close',
+      targetType: 'cash_register',
+      targetId: register.id,
+      details: { closingAmount: req.body.closingAmount },
+      ipAddress: req.ip,
+    });
     res.json(register);
   } catch (error) {
     next(error);

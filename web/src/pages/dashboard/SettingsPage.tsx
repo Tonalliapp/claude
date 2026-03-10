@@ -64,7 +64,7 @@ export default function SettingsPage() {
   const updateMut = useMutation({
     mutationFn: (data: { name: string; config: Record<string, unknown> }) =>
       apiFetch('/tenants/me', { method: 'PUT', body: data, auth: true }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['tenant-settings'] }); toast.success('Configuracion guardada'); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['tenant-settings'] }); toast.success('Configuración guardada'); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -119,7 +119,7 @@ export default function SettingsPage() {
 
   return (
     <div className="p-6 lg:p-8 max-w-xl mx-auto">
-      <h2 className="text-white text-xl font-light tracking-wide mb-6">Configuracion</h2>
+      <h2 className="text-white text-xl font-light tracking-wide mb-6">Configuración</h2>
 
       {/* Logo */}
       <div className="flex flex-col items-center mb-8">
@@ -348,8 +348,8 @@ export default function SettingsPage() {
           <div className="flex items-center gap-3">
             <CreditCard size={16} className="text-gold" />
             <div>
-              <p className="text-gold text-sm font-medium">Facturacion y suscripcion</p>
-              <p className="text-silver-muted text-xs">Gestiona tu plan, facturas y metodo de pago</p>
+              <p className="text-gold text-sm font-medium">Facturación y suscripción</p>
+              <p className="text-silver-muted text-xs">Gestiona tu plan, facturas y método de pago</p>
             </div>
           </div>
           <span className="text-silver-dark group-hover:text-gold transition-colors text-sm">&rarr;</span>

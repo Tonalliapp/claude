@@ -121,6 +121,50 @@ export async function salesByWaiter(tenantId: string, query: PeriodQuery) {
   })).sort((a, b) => b.total - a.total);
 }
 
+export async function tipsByWaiter(tenantId: string, query: PeriodQuery) {
+  const from = new Date(query.from);
+  const to = new Date(query.to);
+
+  const payments = await prisma.payment.findMany({
+    where: {
+      order: { tenantId, status: 'paid' },
+      createdAt: { gte: from, lte: to },
+      tipAmount: { not: null, gt: 0 },
+    },
+    select: {
+      tipAmount: true,
+      method: true,
+      order: { select: { userId: true } },
+    },
+  });
+
+  const byWaiter: Record<string, { count: number; total: Decimal }> = {};
+  let grandTotal = new Decimal(0);
+
+  for (const p of payments) {
+    const uid = p.order.userId ?? '_unknown';
+    if (!byWaiter[uid]) byWaiter[uid] = { count: 0, total: new Decimal(0) };
+    byWaiter[uid].count++;
+    byWaiter[uid].total = byWaiter[uid].total.add(p.tipAmount!.toString());
+    grandTotal = grandTotal.add(p.tipAmount!.toString());
+  }
+
+  const userIds = Object.keys(byWaiter).filter(id => id !== '_unknown');
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select: { id: true, name: true, role: true },
+  });
+  const userMap = new Map(users.map((u) => [u.id, u]));
+
+  const waiters = Object.entries(byWaiter).map(([uid, data]) => ({
+    user: userMap.get(uid) ?? { id: uid, name: 'Sin asignar', role: 'unknown' },
+    tipCount: data.count,
+    tipTotal: data.total.toNumber(),
+  })).sort((a, b) => b.tipTotal - a.tipTotal);
+
+  return { waiters, grandTotal: grandTotal.toNumber(), totalPaymentsWithTip: payments.length };
+}
+
 export async function paymentBreakdown(tenantId: string, query: PeriodQuery) {
   const from = new Date(query.from);
   const to = new Date(query.to);
@@ -406,4 +450,62 @@ export async function ingredientConsumption(tenantId: string, query: PeriodQuery
     ingredients: ingredientList,
     totalCostOfGoods: Number(totalCostOfGoods.toFixed(2)),
   };
+}
+
+/**
+ * Average prep time (confirmed → ready) in minutes, calculated from recent orders.
+ * Returns global average and per-product averages.
+ */
+export async function prepTimeStats(tenantId: string) {
+  const orders = await prisma.order.findMany({
+    where: {
+      tenantId,
+      confirmedAt: { not: null },
+      readyAt: { not: null },
+      status: { in: ['ready', 'delivered', 'paid'] },
+      createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }, // last 30 days
+    },
+    select: {
+      confirmedAt: true,
+      readyAt: true,
+      items: { select: { productId: true, product: { select: { name: true } } } },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 500,
+  });
+
+  if (orders.length === 0) return { globalAvgMinutes: null, byProduct: [] };
+
+  let totalMinutes = 0;
+  const productTimes = new Map<string, { name: string; totalMin: number; count: number }>();
+
+  for (const o of orders) {
+    const mins = (o.readyAt!.getTime() - o.confirmedAt!.getTime()) / 60000;
+    if (mins < 0 || mins > 240) continue; // skip anomalies
+    totalMinutes += mins;
+
+    for (const item of o.items) {
+      const existing = productTimes.get(item.productId);
+      if (existing) {
+        existing.totalMin += mins;
+        existing.count += 1;
+      } else {
+        productTimes.set(item.productId, { name: item.product.name, totalMin: mins, count: 1 });
+      }
+    }
+  }
+
+  const globalAvgMinutes = Math.round(totalMinutes / orders.length);
+
+  const byProduct = Array.from(productTimes.entries())
+    .map(([productId, data]) => ({
+      productId,
+      name: data.name,
+      avgMinutes: Math.round(data.totalMin / data.count),
+      orderCount: data.count,
+    }))
+    .sort((a, b) => b.orderCount - a.orderCount)
+    .slice(0, 20);
+
+  return { globalAvgMinutes, byProduct };
 }

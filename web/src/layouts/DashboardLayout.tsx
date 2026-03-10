@@ -19,6 +19,7 @@ import {
   WifiOff,
   Bell,
   Receipt,
+  Shield,
 } from 'lucide-react';
 import { useAuth } from '@/auth/AuthProvider';
 import { useSocket } from '@/socket/SocketProvider';
@@ -36,8 +37,9 @@ const NAV_ITEMS = [
   { to: '/dashboard/delivery-debts', icon: Receipt, label: 'Deudas', roles: ['owner', 'admin'] },
   { to: '/dashboard/reports', icon: BarChart3, label: 'Reportes', roles: ['owner', 'admin'] },
   { to: '/dashboard/users', icon: Users, label: 'Usuarios', roles: ['owner', 'admin'] },
+  { to: '/dashboard/audit', icon: Shield, label: 'Actividad', roles: ['owner'] },
   { to: '/dashboard/settings', icon: Settings, label: 'Config', roles: ['owner', 'admin'] },
-  { to: '/dashboard/billing', icon: CreditCard, label: 'Facturacion', roles: ['owner'] },
+  { to: '/dashboard/billing', icon: CreditCard, label: 'Facturación', roles: ['owner'] },
 ] as const;
 
 export default function DashboardLayout() {
@@ -47,7 +49,16 @@ export default function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const { permission, requestPermission } = usePushNotifications();
+
+  useEffect(() => {
+    const goOnline = () => setIsOnline(true);
+    const goOffline = () => setIsOnline(false);
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => { window.removeEventListener('online', goOnline); window.removeEventListener('offline', goOffline); };
+  }, []);
 
   useEffect(() => {
     if (permission === 'default') {
@@ -237,6 +248,14 @@ export default function DashboardLayout() {
             </Link>
           </div>
         </header>
+
+        {/* Offline banner */}
+        {!isOnline && (
+          <div className="bg-red-500/15 border-b border-red-500/30 px-4 py-2 flex items-center justify-center gap-2">
+            <WifiOff size={14} className="text-red-400" />
+            <span className="text-red-300 text-xs font-medium">Sin conexión a internet — los cambios no se guardarán</span>
+          </div>
+        )}
 
         {/* Page content */}
         <main className="flex-1 overflow-y-auto">

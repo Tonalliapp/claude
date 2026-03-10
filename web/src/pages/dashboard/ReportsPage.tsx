@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { TrendingUp, Award, Users, Loader2, Download, Banknote, CreditCard, ArrowRightLeft, ChevronDown, ChevronUp } from 'lucide-react';
+import { TrendingUp, Award, Users, Loader2, Download, Banknote, CreditCard, ArrowRightLeft, ChevronDown, ChevronUp, HandCoins } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { toast } from 'sonner';
 import { apiFetch, apiFetchBlob } from '@/config/api';
@@ -8,6 +8,19 @@ import type { SalesReport, TopProduct, WaiterSales, ProductCostsReport, Ingredie
 
 type Period = 'day' | 'week' | 'month' | 'custom';
 type ReportTab = 'sales' | 'costs';
+
+interface TipWaiter {
+  userId: string;
+  name: string;
+  totalTips: number;
+  count: number;
+  byMethod: { method: string; total: number; count: number }[];
+}
+interface TipsReport {
+  waiters: TipWaiter[];
+  grandTotal: number;
+  totalPaymentsWithTip: number;
+}
 
 interface PaymentBreakdown {
   method: string;
@@ -101,6 +114,13 @@ export default function ReportsPage() {
     queryKey: ['ingredient-consumption', dateRange.from, dateRange.to],
     queryFn: () => apiFetch<IngredientConsumptionReport>(`/reports/ingredient-consumption?${dateParams}`, { auth: true }),
     enabled: queryEnabled && reportTab === 'costs',
+  });
+
+  // ─── Tips query ───
+  const { data: tipsData } = useQuery({
+    queryKey: ['tips-report', dateRange.from, dateRange.to],
+    queryFn: () => apiFetch<TipsReport>(`/reports/tips?${dateParams}`, { auth: true }).catch(() => null),
+    enabled: queryEnabled && reportTab === 'sales',
   });
 
   const topList = Array.isArray(topProducts) ? topProducts : [];
@@ -301,7 +321,7 @@ export default function ReportsPage() {
 
           {/* Waiter Sales */}
           {waiterList.length > 0 && (
-            <div>
+            <div className="mb-6">
               <div className="flex items-center gap-2 mb-3">
                 <Users size={16} className="text-jade" />
                 <p className="text-gold-muted text-[10px] font-medium tracking-[2px]">VENTAS POR MESERO</p>
@@ -317,6 +337,42 @@ export default function ReportsPage() {
                       <p className="text-silver-dark text-[11px]">{w.orders} pedidos</p>
                     </div>
                     <span className="text-jade text-[15px] font-semibold">${w.total.toFixed(0)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Tips by Waiter */}
+          {tipsData && tipsData.waiters.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <HandCoins size={16} className="text-gold" />
+                <p className="text-gold-muted text-[10px] font-medium tracking-[2px]">PROPINAS POR MESERO</p>
+              </div>
+              <div className="bg-tonalli-black-card border border-subtle rounded-2xl p-4 mb-3 flex items-center justify-between">
+                <div>
+                  <p className="text-silver-muted text-[9px] font-medium tracking-[1.5px]">PROPINAS TOTALES</p>
+                  <p className="text-gold text-2xl font-semibold">${tipsData.grandTotal.toLocaleString()}</p>
+                </div>
+                <p className="text-silver-dark text-xs">{tipsData.totalPaymentsWithTip} pagos con propina</p>
+              </div>
+              <div className="space-y-1.5">
+                {tipsData.waiters.map((w) => (
+                  <div key={w.userId} className="flex items-center bg-tonalli-black-card border border-subtle rounded-xl p-3 gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gold-glow flex items-center justify-center">
+                      <span className="text-gold text-sm font-semibold">{w.name.charAt(0).toUpperCase()}</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-white text-sm font-medium">{w.name}</p>
+                      <p className="text-silver-dark text-[11px]">
+                        {w.count} propinas
+                        {w.byMethod.length > 0 && (
+                          <> · {w.byMethod.map(m => `${METHOD_LABELS[m.method] ?? m.method}: $${m.total.toFixed(0)}`).join(', ')}</>
+                        )}
+                      </p>
+                    </div>
+                    <span className="text-gold text-[15px] font-semibold">${w.totalTips.toFixed(0)}</span>
                   </div>
                 ))}
               </div>

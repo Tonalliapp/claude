@@ -3,6 +3,7 @@ import * as ordersService from './orders.service';
 import type { ListQuery } from './orders.schema';
 import { generateReceipt } from '../../utils/generateReceipt';
 import { prisma } from '../../config/database';
+import { logAudit } from '../audit/audit.service';
 
 export async function list(req: Request, res: Response, next: NextFunction) {
   try {
@@ -43,6 +44,15 @@ export async function createPosOrder(req: Request, res: Response, next: NextFunc
 export async function updateStatus(req: Request, res: Response, next: NextFunction) {
   try {
     const order = await ordersService.updateStatus(req.tenantId!, req.params.id as string, req.body.status);
+    logAudit({
+      tenantId: req.tenantId!,
+      userId: req.user!.userId,
+      action: 'order.status_change',
+      targetType: 'order',
+      targetId: order.id,
+      details: { orderNumber: order.orderNumber, newStatus: req.body.status },
+      ipAddress: req.ip,
+    });
     res.json(order);
   } catch (error) {
     next(error);
@@ -52,6 +62,15 @@ export async function updateStatus(req: Request, res: Response, next: NextFuncti
 export async function cancelOrder(req: Request, res: Response, next: NextFunction) {
   try {
     const order = await ordersService.cancelOrder(req.tenantId!, req.params.id as string, req.body.reason);
+    logAudit({
+      tenantId: req.tenantId!,
+      userId: req.user!.userId,
+      action: 'order.cancel',
+      targetType: 'order',
+      targetId: order.id,
+      details: { orderNumber: order.orderNumber, reason: req.body.reason },
+      ipAddress: req.ip,
+    });
     res.json(order);
   } catch (error) {
     next(error);

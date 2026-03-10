@@ -28,6 +28,7 @@ const SettingsPage = lazy(() => import('@/pages/dashboard/SettingsPage'));
 const BillingPage = lazy(() => import('@/pages/dashboard/BillingPage'));
 const ProfilePage = lazy(() => import('@/pages/dashboard/ProfilePage'));
 const DeliveryDebtsPage = lazy(() => import('@/pages/dashboard/DeliveryDebtsPage'));
+const AuditPage = lazy(() => import('@/pages/dashboard/AuditPage'));
 
 function PageLoader() {
   return (
@@ -72,6 +73,7 @@ export default function App() {
               <Route path="dashboard/inventory" element={<InventoryPage />} />
               <Route path="dashboard/delivery-debts" element={<DeliveryDebtsPage />} />
               <Route path="dashboard/reports" element={<ReportsPage />} />
+              <Route path="dashboard/audit" element={<AuditPage />} />
               <Route path="dashboard/users" element={<UsersPage />} />
               <Route path="dashboard/settings" element={<SettingsPage />} />
               <Route path="dashboard/billing" element={<BillingPage />} />

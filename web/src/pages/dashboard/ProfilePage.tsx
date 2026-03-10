@@ -41,7 +41,7 @@ export default function ProfilePage() {
     mutationFn: (data: { currentPassword: string; newPassword: string }) =>
       apiFetch('/auth/profile', { method: 'PUT', body: data, auth: true }),
     onSuccess: () => {
-      toast.success('Contrasena actualizada');
+      toast.success('Contraseña actualizada');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -89,8 +89,8 @@ export default function ProfilePage() {
             <Lock size={16} className="text-silver" />
           </div>
           <div>
-            <p className="text-white text-sm font-medium">Cambiar contrasena</p>
-            <p className="text-silver-dark text-xs">Minimo 8 caracteres</p>
+            <p className="text-white text-sm font-medium">Cambiar contraseña</p>
+            <p className="text-silver-dark text-xs">Mínimo 8 caracteres</p>
           </div>
         </div>
 
@@ -99,7 +99,7 @@ export default function ProfilePage() {
             label="CONTRASENA ACTUAL"
             value={currentPassword}
             onChange={setCurrentPassword}
-            placeholder="Tu contrasena actual"
+            placeholder="Tu contraseña actual"
             type="password"
             required
           />
@@ -107,26 +107,26 @@ export default function ProfilePage() {
             label="NUEVA CONTRASENA"
             value={newPassword}
             onChange={setNewPassword}
-            placeholder="Minimo 8 caracteres"
+            placeholder="Mínimo 8 caracteres"
             type="password"
             required
-            error={newPassword && newPassword.length < 8 ? 'Minimo 8 caracteres' : undefined}
+            error={newPassword && newPassword.length < 8 ? 'Mínimo 8 caracteres' : undefined}
           />
           <InputField
             label="CONFIRMAR CONTRASENA"
             value={confirmPassword}
             onChange={setConfirmPassword}
-            placeholder="Repite la nueva contrasena"
+            placeholder="Repite la nueva contraseña"
             type="password"
             required
-            error={confirmPassword && confirmPassword !== newPassword ? 'Las contrasenas no coinciden' : undefined}
+            error={confirmPassword && confirmPassword !== newPassword ? 'Las contraseñas no coinciden' : undefined}
           />
           <GoldButton
             loading={changePassword.isPending}
             disabled={!canChangePassword}
             onClick={() => changePassword.mutate({ currentPassword, newPassword })}
           >
-            Cambiar Contrasena
+            Cambiar Contraseña
           </GoldButton>
         </div>
       </div>

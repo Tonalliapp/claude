@@ -185,7 +185,7 @@ export default function BillingPage() {
     <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-8">
       <div className="flex items-center gap-3">
         <Receipt size={20} className="text-gold" />
-        <h2 className="text-white text-xl font-light tracking-wide">Facturacion</h2>
+        <h2 className="text-white text-xl font-light tracking-wide">Facturación</h2>
       </div>
 
       {/* ─── Section 1: Plan Actual ─── */}

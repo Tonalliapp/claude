@@ -130,7 +130,7 @@ export default function UsersPage() {
         <Modal title="Nuevo Usuario" onClose={() => setShowAdd(false)}>
           <InputField label="NOMBRE" value={name} onChange={setName} placeholder="Ana Garcia" required />
           <InputField label="USUARIO" value={username} onChange={setUsername} placeholder="ana" required />
-          <InputField label="CONTRASENA" value={password} onChange={setPassword} placeholder="Minimo 6 caracteres" type="password" required />
+          <InputField label="CONTRASEÑA" value={password} onChange={setPassword} placeholder="Mínimo 6 caracteres" type="password" required />
           <div className="space-y-1.5">
             <label className="text-gold-muted text-[10px] font-medium tracking-[2px]">ROL</label>
             <div className="flex flex-wrap gap-2">
@@ -156,7 +156,7 @@ export default function UsersPage() {
         <Modal title="Editar Usuario" onClose={() => { setEditUser(null); resetForm(); }}>
           <InputField label="NOMBRE" value={name} onChange={setName} placeholder="Ana Garcia" required />
           <InputField label="USUARIO" value={username} onChange={setUsername} placeholder="ana" required />
-          <InputField label="NUEVA CONTRASENA" value={password} onChange={setPassword} placeholder="Dejar vacio para no cambiar" type="password" />
+          <InputField label="NUEVA CONTRASEÑA" value={password} onChange={setPassword} placeholder="Dejar vacio para no cambiar" type="password" />
           <div className="space-y-1.5">
             <label className="text-gold-muted text-[10px] font-medium tracking-[2px]">ROL</label>
             <div className="flex flex-wrap gap-2">
