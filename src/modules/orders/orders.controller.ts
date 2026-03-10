@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import * as ordersService from './orders.service';
 import type { ListQuery } from './orders.schema';
+import { generateReceipt } from '../../utils/generateReceipt';
+import { prisma } from '../../config/database';
 
 export async function list(req: Request, res: Response, next: NextFunction) {
   try {
@@ -65,6 +67,57 @@ export async function updateItemStatus(req: Request, res: Response, next: NextFu
       req.body.status,
     );
     res.json(item);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function receipt(req: Request, res: Response, next: NextFunction) {
+  try {
+    const order = await ordersService.getById(req.tenantId!, req.params.id as string);
+
+    const [tenant, payment] = await Promise.all([
+      prisma.tenant.findUnique({
+        where: { id: req.tenantId! },
+        select: { name: true, config: true },
+      }),
+      prisma.payment.findFirst({
+        where: { orderId: order.id },
+        orderBy: { createdAt: 'desc' },
+        select: { method: true },
+      }),
+    ]);
+
+    const cfg = (tenant?.config as Record<string, unknown>) ?? {};
+
+    const pdf = await generateReceipt({
+      restaurantName: tenant?.name ?? 'Restaurante',
+      address: (cfg.address as string) || undefined,
+      phone: (cfg.phone as string) || undefined,
+      orderNumber: order.orderNumber,
+      orderType: order.orderType,
+      tableName: order.table?.number != null ? String(order.table.number) : undefined,
+      customerName: order.customerName ?? undefined,
+      deliveryAddress: order.deliveryAddress ?? undefined,
+      items: order.items.map((i: { product: { name: string }; quantity: number; unitPrice: unknown; subtotal: unknown; notes?: string | null }) => ({
+        name: i.product.name,
+        quantity: i.quantity,
+        unitPrice: Number(i.unitPrice),
+        subtotal: Number(i.subtotal),
+        notes: i.notes,
+      })),
+      subtotal: Number(order.subtotal),
+      total: Number(order.total),
+      notes: order.notes,
+      paymentMethod: payment?.method,
+      paidAt: order.paidAt?.toISOString() ?? null,
+      createdAt: order.createdAt.toISOString(),
+      attendedBy: order.user?.name,
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="ticket-${order.orderNumber}.pdf"`);
+    res.send(pdf);
   } catch (error) {
     next(error);
   }

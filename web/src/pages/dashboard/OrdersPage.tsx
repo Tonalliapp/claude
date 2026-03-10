@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Clock, ChevronRight, Loader2, Eye, Banknote, CreditCard, ArrowRightLeft, DollarSign, Bike, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Clock, ChevronRight, Loader2, Eye, Banknote, CreditCard, ArrowRightLeft, DollarSign, Bike, ShieldCheck, AlertTriangle, Printer } from 'lucide-react';
 import { toast } from 'sonner';
-import { apiFetch } from '@/config/api';
+import { apiFetch, apiFetchBlob } from '@/config/api';
 import type { Order, OrderStatus, OrdersResponse } from '@/types';
 import Modal from '@/components/ui/Modal';
 import GoldButton from '@/components/ui/GoldButton';
@@ -105,6 +105,20 @@ export default function OrdersPage() {
     },
     onError: (err: Error) => toast.error(err.message),
   });
+
+  const printReceipt = useCallback(async (orderId: string) => {
+    try {
+      const blob = await apiFetchBlob(`/orders/${orderId}/receipt`, { auth: true });
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url, '_blank');
+      if (w) {
+        w.addEventListener('afterprint', () => URL.revokeObjectURL(url));
+        w.addEventListener('load', () => setTimeout(() => w.print(), 300));
+      }
+    } catch {
+      toast.error('Error al generar ticket');
+    }
+  }, []);
 
   const getTimeAgo = useCallback((createdAt: string) => {
     const mins = Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000);
@@ -217,6 +231,13 @@ export default function OrdersPage() {
                       aria-label="Ver detalle"
                     >
                       <Eye size={16} />
+                    </button>
+                    <button
+                      onClick={() => printReceipt(order.id)}
+                      className="p-1.5 rounded-lg text-silver-dark hover:text-silver hover:bg-tonalli-black-soft transition-colors"
+                      aria-label="Imprimir ticket"
+                    >
+                      <Printer size={16} />
                     </button>
                     {order.status !== 'paid' && order.status !== 'cancelled' && (
                       <button
@@ -333,7 +354,13 @@ export default function OrdersPage() {
           )}
 
           <div className="flex justify-between items-center border-t border-light-border pt-3">
-            <span className="text-silver-muted text-sm">Total</span>
+            <button
+              onClick={() => printReceipt(detailOrder.id)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-subtle text-silver-muted hover:text-silver hover:border-silver-dark text-xs transition-colors"
+            >
+              <Printer size={14} />
+              Imprimir
+            </button>
             <span className="text-gold text-xl font-semibold">${Number(detailOrder.total).toFixed(2)}</span>
           </div>
         </Modal>

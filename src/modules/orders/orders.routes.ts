@@ -19,6 +19,7 @@ router.use(authenticate);
 
 router.get('/', validate({ query: listQuerySchema }), ctrl.list);
 router.get('/:id', validate({ params: idParamSchema }), ctrl.getById);
+router.get('/:id/receipt', validate({ params: idParamSchema }), ctrl.receipt);
 router.post('/pos', roleGuard('owner', 'admin', 'cashier'), validate({ body: createPosOrderSchema }), ctrl.createPosOrder);
 router.post('/', roleGuard('owner', 'admin', 'waiter'), validate({ body: createOrderSchema }), ctrl.create);
 router.patch('/:id/status', validate({ params: idParamSchema, body: updateStatusSchema }), ctrl.updateStatus);
