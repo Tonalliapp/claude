@@ -60,9 +60,14 @@ const config: Config = {
           from: { transform: 'translateY(100%)' },
           to: { transform: 'translateY(0)' },
         },
+        'fade-in': {
+          from: { opacity: '0', transform: 'translateY(-4px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
       },
       animation: {
         'slide-up': 'slide-up 0.3s ease-out',
+        'fade-in': 'fade-in 0.4s ease-out',
       },
     },
   },

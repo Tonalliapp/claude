@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, Bell, Receipt, Plus } from 'lucide-react';
+import { ArrowLeft, Loader2, Bell, Receipt, Plus, Radio } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCart } from '@/context/CartContext';
+import { useSocket } from '@/context/SocketContext';
 import { useClientOrder, useRequestBill, useCallWaiter } from '@/hooks/useOrders';
 import OrderTimeline from '@/components/ui/OrderTimeline';
+import LiveActivityFeed from '@/components/ui/LiveActivityFeed';
 
 const ITEM_STATUS_LABEL: Record<string, { text: string; color: string }> = {
   pending: { text: 'Pendiente', color: 'text-gold-muted' },
@@ -17,6 +19,7 @@ export default function OrderTrackingPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { slug, mesa, setActiveOrderId } = useCart();
+  const { isConnected, liveEvents } = useSocket();
   const { data: order, isLoading } = useClientOrder(id ?? null);
   const requestBill = useRequestBill();
   const callWaiter = useCallWaiter();
@@ -78,7 +81,11 @@ export default function OrderTrackingPage() {
         <button onClick={() => navigate(`/${slug}?mesa=${mesa}`)} className="text-silver-muted hover:text-white transition-colors">
           <ArrowLeft size={20} />
         </button>
-        <h1 className="text-white text-base font-medium">Seguimiento</h1>
+        <h1 className="text-white text-base font-medium flex-1">Seguimiento</h1>
+        <div className="flex items-center gap-1.5">
+          <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-jade animate-pulse' : 'bg-red-400'}`} />
+          <span className="text-[10px] text-silver-dark">{isConnected ? 'En vivo' : 'Reconectando...'}</span>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pb-6">
@@ -127,6 +134,19 @@ export default function OrderTrackingPage() {
             })}
           </div>
         </div>
+
+        {/* Live Activity */}
+        {!isFinished && liveEvents.length > 0 && (
+          <div className="mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Radio size={12} className="text-gold" />
+              <p className="text-gold-muted text-[10px] font-medium tracking-[2px]">ACTIVIDAD EN VIVO</p>
+            </div>
+            <div className="bg-tonalli-black-card border border-light-border rounded-xl px-4 py-3">
+              <LiveActivityFeed events={liveEvents} />
+            </div>
+          </div>
+        )}
 
         {/* Total */}
         <div className="flex justify-between items-center pt-3 border-t border-light-border mb-6">
