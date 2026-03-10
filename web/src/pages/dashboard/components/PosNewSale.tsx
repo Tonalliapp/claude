@@ -55,6 +55,7 @@ export default function PosNewSale({ onClose, onSuccess }: Props) {
   const [customerName, setCustomerName] = useState('');
   const [payMethod, setPayMethod] = useState<'cash' | 'card' | 'transfer'>('cash');
   const [payRef, setPayRef] = useState('');
+  const [orderNotes, setOrderNotes] = useState('');
   const [discountPercent, setDiscountPercent] = useState(0);
   const [showDiscount, setShowDiscount] = useState(false);
 
@@ -148,9 +149,10 @@ export default function PosNewSale({ onClose, onSuccess }: Props) {
   const handleSubmit = () => {
     if (cart.length === 0) { toast.error('Agrega productos al carrito'); return; }
     submitMut.mutate({
-      items: cart.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+      items: cart.map((i) => ({ productId: i.productId, quantity: i.quantity, ...(i.notes ? { notes: i.notes } : {}) })),
       orderType,
       customerName: customerName.trim() || undefined,
+      notes: orderNotes.trim() || undefined,
       payImmediately: true,
       paymentMethod: payMethod,
       paymentReference: payRef.trim() || undefined,
@@ -252,12 +254,19 @@ export default function PosNewSale({ onClose, onSuccess }: Props) {
             </div>
           </div>
 
-          <div className="p-4 shrink-0">
+          <div className="p-4 space-y-2 shrink-0">
             <input
               type="text"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
               placeholder="Nombre del cliente (opcional)"
+              className="w-full px-3 py-2 bg-tonalli-black-card border border-subtle rounded-xl text-white text-sm placeholder:text-silver-dark focus:outline-none focus:border-gold-border"
+            />
+            <input
+              type="text"
+              value={orderNotes}
+              onChange={(e) => setOrderNotes(e.target.value)}
+              placeholder="Notas del pedido (opcional)"
               className="w-full px-3 py-2 bg-tonalli-black-card border border-subtle rounded-xl text-white text-sm placeholder:text-silver-dark focus:outline-none focus:border-gold-border"
             />
           </div>
@@ -287,6 +296,13 @@ export default function PosNewSale({ onClose, onSuccess }: Props) {
                       </div>
                       <span className="text-gold text-sm font-semibold">${(item.price * item.quantity).toFixed(2)}</span>
                     </div>
+                    <input
+                      type="text"
+                      value={item.notes || ''}
+                      onChange={(e) => setCart(prev => prev.map(i => i.productId === item.productId ? { ...i, notes: e.target.value || undefined } : i))}
+                      placeholder="Nota (sin cebolla, extra queso...)"
+                      className="w-full mt-2 px-2.5 py-1.5 bg-tonalli-black-soft border border-subtle rounded-lg text-silver text-xs placeholder:text-silver-dark/50 focus:outline-none focus:border-gold-border"
+                    />
                   </div>
                 ))}
               </div>
