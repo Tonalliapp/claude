@@ -92,6 +92,17 @@ export default function OrderTrackingPage() {
         {/* Timeline */}
         <div className="bg-tonalli-black-card border border-light-border rounded-xl p-4 mb-4">
           <OrderTimeline status={order.status} />
+          {(order.status === 'pending' || order.status === 'confirmed' || order.status === 'preparing') && (
+            <div className="mt-3 pt-3 border-t border-light-border text-center">
+              <p className="text-silver-muted text-xs">Tiempo estimado de preparación</p>
+              <p className="text-gold text-lg font-semibold">~{Math.max(10, order.items.length * 5)} min</p>
+            </div>
+          )}
+          {order.status === 'ready' && (
+            <div className="mt-3 pt-3 border-t border-light-border text-center">
+              <p className="text-jade text-sm font-semibold">Tu pedido está listo</p>
+            </div>
+          )}
         </div>
 
         {/* Items */}

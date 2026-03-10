@@ -194,12 +194,12 @@ export default function OrdersPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1.5 mb-5">
+      <div className="flex gap-1.5 mb-5 overflow-x-auto scrollbar-hide pb-1">
         {TABS.map(t => (
           <button
             key={t.key}
             onClick={() => setActiveTab(t.key)}
-            className={`px-4 py-2 rounded-lg text-[13px] font-medium transition-colors ${
+            className={`px-3 sm:px-4 py-2.5 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap shrink-0 ${
               activeTab === t.key
                 ? 'bg-gold text-tonalli-black'
                 : 'bg-tonalli-black-card text-silver-dark hover:text-silver'
@@ -283,17 +283,17 @@ export default function OrdersPage() {
                 {/* Footer */}
                 <div className="flex justify-between items-center border-t border-light-border pt-3">
                   <span className="text-gold text-base font-semibold">${Number(order.total).toFixed(2)}</span>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 items-center">
                     <button
                       onClick={() => setDetailOrder(order)}
-                      className="p-1.5 rounded-lg text-silver-dark hover:text-silver hover:bg-tonalli-black-soft transition-colors"
+                      className="p-2.5 rounded-lg text-silver-dark hover:text-silver hover:bg-tonalli-black-soft active:bg-tonalli-black-soft transition-colors"
                       aria-label="Ver detalle"
                     >
                       <Eye size={16} />
                     </button>
                     <button
                       onClick={() => printReceipt(order.id)}
-                      className="p-1.5 rounded-lg text-silver-dark hover:text-silver hover:bg-tonalli-black-soft transition-colors"
+                      className="p-2.5 rounded-lg text-silver-dark hover:text-silver hover:bg-tonalli-black-soft active:bg-tonalli-black-soft transition-colors"
                       aria-label="Imprimir ticket"
                     >
                       <Printer size={16} />
@@ -301,7 +301,7 @@ export default function OrdersPage() {
                     {order.status !== 'paid' && order.status !== 'cancelled' && (
                       <button
                         onClick={() => setCancelId(order.id)}
-                        className="px-3 py-1.5 rounded-lg border border-red-500/30 text-red-400 text-xs font-medium hover:bg-red-500/10 transition-colors"
+                        className="px-3 py-2 rounded-lg border border-red-500/30 text-red-400 text-xs font-medium hover:bg-red-500/10 active:bg-red-500/10 transition-colors"
                       >
                         Cancelar
                       </button>
@@ -317,10 +317,10 @@ export default function OrdersPage() {
                             updateStatus.mutate({ orderId: order.id, status: NEXT_STATUS[order.status]! });
                           }
                         }}
-                        className={`flex items-center gap-1 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                        className={`flex items-center gap-1 px-3.5 py-2 rounded-lg text-xs font-semibold transition-colors ${
                           order.status === 'delivered'
-                            ? 'bg-jade text-white hover:bg-jade-light'
-                            : 'bg-gold text-tonalli-black hover:bg-gold-light'
+                            ? 'bg-jade text-white hover:bg-jade-light active:bg-jade-light'
+                            : 'bg-gold text-tonalli-black hover:bg-gold-light active:bg-gold-light'
                         }`}
                       >
                         {order.status === 'delivered' && <DollarSign size={14} />}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShoppingBag, Loader2 } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Loader2, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCart } from '@/context/CartContext';
 import { useCreateOrder } from '@/hooks/useOrders';
@@ -11,6 +11,7 @@ export default function CartPage() {
   const { slug, mesa, items, updateQuantity, updateItemNotes, clearCart, totalPrice, setActiveOrderId } = useCart();
   const createOrder = useCreateOrder();
   const [globalNotes, setGlobalNotes] = useState('');
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const handleSubmit = () => {
     if (items.length === 0) return;
@@ -118,18 +119,65 @@ export default function CartPage() {
       {/* Submit */}
       <div className="p-4 border-t border-light-border">
         <button
-          onClick={handleSubmit}
+          onClick={() => setShowConfirm(true)}
           disabled={createOrder.isPending}
           className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-gold text-tonalli-black font-semibold text-sm shadow-lg shadow-gold/20 disabled:opacity-50"
         >
-          {createOrder.isPending ? (
-            <Loader2 size={16} className="animate-spin" />
-          ) : (
-            <ShoppingBag size={16} />
-          )}
-          {createOrder.isPending ? 'Enviando...' : 'Enviar Pedido'}
+          <ShoppingBag size={16} />
+          Revisar y Enviar · ${totalPrice.toFixed(2)}
         </button>
       </div>
+
+      {/* Confirmation modal */}
+      {showConfirm && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60" onClick={() => setShowConfirm(false)}>
+          <div
+            className="w-full max-w-lg bg-tonalli-black-card border-t border-gold-border rounded-t-3xl p-5 pb-8 animate-slide-up"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center">
+                <CheckCircle size={20} className="text-gold" />
+              </div>
+              <div>
+                <p className="text-white text-base font-semibold">Confirmar pedido</p>
+                <p className="text-silver-muted text-xs">Mesa {mesa} · {items.length} {items.length === 1 ? 'producto' : 'productos'}</p>
+              </div>
+            </div>
+
+            <div className="space-y-1.5 max-h-40 overflow-y-auto mb-4">
+              {items.map(item => (
+                <div key={item.product.id} className="flex justify-between items-center px-1">
+                  <span className="text-silver text-sm">{item.quantity}x {item.product.name}</span>
+                  <span className="text-silver-muted text-sm">${(Number(item.product.price) * item.quantity).toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-between items-center py-3 border-t border-light-border mb-4">
+              <span className="text-white text-sm font-medium">Total</span>
+              <span className="text-gold text-xl font-bold">${totalPrice.toFixed(2)}</span>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="flex-1 py-3.5 rounded-xl border border-light-border text-silver text-sm font-medium"
+              >
+                Modificar
+              </button>
+              <button
+                onClick={() => { setShowConfirm(false); handleSubmit(); }}
+                disabled={createOrder.isPending}
+                className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gold text-tonalli-black font-semibold text-sm disabled:opacity-50"
+              >
+                {createOrder.isPending ? <Loader2 size={16} className="animate-spin" /> : <ShoppingBag size={16} />}
+                {createOrder.isPending ? 'Enviando...' : 'Confirmar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, Search, X } from 'lucide-react';
+import { toast } from 'sonner';
 import { useCart } from '@/context/CartContext';
 import { useMenuData } from '@/hooks/useMenu';
 import CategoryPills from '@/components/ui/CategoryPills';
@@ -11,7 +12,11 @@ import type { MenuProduct } from '@/types';
 
 export default function MenuPage() {
   const navigate = useNavigate();
-  const { slug, mesa, items, addItem, updateQuantity, totalItems, totalPrice, restaurant } = useCart();
+  const { slug, mesa, items, addItem: rawAddItem, updateQuantity, totalItems, totalPrice, restaurant } = useCart();
+  const addItem = useCallback((product: MenuProduct) => {
+    rawAddItem(product);
+    toast.success(`${product.name} agregado`, { duration: 1500 });
+  }, [rawAddItem]);
   const { data, isLoading } = useMenuData(slug);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
