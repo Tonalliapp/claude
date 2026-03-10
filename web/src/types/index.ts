@@ -115,6 +115,7 @@ export interface PosOrderInput {
   payImmediately: boolean;
   paymentMethod: 'cash' | 'card' | 'transfer';
   paymentReference?: string;
+  discountPercent?: number;
 }
 
 export interface User {

@@ -65,6 +65,13 @@ export async function list(tenantId: string, query: ListQuery) {
       ...(query.to ? { lte: new Date(query.to) } : {}),
     };
   }
+  if (query.search) {
+    const num = parseInt(query.search, 10);
+    where.OR = [
+      { customerName: { contains: query.search, mode: 'insensitive' } },
+      ...(Number.isFinite(num) ? [{ orderNumber: num }] : []),
+    ];
+  }
 
   const [orders, total] = await Promise.all([
     prisma.order.findMany({
@@ -198,7 +205,17 @@ export async function createPosOrder(tenantId: string, data: CreatePosOrderInput
   });
 
   const subtotal = items.reduce((sum, i) => sum.add(i.subtotal), new Decimal(0));
-  const total = await applyTax(tenantId, subtotal);
+  let total = await applyTax(tenantId, subtotal);
+
+  // Apply discount if provided
+  let notes = data.notes;
+  if (data.discountPercent && data.discountPercent > 0) {
+    const discountAmount = total.mul(data.discountPercent).div(100);
+    total = total.sub(discountAmount);
+    const discountNote = `Descuento ${data.discountPercent}% (-$${discountAmount.toFixed(2)})`;
+    notes = notes ? `${notes} | ${discountNote}` : discountNote;
+  }
+
   const orderNumber = await generateOrderNumber(tenantId);
 
   // Atomic transaction: create order + payment + update cash register
@@ -213,7 +230,7 @@ export async function createPosOrder(tenantId: string, data: CreatePosOrderInput
         subtotal,
         total,
         paidAt: data.payImmediately ? new Date() : undefined,
-        notes: data.notes,
+        notes,
         customerName: data.customerName,
         items: { create: items },
       } as any,

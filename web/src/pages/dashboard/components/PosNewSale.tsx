@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Search, Plus, Minus, Trash2, X, Banknote, CreditCard, ArrowRightLeft, ShoppingBag, Store, Truck, Loader2, AlertTriangle, Flame } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, X, Banknote, CreditCard, ArrowRightLeft, ShoppingBag, Store, Truck, Loader2, AlertTriangle, Flame, Percent } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/config/api';
 import type { Product, Category, PosOrderInput, InventoryItem } from '@/types';
@@ -55,6 +55,8 @@ export default function PosNewSale({ onClose, onSuccess }: Props) {
   const [customerName, setCustomerName] = useState('');
   const [payMethod, setPayMethod] = useState<'cash' | 'card' | 'transfer'>('cash');
   const [payRef, setPayRef] = useState('');
+  const [discountPercent, setDiscountPercent] = useState(0);
+  const [showDiscount, setShowDiscount] = useState(false);
 
   const { data: categories } = useQuery({
     queryKey: ['categories'],
@@ -103,7 +105,9 @@ export default function PosNewSale({ onClose, onSuccess }: Props) {
     return list;
   }, [products, selectedCat, search, topProductIds, topProducts]);
 
-  const cartTotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+  const cartSubtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+  const discountAmount = discountPercent > 0 ? cartSubtotal * discountPercent / 100 : 0;
+  const cartTotal = cartSubtotal - discountAmount;
 
   const addToCart = (product: Product) => {
     // Warn if out of stock but allow adding
@@ -150,6 +154,7 @@ export default function PosNewSale({ onClose, onSuccess }: Props) {
       payImmediately: true,
       paymentMethod: payMethod,
       paymentReference: payRef.trim() || undefined,
+      ...(discountPercent > 0 ? { discountPercent } : {}),
     });
   };
 
@@ -313,9 +318,56 @@ export default function PosNewSale({ onClose, onSuccess }: Props) {
               />
             )}
 
-            <div className="flex justify-between items-center">
-              <span className="text-silver-muted text-sm">Total</span>
-              <span className="text-gold text-2xl font-semibold">${cartTotal.toFixed(2)}</span>
+            {/* Discount toggle */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowDiscount(s => !s)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${showDiscount ? 'bg-gold/10 border border-gold/30 text-gold' : 'bg-tonalli-black-card border border-subtle text-silver-dark hover:text-silver'}`}
+              >
+                <Percent size={12} />
+                Descuento
+              </button>
+              {showDiscount && (
+                <div className="flex items-center gap-1.5 flex-1">
+                  {[5, 10, 15, 20].map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setDiscountPercent(discountPercent === p ? 0 : p)}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${discountPercent === p ? 'bg-gold text-tonalli-black' : 'bg-tonalli-black-card text-silver-dark border border-subtle'}`}
+                    >
+                      {p}%
+                    </button>
+                  ))}
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={discountPercent || ''}
+                    onChange={(e) => setDiscountPercent(Math.min(100, Math.max(0, Number(e.target.value) || 0)))}
+                    placeholder="%"
+                    className="w-14 px-2 py-1.5 bg-tonalli-black-card border border-subtle rounded-lg text-white text-xs text-center focus:outline-none focus:border-gold-border"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-1">
+              {discountPercent > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-silver-dark text-xs">Subtotal</span>
+                  <span className="text-silver-dark text-sm">${cartSubtotal.toFixed(2)}</span>
+                </div>
+              )}
+              {discountPercent > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-red-400 text-xs">Descuento {discountPercent}%</span>
+                  <span className="text-red-400 text-sm">-${discountAmount.toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center">
+                <span className="text-silver-muted text-sm">Total</span>
+                <span className="text-gold text-2xl font-semibold">${cartTotal.toFixed(2)}</span>
+              </div>
             </div>
 
             <button

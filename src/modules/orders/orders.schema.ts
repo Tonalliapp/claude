@@ -25,6 +25,7 @@ export const createPosOrderSchema = z.object({
   payImmediately: z.boolean().default(true),
   paymentMethod: z.enum(['cash', 'card', 'transfer']).default('cash'),
   paymentReference: z.string().max(255).optional(),
+  discountPercent: z.number().min(0).max(100).optional(),
 });
 
 export const updateStatusSchema = z.object({
@@ -55,6 +56,7 @@ export const listQuerySchema = z.object({
   orderType: z.enum(['dine_in', 'takeout', 'counter', 'delivery']).optional(),
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
+  search: z.string().max(100).optional(),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
 });

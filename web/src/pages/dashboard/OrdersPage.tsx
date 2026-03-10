@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Clock, ChevronRight, Loader2, Eye, Banknote, CreditCard, ArrowRightLeft, DollarSign, Bike, ShieldCheck, AlertTriangle, Printer } from 'lucide-react';
+import { Clock, ChevronRight, Loader2, Eye, Banknote, CreditCard, ArrowRightLeft, DollarSign, Bike, ShieldCheck, AlertTriangle, Printer, Search, X, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch, apiFetchBlob } from '@/config/api';
 import type { Order, OrderStatus, OrdersResponse } from '@/types';
@@ -66,12 +66,22 @@ export default function OrdersPage() {
   const [payOrder, setPayOrder] = useState<Order | null>(null);
   const [payMethod, setPayMethod] = useState<'cash' | 'card' | 'transfer'>('cash');
   const [payRef, setPayRef] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
 
   const statusParam = TABS.find(t => t.key === activeTab)?.status;
-  const queryStr = statusParam ? `?status=${statusParam}&limit=50` : '?limit=50';
+  const queryParts = ['limit=50'];
+  if (statusParam) queryParts.push(`status=${statusParam}`);
+  if (searchQuery.trim()) queryParts.push(`search=${encodeURIComponent(searchQuery.trim())}`);
+  if (dateFrom) queryParts.push(`from=${dateFrom}T00:00:00.000Z`);
+  if (dateTo) queryParts.push(`to=${dateTo}T23:59:59.999Z`);
+  const queryStr = `?${queryParts.join('&')}`;
 
   const { data, isLoading } = useQuery({
-    queryKey: ['orders', activeTab],
+    queryKey: ['orders', activeTab, searchQuery, dateFrom, dateTo],
     queryFn: () => apiFetch<OrdersResponse>(`/orders${queryStr}`, { auth: true }),
     refetchInterval: 10000,
   });
@@ -129,10 +139,58 @@ export default function OrdersPage() {
 
   return (
     <div className="p-6 lg:p-8">
-      <div className="flex items-baseline justify-between mb-4">
-        <h2 className="text-white text-2xl font-light tracking-wide">Pedidos</h2>
-        {data && <span className="text-silver-muted text-sm">{data.total} total</span>}
+      <div className="flex items-center justify-between mb-4">
+        {searchOpen ? (
+          <div className="flex items-center gap-2 flex-1">
+            <div className="relative flex-1 max-w-sm">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-silver-dark" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar # o cliente..."
+                autoFocus
+                className="w-full pl-9 pr-4 py-2 bg-tonalli-black-card border border-subtle rounded-xl text-white text-sm placeholder:text-silver-dark focus:outline-none focus:border-gold-border"
+              />
+            </div>
+            <button onClick={() => { setSearchOpen(false); setSearchQuery(''); }} className="text-silver-dark hover:text-silver">
+              <X size={18} />
+            </button>
+          </div>
+        ) : (
+          <>
+            <h2 className="text-white text-2xl font-light tracking-wide">Pedidos</h2>
+            <div className="flex items-center gap-2">
+              {data && <span className="text-silver-muted text-sm mr-2">{data.total} total</span>}
+              <button onClick={() => setSearchOpen(true)} className="p-2 rounded-lg text-silver-dark hover:text-silver hover:bg-tonalli-black-card transition-colors">
+                <Search size={16} />
+              </button>
+              <button onClick={() => setShowFilters(f => !f)} className={`p-2 rounded-lg transition-colors ${showFilters || dateFrom || dateTo ? 'text-gold bg-status-pending' : 'text-silver-dark hover:text-silver hover:bg-tonalli-black-card'}`}>
+                <Filter size={16} />
+              </button>
+            </div>
+          </>
+        )}
       </div>
+
+      {/* Date filters */}
+      {showFilters && (
+        <div className="flex items-center gap-3 mb-4 bg-tonalli-black-card border border-subtle rounded-xl p-3">
+          <div className="flex items-center gap-2 flex-1">
+            <label className="text-silver-muted text-xs">Desde:</label>
+            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="bg-tonalli-black-soft border border-subtle rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-gold-border" />
+          </div>
+          <div className="flex items-center gap-2 flex-1">
+            <label className="text-silver-muted text-xs">Hasta:</label>
+            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="bg-tonalli-black-soft border border-subtle rounded-lg px-2.5 py-1.5 text-white text-xs focus:outline-none focus:border-gold-border" />
+          </div>
+          {(dateFrom || dateTo) && (
+            <button onClick={() => { setDateFrom(''); setDateTo(''); }} className="text-red-400 text-xs hover:text-red-300">
+              Limpiar
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1.5 mb-5">
