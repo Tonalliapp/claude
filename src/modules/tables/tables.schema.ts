@@ -9,6 +9,7 @@ export const updateTableSchema = z.object({
   number: z.number().int().positive().optional(),
   capacity: z.number().int().positive().optional(),
   active: z.boolean().optional(),
+  notes: z.string().max(500).nullable().optional(),
 });
 
 export const statusSchema = z.object({

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Users, QrCode, Pencil, Loader2 } from 'lucide-react';
+import { Plus, Users, QrCode, Pencil, Loader2, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/config/api';
 import type { Table, QRData } from '@/types';
@@ -30,6 +30,7 @@ export default function TablesPage() {
   const [newCap, setNewCap] = useState('4');
   const [editNum, setEditNum] = useState('');
   const [editCap, setEditCap] = useState('');
+  const [editNotes, setEditNotes] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const inv = () => queryClient.invalidateQueries({ queryKey: ['tables'] });
@@ -79,6 +80,7 @@ export default function TablesPage() {
     setSelected(t);
     setEditNum(String(t.number));
     setEditCap(String(t.capacity));
+    setEditNotes(t.notes || '');
     setShowDetail(false);
     setShowEdit(true);
   };
@@ -135,6 +137,7 @@ export default function TablesPage() {
                 <div className="flex items-center gap-1 mt-0.5">
                   <Users size={10} className="text-silver-dark" />
                   <span className="text-silver-dark text-[10px]">{t.capacity}</span>
+                  {t.notes && <MessageSquare size={10} className="text-gold ml-1" />}
                 </div>
               </button>
             );
@@ -158,7 +161,8 @@ export default function TablesPage() {
         <Modal title={`Editar Mesa ${selected.number}`} onClose={() => setShowEdit(false)}>
           <InputField label="NÚMERO" value={editNum} onChange={setEditNum} type="number" required />
           <InputField label="CAPACIDAD" value={editCap} onChange={setEditCap} type="number" />
-          <GoldButton loading={editTable.isPending} disabled={!editNum.trim()} onClick={() => editTable.mutate({ id: selected.id, number: parseInt(editNum) || 1, capacity: parseInt(editCap) || 4 })}>
+          <InputField label="NOTAS" value={editNotes} onChange={setEditNotes} placeholder="Ej: Junto a ventana, cumpleaños, alergia..." />
+          <GoldButton loading={editTable.isPending} disabled={!editNum.trim()} onClick={() => editTable.mutate({ id: selected.id, number: parseInt(editNum) || 1, capacity: parseInt(editCap) || 4, notes: editNotes.trim() || null } as { id: string; number: number; capacity: number })}>
             Guardar
           </GoldButton>
         </Modal>
@@ -177,6 +181,15 @@ export default function TablesPage() {
             <span className="text-silver-muted text-[13px]">Capacidad</span>
             <span className="text-white text-[15px] font-medium">{selected.capacity} personas</span>
           </div>
+
+          {selected.notes && (
+            <div className="bg-gold/5 border border-gold/15 rounded-lg px-3 py-2">
+              <div className="flex items-start gap-2">
+                <MessageSquare size={12} className="text-gold mt-0.5 shrink-0" />
+                <p className="text-silver text-xs">{selected.notes}</p>
+              </div>
+            </div>
+          )}
 
           <p className="text-gold-muted text-[10px] font-medium tracking-[2px] mt-2">CAMBIAR ESTADO</p>
           <div className="flex flex-wrap gap-2">

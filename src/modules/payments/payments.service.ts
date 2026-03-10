@@ -28,6 +28,7 @@ export async function create(tenantId: string, data: CreatePaymentInput) {
       cashRegisterId: cashRegister?.id,
       method: data.method,
       amount: data.amount,
+      tipAmount: data.tipAmount ?? null,
       reference: data.reference,
     },
     include: { order: { select: { id: true, orderNumber: true, tableId: true } } },
@@ -39,12 +40,13 @@ export async function create(tenantId: string, data: CreatePaymentInput) {
     data: { status: 'paid', paidAt: new Date() },
   });
 
-  // Update cash register totals
+  // Update cash register totals (amount + tip)
   if (cashRegister) {
+    const totalCollected = data.amount + (data.tipAmount ?? 0);
     await prisma.cashRegister.update({
       where: { id: cashRegister.id },
       data: {
-        salesTotal: { increment: data.amount },
+        salesTotal: { increment: totalCollected },
         transactions: { increment: 1 },
       },
     });

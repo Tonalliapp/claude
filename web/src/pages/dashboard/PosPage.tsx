@@ -100,6 +100,7 @@ export default function PosPage() {
   const [selOrder, setSelOrder] = useState<Order | null>(null);
   const [payMethod, setPayMethod] = useState<'cash' | 'card' | 'transfer'>('cash');
   const [payRef, setPayRef] = useState('');
+  const [tipAmount, setTipAmount] = useState('');
   const [showNewSale, setShowNewSale] = useState(false);
   const [closeResult, setCloseResult] = useState<CashRegisterCloseResponse | null>(null);
   const [showHistory, setShowHistory] = useState(false);
@@ -606,7 +607,38 @@ export default function PosPage() {
             ))}
           </div>
           {payMethod !== 'cash' && <InputField label="REFERENCIA" value={payRef} onChange={setPayRef} placeholder="No. de voucher o referencia" />}
-          <GoldButton loading={payMut.isPending} onClick={() => payMut.mutate({ orderId: selOrder.id, method: payMethod, amount: selOrder.total, ...(payRef.trim() ? { reference: payRef.trim() } : {}) })}>Cobrar</GoldButton>
+          <div>
+            <p className="text-gold-muted text-[10px] font-medium tracking-[2px] mb-1.5">PROPINA (OPCIONAL)</p>
+            <div className="flex gap-2">
+              {[0, 10, 15, 20].map(p => {
+                const tipVal = p === 0 ? 0 : Number(selOrder.total) * p / 100;
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setTipAmount(p === 0 ? '' : tipVal.toFixed(2))}
+                    className={`flex-1 py-2 rounded-lg text-xs font-medium transition-colors ${
+                      (p === 0 && !tipAmount) || tipAmount === tipVal.toFixed(2)
+                        ? 'bg-jade/15 border border-jade/30 text-jade'
+                        : 'bg-tonalli-black-card border border-subtle text-silver-dark'
+                    }`}
+                  >
+                    {p === 0 ? 'Sin' : `${p}%`}
+                  </button>
+                );
+              })}
+              <input
+                type="number"
+                value={tipAmount}
+                onChange={(e) => setTipAmount(e.target.value)}
+                placeholder="$0"
+                className="w-20 px-2 py-2 bg-tonalli-black-card border border-subtle rounded-lg text-white text-xs text-center focus:outline-none focus:border-gold-border"
+              />
+            </div>
+          </div>
+          <GoldButton loading={payMut.isPending} onClick={() => payMut.mutate({ orderId: selOrder.id, method: payMethod, amount: selOrder.total, ...(parseFloat(tipAmount) > 0 ? { tipAmount: parseFloat(tipAmount) } : {}), ...(payRef.trim() ? { reference: payRef.trim() } : {}) })}>
+            Cobrar ${(Number(selOrder.total) + (parseFloat(tipAmount) || 0)).toFixed(2)}
+            {parseFloat(tipAmount) > 0 && <span className="text-[10px] opacity-75 ml-1">(+${tipAmount} propina)</span>}
+          </GoldButton>
         </Modal>
       )}
 

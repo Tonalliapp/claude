@@ -204,6 +204,7 @@ model Table {
   status   TableStatus @default(free)
   capacity Int         @default(4)
   active   Boolean     @default(true)
+  notes    String?     @db.VarChar(500)
 
   tenant Tenant  @relation(fields: [tenantId], references: [id])
   orders Order[]
@@ -334,6 +335,7 @@ model Payment {
   cashRegisterId String?       @map("cash_register_id") @db.Uuid
   method         PaymentMethod
   amount         Decimal       @db.Decimal(10, 2)
+  tipAmount      Decimal?      @map("tip_amount") @db.Decimal(10, 2)
   reference      String?       @db.VarChar(255)
   createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz
 

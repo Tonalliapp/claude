@@ -20,6 +20,7 @@ export interface Table {
   capacity: number;
   qrCode: string;
   active?: boolean;
+  notes?: string | null;
 }
 
 export interface Category {

@@ -4,6 +4,7 @@ export const createPaymentSchema = z.object({
   orderId: z.string().uuid(),
   method: z.enum(['cash', 'card', 'transfer']),
   amount: z.number().positive(),
+  tipAmount: z.number().min(0).optional(),
   reference: z.string().max(255).optional(),
 });
 

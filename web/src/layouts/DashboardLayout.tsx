@@ -181,23 +181,41 @@ export default function DashboardLayout() {
               </button>
               {showNotifs && (
                 <div className="absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto bg-tonalli-black-card border border-gold-border rounded-xl shadow-2xl z-50">
-                  <div className="p-3 border-b border-light-border">
+                  <div className="flex items-center justify-between p-3 border-b border-light-border">
                     <span className="text-white text-sm font-medium">Notificaciones</span>
+                    {notifications.length > 0 && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); clearNotifications(); }}
+                        className="text-silver-dark text-[10px] hover:text-silver"
+                      >
+                        Marcar leídas
+                      </button>
+                    )}
                   </div>
                   {notifications.length === 0 ? (
                     <p className="p-4 text-silver-muted text-sm text-center">Sin notificaciones</p>
                   ) : (
-                    notifications.slice(0, 10).map((n, i) => (
+                    notifications.slice(0, 15).map((n, i) => (
                       <div
                         key={i}
                         className="px-3 py-2.5 border-b border-subtle hover:bg-tonalli-black-soft cursor-pointer"
-                        onClick={() => dismissNotification(i)}
+                        onClick={() => {
+                          dismissNotification(i);
+                          setShowNotifs(false);
+                          if (n.type === 'order_new' || n.type === 'order_updated') navigate('/dashboard/orders');
+                          else if (n.type === 'bill_requested') navigate('/dashboard/pos');
+                          else if (n.type === 'waiter_called') navigate('/dashboard/tables');
+                        }}
                       >
-                        <p className="text-gold text-xs font-medium">{n.title}</p>
-                        <p className="text-silver text-sm">{n.message}</p>
-                        <p className="text-silver-dark text-[10px] mt-0.5">
-                          {new Date(n.timestamp).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
-                        </p>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-gold text-xs font-medium">{n.title}</p>
+                            <p className="text-silver text-sm truncate">{n.message}</p>
+                          </div>
+                          <p className="text-silver-dark text-[10px] shrink-0">
+                            {new Date(n.timestamp).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
                       </div>
                     ))
                   )}
