@@ -135,8 +135,8 @@ function KitchenItemRow({
         {item.product.name}
       </span>
       {item.notes && (
-        <span className="px-1.5 py-0.5 rounded bg-gold/15 text-gold text-[10px] font-medium max-w-[120px] truncate">
-          {item.notes}
+        <span className="px-1.5 py-0.5 rounded bg-red-500/15 border border-red-500/20 text-red-300 text-[11px] font-semibold max-w-[160px] truncate">
+          ⚠ {item.notes}
         </span>
       )}
     </button>
@@ -287,11 +287,11 @@ function KitchenOrderCard({
         </div>
       )}
 
-      {/* Notes */}
+      {/* Notes — prominent for kitchen staff */}
       {order.notes && (
-        <div className="bg-tonalli-black-soft rounded-lg px-2.5 py-1.5 mb-2.5 flex items-start gap-1.5">
-          <AlertTriangle size={12} className="text-gold mt-0.5 shrink-0" />
-          <p className="text-silver-muted text-xs">{order.notes}</p>
+        <div className="bg-red-500/10 border border-red-500/25 rounded-lg px-3 py-2 mb-2.5 flex items-start gap-2">
+          <AlertTriangle size={14} className="text-red-400 mt-0.5 shrink-0" />
+          <p className="text-red-300 text-sm font-semibold">{order.notes}</p>
         </div>
       )}
 

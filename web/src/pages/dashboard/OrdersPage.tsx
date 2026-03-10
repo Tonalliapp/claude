@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Clock, ChevronRight, Loader2, Eye, Banknote, CreditCard, ArrowRightLeft, DollarSign, Bike, ShieldCheck } from 'lucide-react';
+import { Clock, ChevronRight, Loader2, Eye, Banknote, CreditCard, ArrowRightLeft, DollarSign, Bike, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/config/api';
 import type { Order, OrderStatus, OrdersResponse } from '@/types';
@@ -190,6 +190,14 @@ export default function OrdersPage() {
                   )}
                 </div>
 
+                {/* Order notes */}
+                {order.notes && (
+                  <div className="bg-red-500/10 border border-red-500/25 rounded-lg px-2.5 py-1.5 mb-2 flex items-start gap-1.5">
+                    <AlertTriangle size={12} className="text-red-400 mt-0.5 shrink-0" />
+                    <p className="text-red-300 text-xs font-semibold truncate">{order.notes}</p>
+                  </div>
+                )}
+
                 {/* Delivery driver info */}
                 {order.orderType === 'delivery' && order.deliveryMeta?.driverName && (
                   <div className="flex items-center gap-1.5 mb-2">
@@ -274,7 +282,7 @@ export default function OrdersPage() {
                 <span className="text-gold text-sm font-bold min-w-[28px]">{item.quantity}x</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-white text-sm font-medium truncate">{item.product.name}</p>
-                  {item.notes && <p className="text-silver-dark text-xs italic">{item.notes}</p>}
+                  {item.notes && <p className="text-red-300 text-xs font-medium">⚠ {item.notes}</p>}
                 </div>
                 <span className="text-silver text-sm">${(Number(item.unitPrice) * item.quantity).toFixed(2)}</span>
               </div>
@@ -282,8 +290,9 @@ export default function OrdersPage() {
           </div>
 
           {detailOrder.notes && (
-            <div className="bg-tonalli-black-soft rounded-lg px-3 py-2">
-              <p className="text-silver-muted text-xs">📝 {detailOrder.notes}</p>
+            <div className="bg-red-500/10 border border-red-500/25 rounded-lg px-3 py-2 flex items-start gap-2">
+              <AlertTriangle size={14} className="text-red-400 mt-0.5 shrink-0" />
+              <p className="text-red-300 text-sm font-semibold">{detailOrder.notes}</p>
             </div>
           )}
 

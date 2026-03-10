@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   DollarSign, CreditCard, Banknote, ArrowRightLeft, Lock, Unlock,
   Plus, Truck, Store, ShoppingBag, UtensilsCrossed, Clock, ChevronRight, X,
-  TrendingUp, TrendingDown, FileText, Loader2, Download, ShieldCheck, AlertTriangle,
+  TrendingUp, TrendingDown, FileText, Loader2, Download, ShieldCheck, AlertTriangle, Keyboard,
 } from 'lucide-react';
+import { useHotkeys } from '@/hooks/useHotkeys';
 import { toast } from 'sonner';
 import { apiFetch } from '@/config/api';
 import type {
@@ -160,6 +161,22 @@ export default function PosPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const [showShortcuts, setShowShortcuts] = useState(false);
+
+  const hotkeys = useMemo(() => ({
+    'f1': () => { if (!isOpenRef.current) setShowOpen(true); },
+    'f2': () => { if (isOpenRef.current) setShowNewSale(true); },
+    'f3': () => setShowHistory(true),
+    'f4': () => { if (isOpenRef.current) setShowClose(true); },
+    'f5': () => { if (isOpenRef.current) { setMovType('deposit'); setMovAmt(''); setMovDesc(''); setShowMovement(true); } },
+    'escape': () => { setShowOpen(false); setShowClose(false); setShowPay(false); setShowNewSale(false); setShowHistory(false); setShowMovement(false); setCloseResult(null); setShowSummary(null); setShowShortcuts(false); },
+    '?': () => setShowShortcuts(s => !s),
+  }), []);
+  useHotkeys(hotkeys);
+
+  // Ref to avoid stale closure in hotkeys
+  const isOpenRef = { current: register?.status === 'open' };
+
   const isOpen = register && register.status === 'open';
   const payList = paymentsData?.payments ?? [];
   const total = payList.reduce((s, p) => s + Number(p.amount ?? 0), 0);
@@ -185,6 +202,13 @@ export default function PosPage() {
     <div className="p-6 lg:p-8 max-w-3xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <h2 className="text-white text-xl font-light tracking-wide flex-1">Caja / POS</h2>
+        <button
+          onClick={() => setShowShortcuts(true)}
+          className="p-2 rounded-lg text-silver-dark hover:text-silver hover:bg-tonalli-black-card transition-colors"
+          title="Atajos de teclado (?)"
+        >
+          <Keyboard size={16} />
+        </button>
         <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg ${isOpen ? 'bg-jade-glow' : 'bg-status-preparing'}`}>
           {isOpen ? <Unlock size={12} className="text-jade" /> : <Lock size={12} className="text-silver-dark" />}
           <span className={`text-[11px] font-semibold ${isOpen ? 'text-jade' : 'text-silver-dark'}`}>{isOpen ? 'Abierta' : 'Cerrada'}</span>
@@ -583,6 +607,28 @@ export default function PosPage() {
           </div>
           {payMethod !== 'cash' && <InputField label="REFERENCIA" value={payRef} onChange={setPayRef} placeholder="No. de voucher o referencia" />}
           <GoldButton loading={payMut.isPending} onClick={() => payMut.mutate({ orderId: selOrder.id, method: payMethod, amount: selOrder.total, ...(payRef.trim() ? { reference: payRef.trim() } : {}) })}>Cobrar</GoldButton>
+        </Modal>
+      )}
+
+      {/* Shortcuts Modal */}
+      {showShortcuts && (
+        <Modal title="Atajos de Teclado" onClose={() => setShowShortcuts(false)}>
+          <div className="space-y-2">
+            {[
+              ['F1', 'Abrir caja'],
+              ['F2', 'Nueva venta'],
+              ['F3', 'Historial de turnos'],
+              ['F4', 'Cerrar caja'],
+              ['F5', 'Fondeo / movimiento'],
+              ['Esc', 'Cerrar modal'],
+              ['?', 'Mostrar atajos'],
+            ].map(([key, desc]) => (
+              <div key={key} className="flex items-center justify-between bg-tonalli-black-soft rounded-lg px-3 py-2">
+                <span className="text-silver text-sm">{desc}</span>
+                <kbd className="px-2 py-0.5 rounded bg-tonalli-black-card border border-subtle text-gold text-xs font-mono">{key}</kbd>
+              </div>
+            ))}
+          </div>
         </Modal>
       )}
 
