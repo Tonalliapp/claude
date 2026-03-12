@@ -1,6 +1,7 @@
 import { prisma } from '../../config/database';
 import { resend } from '../../config/email';
 import * as templates from './email.templates';
+import { cleanupStalePushSubs } from './push.service';
 
 const FROM_EMAIL = process.env.EMAIL_FROM || 'Tonalli <noreply@tonalli.app>';
 const ONE_DAY = 24 * 60 * 60 * 1000;
@@ -236,6 +237,7 @@ async function runAllChecks() {
     await checkPlanExpiring();
     await checkLowStockAlerts();
     await checkWeeklyDigest();
+    await cleanupStalePushSubs();
     console.log('[Notifications] Auto-checks completed');
   } catch (err) {
     console.error('[Notifications] Auto-check error:', err);

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Search, Plus, Minus, Trash2, X, Banknote, CreditCard, ArrowRightLeft, ShoppingBag, Store, Truck, Loader2, AlertTriangle, Flame, Percent } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, X, Banknote, CreditCard, ArrowRightLeft, ShoppingBag, Store, Truck, Loader2, AlertTriangle, Flame, Percent, ShoppingCart } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/config/api';
 import type { Product, Category, PosOrderInput, InventoryItem } from '@/types';
@@ -58,6 +58,7 @@ export default function PosNewSale({ onClose, onSuccess }: Props) {
   const [orderNotes, setOrderNotes] = useState('');
   const [discountPercent, setDiscountPercent] = useState(0);
   const [showDiscount, setShowDiscount] = useState(false);
+  const [showMobileCart, setShowMobileCart] = useState(false);
 
   const { data: categories } = useQuery({
     queryKey: ['categories'],
@@ -236,10 +237,28 @@ export default function PosNewSale({ onClose, onSuccess }: Props) {
           </div>
         </div>
 
+        {/* Mobile cart FAB */}
+        {cart.length > 0 && !showMobileCart && (
+          <button
+            onClick={() => setShowMobileCart(true)}
+            className="lg:hidden fixed bottom-6 right-6 z-[60] bg-gold text-tonalli-black w-14 h-14 rounded-full flex items-center justify-center shadow-lg"
+          >
+            <ShoppingCart size={22} />
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-[10px] font-bold flex items-center justify-center">
+              {cart.reduce((s, i) => s + i.quantity, 0)}
+            </span>
+          </button>
+        )}
+
         {/* Right — Cart */}
-        <div className="w-full lg:w-96 bg-tonalli-black-elevated border-l border-light-border flex flex-col overflow-hidden">
+        <div className={`${showMobileCart ? 'fixed inset-0 z-[60]' : 'hidden'} lg:relative lg:flex w-full lg:w-96 bg-tonalli-black-elevated border-l border-light-border flex flex-col overflow-hidden`}>
           <div className="p-4 border-b border-light-border shrink-0">
-            <p className="text-gold-muted text-[10px] font-medium tracking-[2px] mb-2">TIPO DE ORDEN</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-gold-muted text-[10px] font-medium tracking-[2px]">TIPO DE ORDEN</p>
+              <button onClick={() => setShowMobileCart(false)} className="lg:hidden text-silver-dark hover:text-silver">
+                <X size={18} />
+              </button>
+            </div>
             <div className="flex gap-1.5">
               {ORDER_TYPES.map((t) => (
                 <button
