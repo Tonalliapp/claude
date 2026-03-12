@@ -121,7 +121,7 @@ export default function CartPage() {
         <button
           onClick={() => setShowConfirm(true)}
           disabled={createOrder.isPending}
-          className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-gold text-tonalli-black font-semibold text-sm shadow-lg shadow-gold/20 disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-gold text-tonalli-black font-semibold text-sm shadow-lg shadow-gold/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <ShoppingBag size={16} />
           Revisar y Enviar · ${totalPrice.toFixed(2)}
@@ -169,7 +169,7 @@ export default function CartPage() {
               <button
                 onClick={() => { setShowConfirm(false); handleSubmit(); }}
                 disabled={createOrder.isPending}
-                className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gold text-tonalli-black font-semibold text-sm disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gold text-tonalli-black font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {createOrder.isPending ? <Loader2 size={16} className="animate-spin" /> : <ShoppingBag size={16} />}
                 {createOrder.isPending ? 'Enviando...' : 'Confirmar'}

@@ -160,7 +160,7 @@ export default function OrderTrackingPage() {
             <button
               onClick={handleRequestBill}
               disabled={requestBill.isPending || order.status === 'pending'}
-              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl border border-gold/30 text-gold text-sm font-medium hover:bg-gold/10 transition-colors disabled:opacity-40"
+              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl border border-gold/30 text-gold text-sm font-medium hover:bg-gold/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Receipt size={16} />
               {requestBill.isPending ? 'Solicitando...' : 'Pedir Cuenta'}

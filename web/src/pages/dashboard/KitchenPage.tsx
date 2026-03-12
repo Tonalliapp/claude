@@ -579,7 +579,7 @@ export default function KitchenPage() {
         playSound('kitchen');
         setNewOrderIds(brandNew);
         // Clear flash after animation
-        setTimeout(() => setNewOrderIds(new Set()), 1200);
+        setTimeout(() => setNewOrderIds(new Set()), 1000);
       }
     }
 

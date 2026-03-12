@@ -50,11 +50,11 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-tonalli-black flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-[420px]">
-        <div className="text-center mb-8">
+        <div className="text-center mb-10">
           <Link to="/" className="inline-block hover:opacity-80 transition-opacity">
-            <h1 className="font-display text-gold text-[28px] tracking-[8px] font-light">TONALLI</h1>
+            <h1 className="font-display text-gold text-3xl tracking-[8px] font-light">TONALLI</h1>
           </Link>
-          <div className="w-14 h-px bg-jade-muted/50 mx-auto my-2.5" />
+          <div className="w-14 h-px bg-jade-muted/50 mx-auto my-3" />
           <p className="text-silver-muted text-xs tracking-[2px]">Registra tu restaurante</p>
         </div>
 

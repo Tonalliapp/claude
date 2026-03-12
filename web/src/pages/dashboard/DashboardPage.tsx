@@ -97,22 +97,22 @@ export default function DashboardPage() {
               <p className="text-gold text-3xl font-semibold">{fmt(data.todaySales)}</p>
             </div>
             <div className="bg-tonalli-black-card border border-subtle rounded-2xl p-5">
-              <div className="w-7 h-7 rounded-lg bg-jade-glow flex items-center justify-center mb-2">
-                <ShoppingBag size={14} className="text-jade" />
+              <div className="w-8 h-8 rounded-lg bg-jade-glow flex items-center justify-center mb-2.5">
+                <ShoppingBag size={16} className="text-jade" />
               </div>
               <p className="text-silver-muted text-[9px] font-medium tracking-[1.5px] mb-1">PEDIDOS</p>
               <p className="text-white text-xl font-semibold">{data.todayOrders}</p>
             </div>
             <div className="bg-tonalli-black-card border border-subtle rounded-2xl p-5">
-              <div className="w-7 h-7 rounded-lg bg-status-preparing flex items-center justify-center mb-2">
-                <Receipt size={14} className="text-silver" />
+              <div className="w-8 h-8 rounded-lg bg-status-preparing flex items-center justify-center mb-2.5">
+                <Receipt size={16} className="text-silver" />
               </div>
               <p className="text-silver-muted text-[9px] font-medium tracking-[1.5px] mb-1">TICKET PROM.</p>
               <p className="text-white text-xl font-semibold">{fmt(data.averageTicket)}</p>
             </div>
             <div className="bg-tonalli-black-card border border-subtle rounded-2xl p-5">
-              <div className="w-7 h-7 rounded-lg bg-gold-glow flex items-center justify-center mb-2">
-                <ChefHat size={14} className="text-gold-light" />
+              <div className="w-8 h-8 rounded-lg bg-gold-glow flex items-center justify-center mb-2.5">
+                <ChefHat size={16} className="text-gold-light" />
               </div>
               <p className="text-silver-muted text-[9px] font-medium tracking-[1.5px] mb-1">PRODUCTOS</p>
               <p className="text-white text-xl font-semibold">{data.totalProducts}</p>
@@ -135,12 +135,12 @@ export default function DashboardPage() {
           {/* Sales Trend + Top Products */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
             {/* 7-day sales trend */}
-            {data.salesTrend && data.salesTrend.length > 0 && (
-              <div className="bg-tonalli-black-card border border-subtle rounded-2xl p-5">
-                <div className="flex items-center gap-2 mb-4">
-                  <TrendingUp size={14} className="text-gold" />
-                  <p className="text-silver-muted text-[10px] font-medium tracking-[1.5px]">VENTAS ÚLTIMOS 7 DÍAS</p>
-                </div>
+            <div className="bg-tonalli-black-card border border-subtle rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp size={14} className="text-gold" />
+                <p className="text-silver-muted text-[10px] font-medium tracking-[1.5px]">VENTAS ÚLTIMOS 7 DÍAS</p>
+              </div>
+              {data.salesTrend && data.salesTrend.length > 0 ? (
                 <ResponsiveContainer width="100%" height={160}>
                   <BarChart data={data.salesTrend} barSize={20}>
                     <XAxis dataKey="day" tick={{ fill: '#9CA3AF', fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -153,16 +153,22 @@ export default function DashboardPage() {
                     <Bar dataKey="sales" fill="#C9A84C" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
-              </div>
-            )}
+              ) : (
+                <div className="flex flex-col items-center justify-center h-[160px] text-center">
+                  <TrendingUp size={24} className="text-silver-dark/30 mb-2" />
+                  <p className="text-silver-dark text-xs">Sin datos de ventas aún</p>
+                  <p className="text-silver-dark/60 text-[10px] mt-0.5">Aparecerán cuando registres pedidos</p>
+                </div>
+              )}
+            </div>
 
             {/* Top products today */}
-            {data.topProducts && data.topProducts.length > 0 && (
-              <div className="bg-tonalli-black-card border border-subtle rounded-2xl p-5">
-                <div className="flex items-center gap-2 mb-4">
-                  <Award size={14} className="text-jade" />
-                  <p className="text-silver-muted text-[10px] font-medium tracking-[1.5px]">TOP PRODUCTOS HOY</p>
-                </div>
+            <div className="bg-tonalli-black-card border border-subtle rounded-2xl p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Award size={14} className="text-jade" />
+                <p className="text-silver-muted text-[10px] font-medium tracking-[1.5px]">TOP PRODUCTOS HOY</p>
+              </div>
+              {data.topProducts && data.topProducts.length > 0 ? (
                 <div className="space-y-3">
                   {data.topProducts.map((p, i) => {
                     const maxQty = data.topProducts![0].quantity;
@@ -183,8 +189,14 @@ export default function DashboardPage() {
                     );
                   })}
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="flex flex-col items-center justify-center h-[160px] text-center">
+                  <Award size={24} className="text-silver-dark/30 mb-2" />
+                  <p className="text-silver-dark text-xs">Sin pedidos hoy</p>
+                  <p className="text-silver-dark/60 text-[10px] mt-0.5">Los productos más vendidos aparecerán aquí</p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Quick actions */}
@@ -198,7 +210,7 @@ export default function DashboardPage() {
               <Link
                 key={a.to}
                 to={a.to}
-                className="bg-tonalli-black-card border border-subtle rounded-2xl p-4 flex flex-col items-center gap-2 hover:border-gold-border transition-colors"
+                className="bg-tonalli-black-card border border-subtle rounded-2xl p-4 flex flex-col items-center gap-2 hover:border-gold-border hover:bg-tonalli-black-soft transition-all duration-200"
               >
                 <a.icon size={20} className={a.color} />
                 <span className="text-silver text-xs font-medium">{a.label}</span>

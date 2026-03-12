@@ -63,8 +63,8 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-silver-dark text-xs">&copy; 2026 Tonalli. Todos los derechos reservados.</p>
           <div className="flex gap-4 text-silver-dark text-xs">
-            <span className="hover:text-silver cursor-pointer transition-colors">Privacidad</span>
-            <span className="hover:text-silver cursor-pointer transition-colors">Terminos</span>
+            <Link to="/privacy" className="hover:text-silver transition-colors">Privacidad</Link>
+            <Link to="/terms" className="hover:text-silver transition-colors">Términos</Link>
           </div>
         </div>
       </div>

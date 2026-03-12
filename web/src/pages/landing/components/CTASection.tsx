@@ -32,7 +32,7 @@ export default function CTASection() {
         </p>
         <Link
           to="/register"
-          className="inline-flex items-center gap-2 bg-gold hover:bg-gold-light text-tonalli-black px-10 py-4 rounded-xl text-lg font-semibold transition-colors animate-pulse hover:animate-none"
+          className="inline-flex items-center gap-2 bg-gold hover:bg-gold-light hover:scale-105 text-tonalli-black px-10 py-4 rounded-xl text-lg font-semibold transition-all duration-300 shadow-lg shadow-gold/20 hover:shadow-gold/40"
         >
           Empezar ahora
           <ArrowRight size={20} />
