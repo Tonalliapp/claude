@@ -26,32 +26,37 @@ export default function Navbar() {
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
+        <Link to="/" aria-label="Tonalli — Inicio" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
           <TonalliLogo size={28} />
           <span className="font-display text-gold text-xl tracking-[6px] font-light">TONALLI</span>
         </Link>
 
         {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-3">
-          <a href="#features" className="text-silver-muted hover:text-white text-sm transition-colors px-3 py-1.5">
+        <nav className="hidden md:flex items-center gap-3" aria-label="Navegación principal">
+          <a href="#features" className="text-silver-muted hover:text-white focus-visible:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/50 text-sm transition-colors px-3 py-1.5 rounded-lg">
             Funciones
           </a>
-          <a href="#pricing" className="text-silver-muted hover:text-white text-sm transition-colors px-3 py-1.5">
+          <a href="#pricing" className="text-silver-muted hover:text-white focus-visible:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/50 text-sm transition-colors px-3 py-1.5 rounded-lg">
             Precio
           </a>
-          <Link to="/login" className="text-silver-muted hover:text-white text-sm transition-colors px-3 py-1.5">
-            Iniciar Sesion
+          <Link to="/login" className="text-silver-muted hover:text-white focus-visible:text-white focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/50 text-sm transition-colors px-3 py-1.5 rounded-lg">
+            Iniciar Sesión
           </Link>
           <Link
             to="/register"
-            className="bg-gold hover:bg-gold-light text-tonalli-black px-5 py-2 rounded-lg text-sm font-semibold transition-colors"
+            className="bg-gold hover:bg-gold-light focus-visible:ring-2 focus-visible:ring-gold/50 focus-visible:outline-none text-tonalli-black px-5 py-2 rounded-lg text-sm font-semibold transition-colors"
           >
             Registrar Restaurante
           </Link>
-        </div>
+        </nav>
 
         {/* Mobile toggle */}
-        <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden text-silver-muted p-1">
+        <button
+          onClick={() => setMobileOpen(!mobileOpen)}
+          className="md:hidden text-silver-muted p-2 rounded-lg hover:bg-tonalli-black-soft transition-colors"
+          aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
+          aria-expanded={mobileOpen}
+        >
           {mobileOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
       </div>

@@ -20,7 +20,7 @@ export default function Footer() {
 
           {/* Producto */}
           <div>
-            <p className="text-gold-muted text-[10px] font-medium tracking-[2px] mb-3">PRODUCTO</p>
+            <h3 className="text-gold-muted text-[10px] font-medium tracking-[2px] mb-3">PRODUCTO</h3>
             <div className="space-y-2">
               <a href="#features" className="block text-silver-dark text-sm hover:text-silver transition-colors">Funciones</a>
               <a href="#pricing" className="block text-silver-dark text-sm hover:text-silver transition-colors">Precio</a>
@@ -30,7 +30,7 @@ export default function Footer() {
 
           {/* Empresa */}
           <div>
-            <p className="text-gold-muted text-[10px] font-medium tracking-[2px] mb-3">EMPRESA</p>
+            <h3 className="text-gold-muted text-[10px] font-medium tracking-[2px] mb-3">EMPRESA</h3>
             <div className="space-y-2">
               <span className="block text-silver-dark text-sm">Tonalli</span>
               <span className="block text-silver-dark text-sm">Tomatlan, Jalisco</span>
@@ -39,7 +39,7 @@ export default function Footer() {
 
           {/* Contacto */}
           <div>
-            <p className="text-gold-muted text-[10px] font-medium tracking-[2px] mb-3">CONTACTO</p>
+            <h3 className="text-gold-muted text-[10px] font-medium tracking-[2px] mb-3">CONTACTO</h3>
             <div className="space-y-2">
               <a
                 href="https://wa.me/525623655099"

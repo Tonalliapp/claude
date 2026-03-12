@@ -89,7 +89,7 @@ export default function CartPage() {
                 placeholder="Notas (sin cebolla, etc.)"
                 value={item.notes || ''}
                 onChange={(e) => updateItemNotes(item.product.id, e.target.value)}
-                className="w-full bg-tonalli-black border border-light-border rounded-lg px-3 py-2 text-white text-xs placeholder:text-silver-dark focus:outline-none focus:border-gold/30"
+                className="w-full bg-tonalli-black border border-light-border rounded-xl px-3 py-2 text-white text-xs placeholder:text-silver-dark focus:outline-none focus:border-gold/30 transition-colors"
               />
             </div>
           ))}

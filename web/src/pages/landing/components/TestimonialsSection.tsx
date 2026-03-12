@@ -63,11 +63,11 @@ export default function TestimonialsSection() {
               key={t.name}
               variants={fadeUp}
               custom={i}
-              className="bg-tonalli-black-card border border-subtle rounded-2xl p-6 hover:border-gold-border transition-colors"
+              className="bg-tonalli-black-card border border-subtle rounded-2xl p-6 hover:border-gold-border hover:-translate-y-1 transition-all duration-300"
             >
-              <div className="flex gap-0.5 mb-4">
+              <div className="flex gap-0.5 mb-4" aria-label={`${t.stars} de 5 estrellas`}>
                 {[...Array(t.stars)].map((_, j) => (
-                  <Star key={j} size={14} className="text-gold fill-gold" />
+                  <Star key={j} size={14} className="text-gold fill-gold" aria-hidden="true" />
                 ))}
               </div>
               <p className="text-silver text-sm leading-relaxed mb-5">"{t.text}"</p>

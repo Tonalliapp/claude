@@ -87,10 +87,13 @@ export default function PricingSection() {
               <span className={`text-sm ${!annual ? 'text-gold' : 'text-silver-muted'}`}>Mensual</span>
               <button
                 onClick={() => setAnnual(!annual)}
-                className={`relative w-11 h-6 rounded-full transition-colors ${annual ? 'bg-gold' : 'bg-white/10'}`}
+                role="switch"
+                aria-checked={annual}
+                aria-label="Cambiar entre pago mensual y anual"
+                className={`relative w-11 h-6 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 ${annual ? 'bg-gold' : 'bg-white/10'}`}
               >
                 <span
-                  className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${annual ? 'translate-x-5' : ''}`}
+                  className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${annual ? 'translate-x-5' : ''}`}
                 />
               </button>
               <span className={`text-sm ${annual ? 'text-gold' : 'text-silver-muted'}`}>
@@ -121,7 +124,7 @@ export default function PricingSection() {
                 <div className="relative">
                   <h3 className="text-white text-lg font-medium mb-4">{plan.name}</h3>
                   <div className="mb-6">
-                    <span className="font-display text-4xl text-gold font-light">
+                    <span className="font-display text-4xl text-gold font-light tabular-nums">
                       ${annual ? Math.round(plan.yearlyPrice / 12).toLocaleString() : plan.monthlyPrice}
                     </span>
                     <span className="text-silver-muted text-sm ml-2">/ mes</span>
@@ -141,7 +144,7 @@ export default function PricingSection() {
 
                   <Link
                     to="/register"
-                    className={`block w-full py-3 rounded-xl text-center font-semibold transition-colors ${
+                    className={`block w-full py-3 rounded-xl text-center font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 ${
                       plan.popular
                         ? 'bg-gold hover:bg-gold-light text-tonalli-black'
                         : 'border border-gold/30 text-gold hover:bg-gold/10'

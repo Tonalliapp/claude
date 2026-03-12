@@ -15,7 +15,7 @@ export default function CartBar({ totalItems, totalPrice, onClick }: Props) {
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
-          className="fixed bottom-0 left-0 right-0 p-4 z-30"
+          className="fixed bottom-0 left-0 right-0 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] z-30"
         >
           <button
             onClick={onClick}

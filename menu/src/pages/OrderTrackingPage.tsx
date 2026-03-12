@@ -169,7 +169,7 @@ export default function OrderTrackingPage() {
             <button
               onClick={handleCallWaiter}
               disabled={callWaiter.isPending}
-              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl border border-silver/20 text-silver text-sm font-medium hover:bg-silver/5 transition-colors disabled:opacity-40"
+              className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl border border-silver/20 text-silver text-sm font-medium hover:bg-silver/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Bell size={16} />
               {callWaiter.isPending ? 'Llamando...' : 'Llamar Mesero'}

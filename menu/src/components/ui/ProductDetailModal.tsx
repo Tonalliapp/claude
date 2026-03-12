@@ -36,7 +36,7 @@ export default function ProductDetailModal({ product, quantity, onAdd, onUpdateQ
           <img
             src={product.imageUrl}
             alt={product.name}
-            className="w-full h-56 object-cover"
+            className="w-full h-56 object-cover aspect-video"
           />
         )}
 
@@ -69,7 +69,7 @@ export default function ProductDetailModal({ product, quantity, onAdd, onUpdateQ
               ) : (
                 <button
                   onClick={() => { onAdd(); onClose(); }}
-                  className="w-full bg-gold/10 border border-gold/30 text-gold py-3 rounded-xl text-sm font-medium hover:bg-gold/20 transition-colors flex items-center justify-center gap-2"
+                  className="w-full bg-gold text-tonalli-black py-3 rounded-xl text-sm font-semibold hover:bg-gold-light transition-colors flex items-center justify-center gap-2"
                 >
                   <Plus size={16} />
                   Agregar al pedido
