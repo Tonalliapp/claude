@@ -11,12 +11,18 @@ export type OrderStatus =
 
 export type OrderItemStatus = 'pending' | 'preparing' | 'ready' | 'delivered';
 
+export interface RestaurantConfig {
+  ivaEnabled?: boolean;
+  ivaRate?: number;
+  [key: string]: unknown;
+}
+
 export interface Restaurant {
   id: string;
   name: string;
   slug: string;
   logoUrl: string | null;
-  config: Record<string, unknown> | null;
+  config: RestaurantConfig | null;
 }
 
 export interface TableInfo {

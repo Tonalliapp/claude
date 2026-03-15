@@ -93,3 +93,12 @@ export async function prepTimeStats(req: Request, res: Response, next: NextFunct
     next(error);
   }
 }
+
+export async function businessAlerts(req: Request, res: Response, next: NextFunction) {
+  try {
+    const result = await reportsService.businessAlerts(req.tenantId!);
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+}

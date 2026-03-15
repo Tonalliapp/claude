@@ -31,6 +31,14 @@ export async function getById(tenantId: string, id: string) {
   return ingredient;
 }
 
+export async function findByBarcode(tenantId: string, barcode: string) {
+  const ingredient = await prisma.ingredient.findFirst({
+    where: { tenantId, barcode },
+  });
+  if (!ingredient) throw new AppError(404, 'Ingrediente no encontrado con ese código de barras', 'NOT_FOUND');
+  return ingredient;
+}
+
 export async function create(tenantId: string, data: CreateIngredientInput) {
   const existing = await prisma.ingredient.findUnique({
     where: { tenantId_name: { tenantId, name: data.name } },
@@ -45,6 +53,7 @@ export async function create(tenantId: string, data: CreateIngredientInput) {
       costPerUnit: data.costPerUnit,
       currentStock: data.currentStock ?? 0,
       minStock: data.minStock ?? 0,
+      barcode: data.barcode,
     },
   });
 }

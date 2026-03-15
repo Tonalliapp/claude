@@ -1,9 +1,14 @@
 node_modules/
 dist/
 .env
+.env.*
 *.log
 *.tsbuildinfo
 .DS_Store
 Thumbs.db
 rork-app/
 files/
+backups/
+
+# Claude Code — local settings (secrets/permissions per-machine)
+.claude/settings.local.json

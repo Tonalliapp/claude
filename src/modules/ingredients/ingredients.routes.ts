@@ -7,6 +7,7 @@ import {
   updateIngredientSchema,
   ingredientMovementSchema,
   idParamSchema,
+  barcodeParamSchema,
 } from './ingredients.schema';
 import * as ctrl from './ingredients.controller';
 
@@ -15,6 +16,7 @@ router.use(authenticate, roleGuard('owner', 'admin'));
 
 router.get('/', ctrl.list);
 router.get('/alerts', ctrl.getAlerts);
+router.get('/barcode/:barcode', validate({ params: barcodeParamSchema }), ctrl.findByBarcode);
 router.get('/:id', validate({ params: idParamSchema }), ctrl.getById);
 router.post('/', validate({ body: createIngredientSchema }), ctrl.create);
 router.put('/:id', validate({ params: idParamSchema, body: updateIngredientSchema }), ctrl.update);

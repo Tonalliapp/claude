@@ -8,6 +8,7 @@ export const createIngredientSchema = z.object({
   costPerUnit: z.number().min(0),
   currentStock: z.number().min(0).optional(),
   minStock: z.number().min(0).optional(),
+  barcode: z.string().max(50).optional(),
 });
 
 export const updateIngredientSchema = z.object({
@@ -15,6 +16,11 @@ export const updateIngredientSchema = z.object({
   unit: z.enum(ingredientUnits).optional(),
   costPerUnit: z.number().min(0).optional(),
   minStock: z.number().min(0).optional(),
+  barcode: z.string().max(50).nullable().optional(),
+});
+
+export const barcodeParamSchema = z.object({
+  barcode: z.string().min(1).max(50),
 });
 
 export const ingredientMovementSchema = z.object({

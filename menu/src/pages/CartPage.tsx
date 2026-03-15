@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShoppingBag, Loader2, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -8,7 +8,12 @@ import QuantityControl from '@/components/ui/QuantityControl';
 
 export default function CartPage() {
   const navigate = useNavigate();
-  const { slug, mesa, items, updateQuantity, updateItemNotes, clearCart, totalPrice, setActiveOrderId } = useCart();
+  const { slug, mesa, items, updateQuantity, updateItemNotes, clearCart, totalPrice, restaurant, setActiveOrderId } = useCart();
+
+  const ivaEnabled = restaurant?.config?.ivaEnabled === true;
+  const ivaRate = ivaEnabled ? Number(restaurant?.config?.ivaRate || 16) : 0;
+  const ivaAmount = useMemo(() => ivaEnabled ? totalPrice * (ivaRate / 100) : 0, [totalPrice, ivaEnabled, ivaRate]);
+  const grandTotal = totalPrice + ivaAmount;
   const createOrder = useCreateOrder();
   const [globalNotes, setGlobalNotes] = useState('');
   const [showConfirm, setShowConfirm] = useState(false);
@@ -110,9 +115,23 @@ export default function CartPage() {
         </div>
 
         {/* Total */}
-        <div className="flex justify-between items-center mt-4 pt-4 border-t border-light-border">
-          <span className="text-silver-muted text-sm">Total</span>
-          <span className="text-gold text-xl font-bold">${totalPrice.toFixed(2)}</span>
+        <div className="mt-4 pt-4 border-t border-light-border space-y-2">
+          {ivaEnabled && (
+            <>
+              <div className="flex justify-between items-center">
+                <span className="text-silver-muted text-sm">Subtotal</span>
+                <span className="text-silver text-sm">${totalPrice.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-silver-muted text-sm">IVA ({ivaRate}%)</span>
+                <span className="text-silver text-sm">${ivaAmount.toFixed(2)}</span>
+              </div>
+            </>
+          )}
+          <div className="flex justify-between items-center">
+            <span className="text-silver-muted text-sm font-medium">Total</span>
+            <span className="text-gold text-xl font-bold">${grandTotal.toFixed(2)}</span>
+          </div>
         </div>
       </div>
 
@@ -124,7 +143,7 @@ export default function CartPage() {
           className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-gold text-tonalli-black font-semibold text-sm shadow-lg shadow-gold/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           <ShoppingBag size={16} />
-          Revisar y Enviar · ${totalPrice.toFixed(2)}
+          Revisar y Enviar · ${grandTotal.toFixed(2)}
         </button>
       </div>
 
@@ -154,9 +173,23 @@ export default function CartPage() {
               ))}
             </div>
 
-            <div className="flex justify-between items-center py-3 border-t border-light-border mb-4">
-              <span className="text-white text-sm font-medium">Total</span>
-              <span className="text-gold text-xl font-bold">${totalPrice.toFixed(2)}</span>
+            <div className="py-3 border-t border-light-border mb-4 space-y-1.5">
+              {ivaEnabled && (
+                <>
+                  <div className="flex justify-between items-center">
+                    <span className="text-silver-muted text-xs">Subtotal</span>
+                    <span className="text-silver text-xs">${totalPrice.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-silver-muted text-xs">IVA ({ivaRate}%)</span>
+                    <span className="text-silver text-xs">${ivaAmount.toFixed(2)}</span>
+                  </div>
+                </>
+              )}
+              <div className="flex justify-between items-center">
+                <span className="text-white text-sm font-medium">Total</span>
+                <span className="text-gold text-xl font-bold">${grandTotal.toFixed(2)}</span>
+              </div>
             </div>
 
             <div className="flex gap-3">

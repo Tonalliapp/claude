@@ -62,16 +62,10 @@ export async function getQRImage(req: Request, res: Response, next: NextFunction
   }
 }
 
-export async function getCustomQR(req: Request, res: Response, next: NextFunction) {
+export async function updateStatus(req: Request, res: Response, next: NextFunction) {
   try {
-    const buffer = await tablesService.getCustomQR(req.tenantId!, req.params.id as string, req.body);
-    res.set({
-      'Content-Type': 'image/png',
-      'Content-Disposition': `inline; filename="qr-custom-mesa-${req.params.id}.png"`,
-      'Content-Length': buffer.length.toString(),
-      'Cache-Control': 'no-cache',
-    });
-    res.send(buffer);
+    const table = await tablesService.updateStatus(req.tenantId!, req.params.id as string, req.body.status);
+    res.json(table);
   } catch (error) {
     next(error);
   }
@@ -79,23 +73,27 @@ export async function getCustomQR(req: Request, res: Response, next: NextFunctio
 
 export async function getBrandedQR(req: Request, res: Response, next: NextFunction) {
   try {
-    const buffer = await tablesService.getBrandedQR(req.tenantId!, req.params.id as string, req.body);
+    const result = await tablesService.getBrandedQR(req.tenantId!, req.params.id as string, req.body);
     res.set({
-      'Content-Type': 'image/png',
-      'Content-Disposition': `attachment; filename="tarjeta-mesa-${req.params.id}.png"`,
-      'Content-Length': buffer.length.toString(),
-      'Cache-Control': 'no-cache',
+      'Content-Type': result.contentType,
+      'Content-Disposition': `attachment; filename="${result.filename}"`,
+      'Content-Length': result.buffer.length.toString(),
     });
-    res.send(buffer);
+    res.send(result.buffer);
   } catch (error) {
     next(error);
   }
 }
 
-export async function updateStatus(req: Request, res: Response, next: NextFunction) {
+export async function getBatchQR(req: Request, res: Response, next: NextFunction) {
   try {
-    const table = await tablesService.updateStatus(req.tenantId!, req.params.id as string, req.body.status);
-    res.json(table);
+    const zipBuffer = await tablesService.getBatchQR(req.tenantId!, req.body);
+    res.set({
+      'Content-Type': 'application/zip',
+      'Content-Disposition': 'attachment; filename="qr-mesas.zip"',
+      'Content-Length': zipBuffer.length.toString(),
+    });
+    res.send(zipBuffer);
   } catch (error) {
     next(error);
   }

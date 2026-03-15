@@ -37,6 +37,7 @@ export interface Product {
   description: string | null;
   price: number;
   imageUrl: string | null;
+  barcode?: string | null;
   available: boolean;
   categoryId: string;
   trackStock?: boolean;
@@ -292,6 +293,7 @@ export type IngredientUnit = 'piezas' | 'kg' | 'g' | 'lt' | 'ml';
 export interface Ingredient {
   id: string;
   name: string;
+  barcode?: string | null;
   unit: IngredientUnit;
   costPerUnit: number;
   currentStock: number;

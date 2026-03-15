@@ -509,3 +509,167 @@ export async function prepTimeStats(tenantId: string) {
 
   return { globalAvgMinutes, byProduct };
 }
+
+// ── Business Alerts (proactive monitoring) ──
+
+interface BusinessAlert {
+  id: string;
+  severity: 'critical' | 'warning' | 'info';
+  category: 'orders' | 'inventory' | 'kitchen' | 'tables' | 'cash';
+  title: string;
+  message: string;
+  action?: string;
+}
+
+export async function businessAlerts(tenantId: string) {
+  const alerts: BusinessAlert[] = [];
+  const now = new Date();
+
+  // Run all checks in parallel
+  const [pendingOrders, preparingOrders, readyOrders, lowIngredients, openRegister, billTables] = await Promise.all([
+    // 1. Orders stuck in pending (not confirmed after 5 min)
+    prisma.order.findMany({
+      where: {
+        tenantId,
+        status: 'pending',
+        createdAt: { lt: new Date(now.getTime() - 5 * 60000) },
+      },
+      select: { id: true, orderNumber: true, createdAt: true, table: { select: { number: true } } },
+      orderBy: { createdAt: 'asc' },
+      take: 10,
+    }),
+    // 2. Orders in preparing too long (>25 min)
+    prisma.order.findMany({
+      where: {
+        tenantId,
+        status: 'preparing',
+        confirmedAt: { lt: new Date(now.getTime() - 25 * 60000) },
+      },
+      select: { id: true, orderNumber: true, confirmedAt: true, table: { select: { number: true } } },
+      orderBy: { confirmedAt: 'asc' },
+      take: 10,
+    }),
+    // 3. Orders ready but not delivered (>10 min)
+    prisma.order.findMany({
+      where: {
+        tenantId,
+        status: 'ready',
+        readyAt: { lt: new Date(now.getTime() - 10 * 60000) },
+      },
+      select: { id: true, orderNumber: true, readyAt: true, table: { select: { number: true } } },
+      take: 10,
+    }),
+    // 4. Low stock ingredients
+    prisma.$queryRaw<{ name: string; current_stock: number; min_stock: number; unit: string }[]>`
+      SELECT name, current_stock, min_stock, unit
+      FROM ingredients
+      WHERE tenant_id = ${tenantId}::uuid AND active = true AND min_stock > 0 AND current_stock <= min_stock
+      ORDER BY (current_stock::float / NULLIF(min_stock::float, 0)) ASC
+      LIMIT 10
+    `,
+    // 5. Check if cash register is open
+    prisma.cashRegister.findFirst({
+      where: { tenantId, status: 'open' },
+      select: { id: true },
+    }),
+    // 6. Tables requesting bill — find via orders with bill-requested status
+    prisma.table.findMany({
+      where: { tenantId, status: 'bill' },
+      select: { number: true, orders: { where: { status: { notIn: ['paid', 'cancelled'] } }, select: { createdAt: true }, orderBy: { createdAt: 'desc' }, take: 1 } },
+    }),
+  ]);
+
+  // Process pending orders
+  for (const order of pendingOrders) {
+    const mins = Math.floor((now.getTime() - order.createdAt.getTime()) / 60000);
+    const num = `#${String(order.orderNumber).padStart(3, '0')}`;
+    const loc = order.table ? `Mesa ${order.table.number}` : '';
+    alerts.push({
+      id: `pending-${order.id}`,
+      severity: mins > 10 ? 'critical' : 'warning',
+      category: 'orders',
+      title: 'Pedido sin confirmar',
+      message: `${num} ${loc} lleva ${mins} min esperando confirmacion`,
+      action: '/dashboard/orders',
+    });
+  }
+
+  // Process slow kitchen orders
+  for (const order of preparingOrders) {
+    const mins = Math.floor((now.getTime() - (order.confirmedAt?.getTime() ?? now.getTime())) / 60000);
+    const num = `#${String(order.orderNumber).padStart(3, '0')}`;
+    const loc = order.table ? `Mesa ${order.table.number}` : '';
+    alerts.push({
+      id: `slow-${order.id}`,
+      severity: mins > 40 ? 'critical' : 'warning',
+      category: 'kitchen',
+      title: 'Comanda tardada',
+      message: `${num} ${loc} lleva ${mins} min en preparacion`,
+      action: '/dashboard/kitchen',
+    });
+  }
+
+  // Process ready but not delivered
+  for (const order of readyOrders) {
+    const mins = Math.floor((now.getTime() - (order.readyAt?.getTime() ?? now.getTime())) / 60000);
+    const num = `#${String(order.orderNumber).padStart(3, '0')}`;
+    alerts.push({
+      id: `ready-${order.id}`,
+      severity: 'warning',
+      category: 'kitchen',
+      title: 'Pedido listo sin entregar',
+      message: `${num} listo hace ${mins} min, no se ha entregado`,
+      action: '/dashboard/kitchen',
+    });
+  }
+
+  // Process low ingredients
+  for (const ing of lowIngredients) {
+    const stock = Number(ing.current_stock);
+    const min = Number(ing.min_stock);
+    alerts.push({
+      id: `ingredient-${ing.name}`,
+      severity: stock <= 0 ? 'critical' : 'warning',
+      category: 'inventory',
+      title: stock <= 0 ? 'Sin stock' : 'Stock bajo',
+      message: `${ing.name}: ${stock.toFixed(1)} ${ing.unit} (min: ${min.toFixed(1)})`,
+      action: '/dashboard/inventory',
+    });
+  }
+
+  // Cash register check (only during likely business hours 8AM-11PM)
+  const hour = now.getHours();
+  if (!openRegister && hour >= 10 && hour <= 23) {
+    alerts.push({
+      id: 'cash-closed',
+      severity: 'info',
+      category: 'cash',
+      title: 'Caja cerrada',
+      message: 'No hay caja registradora abierta',
+      action: '/dashboard/cash-register',
+    });
+  }
+
+  // Tables with pending bill
+  for (const table of billTables) {
+    const orderDate = table.orders?.[0]?.createdAt;
+    if (!orderDate) continue;
+    const mins = Math.floor((now.getTime() - orderDate.getTime()) / 60000);
+    if (mins >= 5) {
+      alerts.push({
+        id: `bill-table-${table.number}`,
+        severity: mins > 15 ? 'critical' : 'warning',
+        category: 'tables',
+        title: 'Cuenta pendiente',
+        message: `Mesa ${table.number} esperando cuenta hace ${mins} min`,
+        action: '/dashboard/pos',
+      });
+    }
+  }
+
+  // Sort: critical first, then warning, then info
+  const order: Record<string, number> = { critical: 0, warning: 1, info: 2 };
+  alerts.sort((a, b) => order[a.severity] - order[b.severity]);
+
+  return { alerts, checkedAt: now.toISOString() };
+}

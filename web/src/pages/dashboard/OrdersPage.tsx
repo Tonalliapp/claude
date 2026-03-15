@@ -121,11 +121,27 @@ export default function OrdersPage() {
     try {
       const blob = await apiFetchBlob(`/orders/${orderId}/receipt`, { auth: true });
       const url = URL.createObjectURL(blob);
-      const w = window.open(url, '_blank');
-      if (w) {
-        w.addEventListener('afterprint', () => URL.revokeObjectURL(url));
-        w.addEventListener('load', () => setTimeout(() => w.print(), 300));
+
+      // Use hidden iframe for thermal-friendly printing (avoids browser scaling to A4/Letter)
+      let iframe = document.getElementById('receipt-print-frame') as HTMLIFrameElement | null;
+      if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'receipt-print-frame';
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = 'none';
+        document.body.appendChild(iframe);
       }
+      iframe.src = url;
+      iframe.onload = () => {
+        setTimeout(() => {
+          iframe!.contentWindow?.print();
+          setTimeout(() => URL.revokeObjectURL(url), 5000);
+        }, 200);
+      };
     } catch {
       toast.error('Error al generar ticket');
     }
@@ -281,9 +297,9 @@ export default function OrdersPage() {
                 )}
 
                 {/* Footer */}
-                <div className="flex justify-between items-center border-t border-light-border pt-3">
+                <div className="flex flex-wrap justify-between items-center border-t border-light-border pt-3 gap-2">
                   <span className="text-gold text-base font-semibold">${Number(order.total).toFixed(2)}</span>
-                  <div className="flex gap-2 items-center">
+                  <div className="flex gap-2 items-center flex-wrap">
                     <button
                       onClick={() => setDetailOrder(order)}
                       className="p-2.5 rounded-lg text-silver-dark hover:text-silver hover:bg-tonalli-black-soft active:bg-tonalli-black-soft transition-colors"

@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, Search, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -12,7 +13,7 @@ import type { MenuProduct } from '@/types';
 
 export default function MenuPage() {
   const navigate = useNavigate();
-  const { slug, mesa, items, addItem: rawAddItem, updateQuantity, totalItems, totalPrice, restaurant } = useCart();
+  const { slug, mesa, items, addItem: rawAddItem, updateQuantity, totalItems, totalPrice, restaurant, setSession } = useCart();
   const addItem = useCallback((product: MenuProduct) => {
     rawAddItem(product);
     toast.success(`${product.name} agregado`, { duration: 1500 });
@@ -28,6 +29,10 @@ export default function MenuPage() {
 
   const categories = data?.categories ?? [];
 
+  const ivaEnabled = restaurant?.config?.ivaEnabled === true;
+  const ivaRate = ivaEnabled ? Number(restaurant?.config?.ivaRate || 16) : 0;
+  const grandTotal = useMemo(() => ivaEnabled ? totalPrice * (1 + ivaRate / 100) : totalPrice, [totalPrice, ivaEnabled, ivaRate]);
+
   // Filter categories/products by search query
   const filteredCategories = useMemo(() => {
     if (!searchQuery.trim()) return categories;
@@ -41,6 +46,13 @@ export default function MenuPage() {
       }))
       .filter(cat => cat.products.length > 0);
   }, [categories, searchQuery]);
+
+  // Set restaurant in cart context from menu data (for IVA config)
+  useEffect(() => {
+    if (data?.restaurant && !restaurant) {
+      setSession(data.restaurant, null);
+    }
+  }, [data, restaurant, setSession]);
 
   useEffect(() => {
     if (categories.length > 0 && !activeCategory) {
@@ -193,7 +205,7 @@ export default function MenuPage() {
 
       <CartBar
         totalItems={totalItems}
-        totalPrice={totalPrice}
+        totalPrice={grandTotal}
         onClick={() => navigate(`/${slug}/cart?mesa=${mesa}`)}
       />
     </div>

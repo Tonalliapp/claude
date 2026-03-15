@@ -1,4 +1,5 @@
-import { Plus } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, UtensilsCrossed } from 'lucide-react';
 import type { MenuProduct } from '@/types';
 import QuantityControl from './QuantityControl';
 
@@ -12,20 +13,26 @@ interface Props {
 
 export default function ProductCard({ product, quantity, onAdd, onUpdateQuantity, onTap }: Props) {
   const unavailable = !product.available;
+  const [imgError, setImgError] = useState(false);
 
   return (
     <div
       className={`flex gap-3 p-3 rounded-xl border border-light-border bg-tonalli-black-card ${unavailable ? 'opacity-50' : ''} ${onTap ? 'cursor-pointer active:bg-tonalli-black-soft' : ''}`}
       onClick={onTap}
     >
-      {product.imageUrl && (
+      {product.imageUrl && !imgError ? (
         <img
           src={product.imageUrl}
           alt={product.name}
           className="w-20 h-20 rounded-lg object-cover shrink-0"
           loading="lazy"
+          onError={() => setImgError(true)}
         />
-      )}
+      ) : product.imageUrl && imgError ? (
+        <div className="w-20 h-20 rounded-lg bg-tonalli-black-soft flex items-center justify-center shrink-0">
+          <UtensilsCrossed size={20} className="text-silver-dark" />
+        </div>
+      ) : null}
       <div className="flex-1 min-w-0">
         <h3 className="text-white text-sm font-medium truncate">{product.name}</h3>
         {product.description && (

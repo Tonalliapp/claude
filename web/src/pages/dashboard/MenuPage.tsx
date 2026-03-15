@@ -34,6 +34,7 @@ export default function MenuPage() {
   const [prodName, setProdName] = useState('');
   const [prodDesc, setProdDesc] = useState('');
   const [prodPrice, setProdPrice] = useState('');
+  const [prodBarcode, setProdBarcode] = useState('');
   const [deleteProdId, setDeleteProdId] = useState<string | null>(null);
   const [recipeProd, setRecipeProd] = useState<Product | null>(null);
 
@@ -103,7 +104,7 @@ export default function MenuPage() {
 
   // Product mutations
   const addProdMut = useMutation({
-    mutationFn: (d: { categoryId: string; name: string; description: string; price: number }) =>
+    mutationFn: (d: { categoryId: string; name: string; description: string; price: number; barcode?: string }) =>
       apiFetch<Product>('/products', { method: 'POST', body: { ...d, available: true }, auth: true }),
     onSuccess: (newProduct) => {
       inv();
@@ -116,7 +117,7 @@ export default function MenuPage() {
   });
 
   const editProdMut = useMutation({
-    mutationFn: ({ id, ...d }: { id: string; name: string; description: string; price: number }) =>
+    mutationFn: ({ id, ...d }: { id: string; name: string; description: string; price: number; barcode?: string | null }) =>
       apiFetch(`/products/${id}`, { method: 'PUT', body: d, auth: true }),
     onSuccess: () => { inv(); setShowEditProd(false); toast.success('Producto actualizado'); },
     onError: (e: Error) => toast.error(e.message),
@@ -165,6 +166,7 @@ export default function MenuPage() {
     setProdName(p.name);
     setProdDesc(p.description || '');
     setProdPrice(String(p.price));
+    setProdBarcode(p.barcode || '');
     setShowEditProd(true);
   };
 
@@ -173,6 +175,7 @@ export default function MenuPage() {
     setProdName('');
     setProdDesc('');
     setProdPrice('');
+    setProdBarcode('');
     setShowAddProd(true);
   };
 
@@ -342,7 +345,8 @@ export default function MenuPage() {
           <InputField label="NOMBRE" placeholder="Ej: Guacamole con Totopos" value={prodName} onChange={setProdName} required />
           <InputField label="DESCRIPCION" placeholder="Descripcion del platillo" value={prodDesc} onChange={setProdDesc} textarea />
           <InputField label="PRECIO (MXN)" placeholder="89.00" value={prodPrice} onChange={setProdPrice} type="number" required />
-          <GoldButton loading={addProdMut.isPending} disabled={!prodName.trim() || !prodPrice.trim()} onClick={() => addProdMut.mutate({ categoryId: selectedCatId, name: prodName, description: prodDesc, price: parseFloat(prodPrice) || 0 })}>
+          <InputField label="CÓDIGO DE BARRAS (opcional)" placeholder="Ej: 7501234567890" value={prodBarcode} onChange={setProdBarcode} />
+          <GoldButton loading={addProdMut.isPending} disabled={!prodName.trim() || !prodPrice.trim()} onClick={() => addProdMut.mutate({ categoryId: selectedCatId, name: prodName, description: prodDesc, price: parseFloat(prodPrice) || 0, ...(prodBarcode.trim() ? { barcode: prodBarcode.trim() } : {}) })}>
             Crear Producto
           </GoldButton>
         </Modal>
@@ -360,6 +364,7 @@ export default function MenuPage() {
           <InputField label="NOMBRE" value={prodName} onChange={setProdName} required />
           <InputField label="DESCRIPCION" value={prodDesc} onChange={setProdDesc} textarea />
           <InputField label="PRECIO (MXN)" value={prodPrice} onChange={setProdPrice} type="number" required />
+          <InputField label="CÓDIGO DE BARRAS (opcional)" placeholder="Ej: 7501234567890" value={prodBarcode} onChange={setProdBarcode} />
           <button
             onClick={() => { setShowEditProd(false); setRecipeProd(editProd); }}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-jade/30 text-jade text-sm font-medium hover:bg-jade/10 transition-colors"
@@ -367,7 +372,7 @@ export default function MenuPage() {
             <BookOpen size={16} />
             Configurar Ingredientes / Receta
           </button>
-          <GoldButton loading={editProdMut.isPending} disabled={!prodName.trim() || !prodPrice.trim()} onClick={() => editProdMut.mutate({ id: editProd.id, name: prodName, description: prodDesc, price: parseFloat(prodPrice) || 0 })}>
+          <GoldButton loading={editProdMut.isPending} disabled={!prodName.trim() || !prodPrice.trim()} onClick={() => editProdMut.mutate({ id: editProd.id, name: prodName, description: prodDesc, price: parseFloat(prodPrice) || 0, barcode: prodBarcode.trim() || null })}>
             Guardar
           </GoldButton>
         </Modal>

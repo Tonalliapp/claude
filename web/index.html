@@ -43,7 +43,8 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Outfit:wght@300;400;500;600;700&display=swap" />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
     <!-- Structured Data -->
     <script type="application/ld+json">
@@ -71,6 +72,27 @@
   </head>
   <body class="bg-tonalli-black text-white font-body antialiased">
     <div id="root"></div>
+    <script>
+      // Cleanup old VitePWA service worker and caches
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          regs.forEach(function(r) {
+            if (r.active && r.active.scriptURL.includes('sw.js') && !r.active.scriptURL.includes('push-sw.js')) {
+              r.unregister();
+            }
+          });
+        });
+        if ('caches' in window) {
+          caches.keys().then(function(keys) {
+            keys.forEach(function(k) {
+              if (k.startsWith('workbox-') || k.startsWith('api-cache') || k.startsWith('google-fonts') || k.startsWith('gstatic-')) {
+                caches.delete(k);
+              }
+            });
+          });
+        }
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

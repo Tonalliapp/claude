@@ -5,6 +5,7 @@ export const createProductSchema = z.object({
   name: z.string().min(1).max(255),
   description: z.string().optional(),
   price: z.number().positive(),
+  barcode: z.string().max(50).optional(),
   available: z.boolean().optional(),
   trackStock: z.boolean().optional(),
   sortOrder: z.number().int().min(0).optional(),
@@ -15,9 +16,14 @@ export const updateProductSchema = z.object({
   name: z.string().min(1).max(255).optional(),
   description: z.string().optional(),
   price: z.number().positive().optional(),
+  barcode: z.string().max(50).nullable().optional(),
   available: z.boolean().optional(),
   trackStock: z.boolean().optional(),
   sortOrder: z.number().int().min(0).optional(),
+});
+
+export const barcodeParamSchema = z.object({
+  barcode: z.string().min(1).max(50),
 });
 
 export const availabilitySchema = z.object({

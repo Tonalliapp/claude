@@ -24,6 +24,7 @@ import {
 import { useAuth } from '@/auth/AuthProvider';
 import { useSocket } from '@/socket/SocketProvider';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useBusinessAlerts } from '@/hooks/useBusinessAlerts';
 
 const NAV_ITEMS = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: null },
@@ -51,6 +52,7 @@ export default function DashboardLayout() {
   const [showNotifs, setShowNotifs] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const { permission, requestPermission } = usePushNotifications();
+  const { criticalCount } = useBusinessAlerts();
 
   useEffect(() => {
     const goOnline = () => setIsOnline(true);
@@ -146,16 +148,23 @@ export default function DashboardLayout() {
 
         {/* Footer */}
         <div className="px-3 py-3 border-t border-gold-border">
-          <div className={`flex items-center gap-2 mb-2 px-2 ${collapsed ? 'justify-center' : ''}`}>
+          <div className={`flex items-center gap-2 mb-2 px-2 py-1.5 rounded-lg ${
+            isConnected ? 'bg-jade/10' : 'bg-red-500/15 animate-pulse'
+          } ${collapsed ? 'justify-center' : ''}`}>
             {isConnected ? (
-              <Wifi size={12} className="text-jade" />
+              <Wifi size={16} className="text-jade" />
             ) : (
-              <WifiOff size={12} className="text-red-500" />
+              <WifiOff size={16} className="text-red-400" />
             )}
             {!collapsed && (
-              <span className={`text-[10px] ${isConnected ? 'text-jade' : 'text-red-500'}`}>
-                {isConnected ? 'Conectado' : 'Desconectado'}
-              </span>
+              <div className="flex flex-col">
+                <span className={`text-xs font-medium ${isConnected ? 'text-jade' : 'text-red-400'}`}>
+                  {isConnected ? 'En vivo' : 'Sin conexión'}
+                </span>
+                {!isConnected && (
+                  <span className="text-red-400/70 text-[10px]">Pedidos no llegarán</span>
+                )}
+              </div>
             )}
           </div>
           <button
@@ -172,26 +181,58 @@ export default function DashboardLayout() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Topbar */}
         <header className="flex items-center justify-between px-4 lg:px-8 py-3 border-b border-gold-border bg-tonalli-black-rich">
-          <button onClick={() => setMobileOpen(true)} className="lg:hidden text-silver-dark p-1">
+          <button onClick={() => setMobileOpen(true)} className="lg:hidden text-silver-dark p-2.5 -ml-2">
             <Menu size={20} />
           </button>
+          {/* WebSocket status in topbar */}
+          {!isConnected && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-500/15 animate-pulse">
+              <WifiOff size={14} className="text-red-400" />
+              <span className="text-red-300 text-xs font-medium hidden sm:inline">Tiempo real desconectado</span>
+            </div>
+          )}
           <div className="flex-1" />
           <div className="flex items-center gap-3">
+            {/* Connection indicator in topbar */}
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${
+              isConnected ? 'bg-jade/10' : 'bg-red-500/15'
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${
+                isConnected ? 'bg-jade animate-pulse' : 'bg-red-400'
+              }`} />
+              <span className={`text-[11px] font-medium hidden sm:inline ${
+                isConnected ? 'text-jade' : 'text-red-400'
+              }`}>
+                {isConnected ? 'En vivo' : 'Desconectado'}
+              </span>
+            </div>
+            {/* Alert indicator */}
+            {criticalCount > 0 && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/15 animate-pulse">
+                <div className="w-2 h-2 rounded-full bg-red-400" />
+                <span className="text-red-300 text-[11px] font-medium hidden sm:inline">
+                  {criticalCount} alerta{criticalCount > 1 ? 's' : ''}
+                </span>
+              </div>
+            )}
+
             {/* Notifications */}
             <div className="relative">
               <button
                 onClick={() => { setShowNotifs(!showNotifs); if (!showNotifs) clearNotifications(); }}
-                className="relative text-silver-dark hover:text-silver transition-colors p-1"
+                className="relative text-silver-dark hover:text-silver transition-colors p-2.5"
               >
                 <Bell size={18} />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-gold text-tonalli-black text-[9px] font-bold flex items-center justify-center">
-                    {unreadCount > 9 ? '9+' : unreadCount}
+                {(unreadCount > 0 || criticalCount > 0) && (
+                  <span className={`absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center ${
+                    criticalCount > 0 ? 'bg-red-500 text-white' : 'bg-gold text-tonalli-black'
+                  }`}>
+                    {(unreadCount + criticalCount) > 9 ? '9+' : unreadCount + criticalCount}
                   </span>
                 )}
               </button>
               {showNotifs && (
-                <div className="absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto bg-tonalli-black-card border border-gold-border rounded-xl shadow-2xl z-50">
+                <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-80 max-h-96 overflow-y-auto bg-tonalli-black-card border border-gold-border rounded-xl shadow-2xl z-50">
                   <div className="flex items-center justify-between p-3 border-b border-light-border">
                     <span className="text-white text-sm font-medium">Notificaciones</span>
                     {notifications.length > 0 && (

@@ -489,12 +489,17 @@ function KitchenHeader({
       <span className="text-silver-muted text-sm font-mono tabular-nums">{clock}</span>
 
       {/* Connection status */}
-      <div className="flex items-center gap-1">
+      <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${
+        isConnected ? 'bg-jade/10' : 'bg-red-500/15 animate-pulse'
+      }`}>
         {isConnected ? (
           <Wifi size={14} className="text-jade" />
         ) : (
           <WifiOff size={14} className="text-red-400" />
         )}
+        <span className={`text-xs font-medium ${isConnected ? 'text-jade' : 'text-red-400'}`}>
+          {isConnected ? 'En vivo' : 'Sin señal'}
+        </span>
       </div>
 
       {/* Test sound */}
@@ -639,6 +644,8 @@ export default function KitchenPage() {
     [confirmPickup],
   );
 
+  const [mobileTab, setMobileTab] = useState<'new' | 'preparing' | 'ready'>('new');
+
   const counts = {
     new: confirmedOrders.length,
     preparing: preparingOrders.length,
@@ -656,46 +663,85 @@ export default function KitchenPage() {
         avgPrepMinutes={prepTimeData?.globalAvgMinutes ?? null}
       />
 
+      {!isConnected && (
+        <div className="bg-red-500/15 border-b border-red-500/30 px-4 py-2.5 flex items-center justify-center gap-2 animate-pulse">
+          <WifiOff size={16} className="text-red-400" />
+          <span className="text-red-300 text-sm font-medium">Conexión perdida — los pedidos nuevos no llegarán en tiempo real</span>
+        </div>
+      )}
+
+      {/* Mobile tabs — visible only on phones */}
+      <div className="flex md:hidden border-b border-subtle">
+        {([
+          { key: 'new' as const, label: 'Nuevas', color: 'text-gold border-gold', count: counts.new },
+          { key: 'preparing' as const, label: 'Preparando', color: 'text-silver border-silver', count: counts.preparing },
+          { key: 'ready' as const, label: 'Listas', color: 'text-jade border-jade', count: counts.ready },
+        ]).map(t => (
+          <button
+            key={t.key}
+            onClick={() => setMobileTab(t.key)}
+            className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors flex items-center justify-center gap-1.5 ${
+              mobileTab === t.key ? t.color : 'text-silver-dark border-transparent'
+            }`}
+          >
+            {t.label}
+            {t.count > 0 && (
+              <span className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center ${
+                mobileTab === t.key ? 'bg-current/15' : 'bg-tonalli-black-soft'
+              }`}>
+                {t.count}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2 p-2 min-h-0 overflow-hidden">
-        <KitchenColumn
-          title="Nuevas"
-          color="gold"
-          count={counts.new}
-          orders={confirmedOrders}
-          column="new"
-          newOrderIds={newOrderIds}
-          onAction={handleAction}
-          onItemToggle={handleItemToggle}
-          onConfirmPickup={handleConfirmPickup}
-          isConfirming={confirmPickup.isPending}
-          isLoading={confirmedQuery.isLoading}
-        />
-        <KitchenColumn
-          title="En Preparaci&#xF3;n"
-          color="silver"
-          count={counts.preparing}
-          orders={preparingOrders}
-          column="preparing"
-          newOrderIds={newOrderIds}
-          onAction={handleAction}
-          onItemToggle={handleItemToggle}
-          onConfirmPickup={handleConfirmPickup}
-          isConfirming={confirmPickup.isPending}
-          isLoading={preparingQuery.isLoading}
-        />
-        <KitchenColumn
-          title="Listas"
-          color="jade"
-          count={counts.ready}
-          orders={readyOrders}
-          column="ready"
-          newOrderIds={newOrderIds}
-          onAction={handleAction}
-          onItemToggle={handleItemToggle}
-          onConfirmPickup={handleConfirmPickup}
-          isConfirming={confirmPickup.isPending}
-          isLoading={readyQuery.isLoading}
-        />
+        <div className={`${mobileTab === 'new' ? '' : 'hidden md:flex'} flex-col`}>
+          <KitchenColumn
+            title="Nuevas"
+            color="gold"
+            count={counts.new}
+            orders={confirmedOrders}
+            column="new"
+            newOrderIds={newOrderIds}
+            onAction={handleAction}
+            onItemToggle={handleItemToggle}
+            onConfirmPickup={handleConfirmPickup}
+            isConfirming={confirmPickup.isPending}
+            isLoading={confirmedQuery.isLoading}
+          />
+        </div>
+        <div className={`${mobileTab === 'preparing' ? '' : 'hidden md:flex'} flex-col`}>
+          <KitchenColumn
+            title="En Preparaci&#xF3;n"
+            color="silver"
+            count={counts.preparing}
+            orders={preparingOrders}
+            column="preparing"
+            newOrderIds={newOrderIds}
+            onAction={handleAction}
+            onItemToggle={handleItemToggle}
+            onConfirmPickup={handleConfirmPickup}
+            isConfirming={confirmPickup.isPending}
+            isLoading={preparingQuery.isLoading}
+          />
+        </div>
+        <div className={`${mobileTab === 'ready' ? '' : 'hidden md:flex'} flex-col`}>
+          <KitchenColumn
+            title="Listas"
+            color="jade"
+            count={counts.ready}
+            orders={readyOrders}
+            column="ready"
+            newOrderIds={newOrderIds}
+            onAction={handleAction}
+            onItemToggle={handleItemToggle}
+            onConfirmPickup={handleConfirmPickup}
+            isConfirming={confirmPickup.isPending}
+            isLoading={readyQuery.isLoading}
+          />
+        </div>
       </div>
     </div>
   );

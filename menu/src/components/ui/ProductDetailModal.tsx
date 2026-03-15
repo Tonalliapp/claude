@@ -1,4 +1,5 @@
-import { Plus, X } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, X, UtensilsCrossed } from 'lucide-react';
 import type { MenuProduct } from '@/types';
 import QuantityControl from './QuantityControl';
 
@@ -12,6 +13,7 @@ interface Props {
 
 export default function ProductDetailModal({ product, quantity, onAdd, onUpdateQuantity, onClose }: Props) {
   const unavailable = !product.available;
+  const [imgError, setImgError] = useState(false);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={onClose}>
@@ -32,13 +34,18 @@ export default function ProductDetailModal({ product, quantity, onAdd, onUpdateQ
         </button>
 
         {/* Image */}
-        {product.imageUrl && (
+        {product.imageUrl && !imgError ? (
           <img
             src={product.imageUrl}
             alt={product.name}
             className="w-full h-56 object-cover aspect-video"
+            onError={() => setImgError(true)}
           />
-        )}
+        ) : product.imageUrl && imgError ? (
+          <div className="w-full h-56 bg-tonalli-black-soft flex items-center justify-center">
+            <UtensilsCrossed size={40} className="text-silver-dark" />
+          </div>
+        ) : null}
 
         {/* Content */}
         <div className="p-5">

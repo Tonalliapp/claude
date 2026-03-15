@@ -4,6 +4,8 @@ import { AppError } from '../../middleware/errorHandler';
 import { processImage } from '../../utils/imageProcessor';
 import { uploadToStorage } from '../../utils/uploadFile';
 import { convertUnits } from '../../utils/unitConversion';
+import { getIO } from '../../websocket/socket';
+import { tenantRoom } from '../../websocket/rooms';
 import type { CreateProductInput, UpdateProductInput, SetRecipeInput } from './products.schema';
 
 export async function list(tenantId: string, categoryId?: string) {
@@ -20,6 +22,15 @@ export async function getById(tenantId: string, id: string) {
     include: { category: { select: { id: true, name: true } }, inventory: true },
   });
   if (!product) throw new AppError(404, 'Producto no encontrado', 'NOT_FOUND');
+  return product;
+}
+
+export async function findByBarcode(tenantId: string, barcode: string) {
+  const product = await prisma.product.findFirst({
+    where: { tenantId, barcode },
+    include: { category: { select: { id: true, name: true } }, inventory: true },
+  });
+  if (!product) throw new AppError(404, 'Producto no encontrado con ese código de barras', 'NOT_FOUND');
   return product;
 }
 
@@ -44,6 +55,7 @@ export async function create(tenantId: string, data: CreateProductInput) {
       name: data.name,
       description: data.description,
       price: data.price,
+      barcode: data.barcode,
       available: data.available ?? true,
       trackStock: data.trackStock ?? false,
       sortOrder: data.sortOrder ?? 0,
@@ -79,10 +91,15 @@ export async function toggleAvailability(tenantId: string, id: string, available
   const product = await prisma.product.findFirst({ where: { id, tenantId } });
   if (!product) throw new AppError(404, 'Producto no encontrado', 'NOT_FOUND');
 
-  return prisma.product.update({
+  const updated = await prisma.product.update({
     where: { id },
     data: { available },
   });
+
+  // Notify clients browsing the menu in real-time
+  getIO().of('/client').to(tenantRoom(tenantId)).emit('menu:updated', { productId: id, available });
+
+  return updated;
 }
 
 export async function reorder(tenantId: string, ids: string[]) {

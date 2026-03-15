@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Search, Plus, Minus, Trash2, X, Banknote, CreditCard, ArrowRightLeft, ShoppingBag, Store, Truck, Loader2, AlertTriangle, Flame, Percent, ShoppingCart } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, X, Banknote, CreditCard, ArrowRightLeft, ShoppingBag, Store, Truck, Loader2, AlertTriangle, Flame, Percent, ShoppingCart, ScanBarcode } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/config/api';
 import type { Product, Category, PosOrderInput, InventoryItem } from '@/types';
+import BarcodeScanner from '@/components/ui/BarcodeScanner';
 
 interface Props {
   onClose: () => void;
@@ -59,6 +60,7 @@ export default function PosNewSale({ onClose, onSuccess }: Props) {
   const [discountPercent, setDiscountPercent] = useState(0);
   const [showDiscount, setShowDiscount] = useState(false);
   const [showMobileCart, setShowMobileCart] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
 
   const { data: categories } = useQuery({
     queryKey: ['categories'],
@@ -129,6 +131,28 @@ export default function PosNewSale({ onClose, onSuccess }: Props) {
     });
   };
 
+  const handleBarcodeScan = async (barcode: string) => {
+    // First try to find in already-loaded products
+    const local = products.find(p => p.barcode === barcode && p.available);
+    if (local) {
+      addToCart(local);
+      toast.success(`Agregado: ${local.name}`);
+      return;
+    }
+    // Fallback: lookup via API
+    try {
+      const product = await apiFetch<Product>(`/products/barcode/${encodeURIComponent(barcode)}`, { auth: true });
+      if (!product.available) {
+        toast.warning(`${product.name} no esta disponible`);
+        return;
+      }
+      addToCart(product);
+      toast.success(`Agregado: ${product.name}`);
+    } catch {
+      toast.error('Producto no encontrado con ese codigo');
+    }
+  };
+
   const updateQty = (productId: string, delta: number) => {
     setCart((prev) => prev.map((i) => {
       if (i.productId !== productId) return i;
@@ -172,16 +196,32 @@ export default function PosNewSale({ onClose, onSuccess }: Props) {
           </div>
 
           <div className="p-4 space-y-3 shrink-0">
-            <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-silver-dark" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar producto..."
-                className="w-full pl-9 pr-4 py-2.5 bg-tonalli-black-card border border-subtle rounded-xl text-white text-sm placeholder:text-silver-dark focus:outline-none focus:border-gold-border"
-              />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-silver-dark" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar producto..."
+                  className="w-full pl-9 pr-4 py-2.5 bg-tonalli-black-card border border-subtle rounded-xl text-white text-sm placeholder:text-silver-dark focus:outline-none focus:border-gold-border"
+                />
+              </div>
+              <button
+                onClick={() => setShowScanner(s => !s)}
+                className={`shrink-0 px-3 py-2.5 rounded-xl transition-colors ${showScanner ? 'bg-gold/10 border border-gold/30 text-gold' : 'bg-tonalli-black-card border border-subtle text-silver-dark hover:text-silver hover:border-gold-border'}`}
+              >
+                <ScanBarcode size={18} />
+              </button>
             </div>
+
+            {showScanner && (
+              <BarcodeScanner
+                onScan={handleBarcodeScan}
+                onClose={() => setShowScanner(false)}
+                label="Escanear producto"
+              />
+            )}
 
             <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
               <button
@@ -305,11 +345,11 @@ export default function PosNewSale({ onClose, onSuccess }: Props) {
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <button onClick={() => updateQty(item.productId, -1)} className="w-7 h-7 rounded-lg bg-tonalli-black-soft flex items-center justify-center text-silver-dark hover:text-silver">
+                        <button onClick={() => updateQty(item.productId, -1)} className="w-9 h-9 rounded-lg bg-tonalli-black-soft flex items-center justify-center text-silver-dark hover:text-silver">
                           <Minus size={14} />
                         </button>
                         <span className="text-white text-sm font-semibold min-w-[24px] text-center">{item.quantity}</span>
-                        <button onClick={() => updateQty(item.productId, 1)} className="w-7 h-7 rounded-lg bg-tonalli-black-soft flex items-center justify-center text-silver-dark hover:text-silver">
+                        <button onClick={() => updateQty(item.productId, 1)} className="w-9 h-9 rounded-lg bg-tonalli-black-soft flex items-center justify-center text-silver-dark hover:text-silver">
                           <Plus size={14} />
                         </button>
                       </div>

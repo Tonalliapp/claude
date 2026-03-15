@@ -4,13 +4,14 @@ import { roleGuard } from '../../middleware/roleGuard';
 import { validate } from '../../middleware/validator';
 import { upload } from '../../middleware/upload';
 import { checkPlanLimit } from '../../middleware/planLimits';
-import { createProductSchema, updateProductSchema, availabilitySchema, idParamSchema, reorderProductsSchema, setRecipeSchema } from './products.schema';
+import { createProductSchema, updateProductSchema, availabilitySchema, idParamSchema, reorderProductsSchema, setRecipeSchema, barcodeParamSchema } from './products.schema';
 import * as ctrl from './products.controller';
 
 const router = Router();
 router.use(authenticate);
 
 router.get('/', ctrl.list);
+router.get('/barcode/:barcode', validate({ params: barcodeParamSchema }), ctrl.findByBarcode);
 router.get('/:id', validate({ params: idParamSchema }), ctrl.getById);
 router.post('/', roleGuard('owner', 'admin'), checkPlanLimit('products'), validate({ body: createProductSchema }), ctrl.create);
 router.put('/reorder', roleGuard('owner', 'admin'), validate({ body: reorderProductsSchema }), ctrl.reorder);

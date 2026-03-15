@@ -16,6 +16,8 @@ export function useMenuData(slug: string) {
     queryKey: ['menu', slug],
     queryFn: () => apiFetch<MenuData>(`/menu/${slug}`),
     enabled: !!slug,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
+    refetchInterval: 60 * 1000,
+    refetchOnWindowFocus: true,
   });
 }

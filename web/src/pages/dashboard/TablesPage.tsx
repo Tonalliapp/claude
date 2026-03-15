@@ -244,6 +244,7 @@ export default function TablesPage() {
           tableNumber={selected.number}
           menuUrl={qrMenuUrl}
           onClose={() => setShowQR(false)}
+          totalTables={sorted.length}
         />
       )}
 

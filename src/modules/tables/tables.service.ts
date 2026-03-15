@@ -1,12 +1,13 @@
 import { TableStatus } from '@prisma/client';
+import archiver from 'archiver';
 import { prisma } from '../../config/database';
 import { AppError } from '../../middleware/errorHandler';
-import { generateTableQR, getTableMenuURL, generateCustomQR, generateBrandedQR } from '../../utils/generateQR';
+import { generateTableQR, getTableMenuURL, generateBrandedQR, wrapInPdf } from '../../utils/generateQR';
+import type { BrandedQROptions } from '../../utils/generateQR';
+import { getLogoBuffer } from '../tenants/tenants.service';
 import { getIO } from '../../websocket/socket';
 import { tenantRoom } from '../../websocket/rooms';
-import { getLogoBuffer } from '../tenants/tenants.service';
-import type { CreateTableInput, UpdateTableInput, CustomQRInput, BrandedQRInput } from './tables.schema';
-import type { CustomQROptions } from '../../utils/generateQR';
+import type { CreateTableInput, UpdateTableInput, BrandedQRInput, BatchQRInput } from './tables.schema';
 
 export async function list(tenantId: string) {
   return prisma.table.findMany({
@@ -73,60 +74,110 @@ export async function getQR(tenantId: string, id: string) {
   return { tableNumber: table.number, qrCode: qrDataUrl, menuUrl: table.qrCode };
 }
 
-export async function getCustomQR(tenantId: string, tableId: string, options: CustomQRInput): Promise<Buffer> {
-  const table = await prisma.table.findFirst({
-    where: { id: tableId, tenantId },
-    include: { tenant: { select: { slug: true, logoUrl: true } } },
-  });
-  if (!table) throw new AppError(404, 'Mesa no encontrada', 'NOT_FOUND');
-
-  const logoBuffer = await getLogoBuffer(tenantId);
-  if (!logoBuffer) {
-    throw new AppError(400, 'Primero sube el logo de tu restaurante en /api/v1/tenants/me/logo', 'LOGO_REQUIRED');
-  }
-
-  const qrOptions: Partial<CustomQROptions> = {
-    qrSize: options.qrSize,
-    position: options.position,
-    opacity: options.opacity,
-    canvasSize: options.canvasSize,
-    showTableNumber: options.showTableNumber,
-  };
-
-  if (options.customX !== undefined && options.customY !== undefined) {
-    qrOptions.customX = options.customX;
-    qrOptions.customY = options.customY;
-  }
-
-  return generateCustomQR(table.tenant.slug, table.number, logoBuffer, qrOptions);
-}
-
-export async function getBrandedQR(tenantId: string, tableId: string, options: BrandedQRInput): Promise<Buffer> {
-  const table = await prisma.table.findFirst({
-    where: { id: tableId, tenantId },
-    include: { tenant: { select: { slug: true, logoUrl: true } } },
-  });
-  if (!table) throw new AppError(404, 'Mesa no encontrada', 'NOT_FOUND');
-
-  const logoBuffer = await getLogoBuffer(tenantId);
-  if (!logoBuffer) {
-    throw new AppError(400, 'Primero sube el logo de tu restaurante en /api/v1/tenants/me/logo', 'LOGO_REQUIRED');
-  }
-
-  return generateBrandedQR(table.tenant.slug, table.number, logoBuffer, {
-    layout: options.layout,
-    showTableNumber: options.showTableNumber,
-  });
-}
-
 export async function updateStatus(tenantId: string, id: string, status: TableStatus) {
   const table = await prisma.table.findFirst({ where: { id, tenantId } });
   if (!table) throw new AppError(404, 'Mesa no encontrada', 'NOT_FOUND');
 
   const updated = await prisma.table.update({ where: { id }, data: { status } });
 
-  // Emit WebSocket event
   getIO().of('/staff').to(tenantRoom(tenantId)).emit('table:updated', updated);
 
   return updated;
+}
+
+export async function getBrandedQR(tenantId: string, tableId: string, options: BrandedQRInput) {
+  const table = await prisma.table.findFirst({
+    where: { id: tableId, tenantId },
+    include: { tenant: { select: { slug: true, name: true } } },
+  });
+  if (!table) throw new AppError(404, 'Mesa no encontrada', 'NOT_FOUND');
+
+  const logoBuffer = await getLogoBuffer(tenantId);
+
+  const qrOptions: BrandedQROptions = {
+    template: options.template,
+    font: options.font,
+    title: options.title || table.tenant.name,
+    subtitle: options.subtitle,
+    callToAction: options.callToAction || 'Escanea para ver el menú',
+    showTableNumber: options.showTableNumber,
+    logoSize: options.logoSize,
+    logoPosition: options.logoPosition,
+    logoShape: options.logoShape,
+    qrSize: options.qrSize,
+    qrStyle: options.qrStyle,
+    showDecorations: options.showDecorations,
+    bgColor: options.bgColor,
+    accentColor: options.accentColor,
+    textColor: options.textColor,
+  };
+
+  const pngBuffer = await generateBrandedQR(table.tenant.slug, table.number, logoBuffer, qrOptions);
+
+  if (options.format === 'pdf') {
+    const pdfBuffer = await wrapInPdf(pngBuffer, 1200, 1800);
+    return { buffer: pdfBuffer, contentType: 'application/pdf', filename: `mesa-${table.number}-qr.pdf` };
+  }
+
+  return { buffer: pngBuffer, contentType: 'image/png', filename: `mesa-${table.number}-qr.png` };
+}
+
+export async function getBatchQR(tenantId: string, options: BatchQRInput) {
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { slug: true, name: true },
+  });
+  if (!tenant) throw new AppError(404, 'Tenant not found', 'NOT_FOUND');
+
+  const tables = await prisma.table.findMany({
+    where: { tenantId, active: true },
+    orderBy: { number: 'asc' },
+  });
+
+  if (tables.length === 0) {
+    throw new AppError(400, 'No hay mesas activas', 'NO_TABLES');
+  }
+
+  const logoBuffer = await getLogoBuffer(tenantId);
+
+  const qrOptions: BrandedQROptions = {
+    template: options.template,
+    font: options.font,
+    title: options.title || tenant.name,
+    subtitle: options.subtitle,
+    callToAction: options.callToAction || 'Escanea para ver el menú',
+    showTableNumber: options.showTableNumber,
+    logoSize: options.logoSize,
+    logoPosition: options.logoPosition,
+    logoShape: options.logoShape,
+    qrSize: options.qrSize,
+    qrStyle: options.qrStyle,
+    showDecorations: options.showDecorations,
+    bgColor: options.bgColor,
+    accentColor: options.accentColor,
+    textColor: options.textColor,
+  };
+
+  // Generate all QR images
+  const images: { name: string; buffer: Buffer }[] = [];
+  for (const table of tables) {
+    const pngBuffer = await generateBrandedQR(tenant.slug, table.number, logoBuffer, qrOptions);
+    images.push({ name: `mesa-${table.number}.png`, buffer: pngBuffer });
+  }
+
+  // Package into ZIP
+  return new Promise<Buffer>((resolve, reject) => {
+    const archive = archiver('zip', { zlib: { level: 6 } });
+    const chunks: Buffer[] = [];
+
+    archive.on('data', (chunk: Buffer) => chunks.push(chunk));
+    archive.on('end', () => resolve(Buffer.concat(chunks)));
+    archive.on('error', reject);
+
+    for (const img of images) {
+      archive.append(img.buffer, { name: img.name });
+    }
+
+    archive.finalize();
+  });
 }

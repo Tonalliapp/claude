@@ -233,17 +233,17 @@ export default function PosPage() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
             <div className="bg-tonalli-black-card border border-subtle rounded-2xl p-4">
-              <p className="text-silver-muted text-[9px] font-medium tracking-[1.5px] mb-1.5">APERTURA</p>
+              <p className="text-silver-muted text-[10px] font-medium tracking-[1.5px] mb-1.5">APERTURA</p>
               <p className="text-gold text-xl font-semibold">${Number(register!.openingAmount ?? 0).toFixed(2)}</p>
             </div>
             <div className="bg-tonalli-black-card border border-subtle rounded-2xl p-4">
-              <p className="text-silver-muted text-[9px] font-medium tracking-[1.5px] mb-1.5">COBRADO HOY</p>
+              <p className="text-silver-muted text-[10px] font-medium tracking-[1.5px] mb-1.5">COBRADO HOY</p>
               <p className="text-jade text-xl font-semibold">${total.toFixed(2)}</p>
             </div>
             <div className="bg-tonalli-black-card border border-subtle rounded-2xl p-4">
-              <p className="text-silver-muted text-[9px] font-medium tracking-[1.5px] mb-1.5">EN CAJA</p>
+              <p className="text-silver-muted text-[10px] font-medium tracking-[1.5px] mb-1.5">EN CAJA</p>
               <p className="text-white text-xl font-semibold">${(() => {
                 const opening = Number(register!.openingAmount ?? 0);
                 const cashSales = liveBreakdown['cash']?.total ?? 0;
@@ -265,7 +265,7 @@ export default function PosPage() {
                   <div key={m.key} className="flex-1 bg-tonalli-black-card border border-subtle rounded-xl p-3">
                     <div className="flex items-center gap-1.5 mb-1">
                       <m.icon size={12} className={m.color} />
-                      <span className="text-silver-muted text-[9px] tracking-[1px]">{m.label.toUpperCase()}</span>
+                      <span className="text-silver-muted text-[10px] tracking-[1px]">{m.label.toUpperCase()}</span>
                     </div>
                     <p className="text-white text-sm font-semibold">${val.total.toFixed(2)}</p>
                     <p className="text-silver-dark text-[10px]">{val.count} cobros</p>

@@ -16,7 +16,9 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache tini fontconfig ttf-dejavu && fc-cache -fv
+# System fonts + Google Fonts via fontsource NPM packages
+RUN apk add --no-cache tini fontconfig ttf-dejavu ttf-liberation ttf-freefont && \
+    fc-cache -fv
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules

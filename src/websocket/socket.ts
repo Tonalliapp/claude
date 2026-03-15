@@ -67,6 +67,7 @@ export function initSocket(server: HttpServer): Server {
 
     logger.info(`[WS] Client connected: table ${tableId}`);
     socket.join(tableRoom(tenantId, tableId));
+    socket.join(tenantRoom(tenantId));
 
     socket.on('disconnect', () => {
       logger.info(`[WS] Client disconnected: table ${tableId}`);

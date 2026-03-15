@@ -22,6 +22,9 @@ router.get('/product-costs', checkFeature('full_reports'), ctrl.productCosts);
 router.get('/ingredient-consumption', checkFeature('full_reports'), validate({ query: periodQuerySchema }), ctrl.ingredientConsumption);
 router.get('/prep-time', ctrl.prepTimeStats);
 
+// Business alerts (proactive monitoring)
+router.get('/business-alerts', ctrl.businessAlerts);
+
 // Premium: export
 router.get('/export/sales', checkFeature('export_reports'), validate({ query: periodQuerySchema }), ctrl.exportSalesCsv);
 

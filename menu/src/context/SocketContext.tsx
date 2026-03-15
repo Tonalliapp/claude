@@ -46,7 +46,7 @@ export function SocketProvider({ tenantId, tableId, children }: { tenantId: stri
   useEffect(() => {
     if (!tenantId || !tableId) return;
 
-    const socket = io(SOCKET_URL, {
+    const socket = io(`${SOCKET_URL}/client`, {
       path: '/socket.io/',
       auth: { tenantId, tableId },
       transports: ['websocket'],
@@ -76,6 +76,11 @@ export function SocketProvider({ tenantId, tableId, children }: { tenantId: stri
           toast(info.toast, { duration: 3000 });
         }
       }
+    });
+
+    // Menu availability changed — refresh menu data
+    socket.on('menu:updated', () => {
+      queryClient.invalidateQueries({ queryKey: ['menu'] });
     });
 
     // Backend sends: { orderId, item: { product: { name }, status } }

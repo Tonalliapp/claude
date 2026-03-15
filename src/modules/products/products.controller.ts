@@ -11,6 +11,15 @@ export async function list(req: Request, res: Response, next: NextFunction) {
   }
 }
 
+export async function findByBarcode(req: Request, res: Response, next: NextFunction) {
+  try {
+    const product = await productsService.findByBarcode(req.tenantId!, req.params.barcode as string);
+    res.json(product);
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function getById(req: Request, res: Response, next: NextFunction) {
   try {
     const product = await productsService.getById(req.tenantId!, req.params.id as string);

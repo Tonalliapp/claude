@@ -103,11 +103,16 @@ export async function receipt(req: Request, res: Response, next: NextFunction) {
       prisma.payment.findFirst({
         where: { orderId: order.id },
         orderBy: { createdAt: 'desc' },
-        select: { method: true },
+        select: { method: true, tipAmount: true, cashRegister: { select: { user: { select: { name: true } } } } },
       }),
     ]);
 
     const cfg = (tenant?.config as Record<string, unknown>) ?? {};
+    const ivaEnabled = cfg.ivaEnabled === true;
+    const ivaRate = typeof cfg.ivaRate === 'number' ? cfg.ivaRate : 16;
+    const subtotal = Number(order.subtotal);
+    const total = Number(order.total);
+    const ivaAmount = ivaEnabled ? total - subtotal : 0;
 
     const pdf = await generateReceipt({
       restaurantName: tenant?.name ?? 'Restaurante',
@@ -125,13 +130,18 @@ export async function receipt(req: Request, res: Response, next: NextFunction) {
         subtotal: Number(i.subtotal),
         notes: i.notes,
       })),
-      subtotal: Number(order.subtotal),
-      total: Number(order.total),
+      subtotal,
+      total,
+      ivaEnabled,
+      ivaRate,
+      ivaAmount,
       notes: order.notes,
       paymentMethod: payment?.method,
+      tipAmount: payment?.tipAmount ? Number(payment.tipAmount) : undefined,
       paidAt: order.paidAt?.toISOString() ?? null,
       createdAt: order.createdAt.toISOString(),
       attendedBy: order.user?.name,
+      cashierName: payment?.cashRegister?.user?.name,
     });
 
     res.setHeader('Content-Type', 'application/pdf');

@@ -180,6 +180,7 @@ model Product {
   description String?
   price       Decimal  @db.Decimal(10, 2)
   imageUrl    String?  @map("image_url")
+  barcode     String?  @db.VarChar(50)
   available   Boolean  @default(true)
   trackStock  Boolean  @default(false) @map("track_stock")
   sortOrder   Int      @default(0) @map("sort_order")
@@ -192,6 +193,7 @@ model Product {
   inventory   Inventory?
   recipeItems RecipeItem[]
 
+  @@unique([tenantId, barcode])
   @@index([tenantId])
   @@index([tenantId, categoryId])
   @@map("products")
@@ -416,6 +418,7 @@ model Ingredient {
   id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   tenantId     String         @map("tenant_id") @db.Uuid
   name         String         @db.VarChar(255)
+  barcode      String?        @db.VarChar(50)
   unit         IngredientUnit @default(piezas)
   costPerUnit  Decimal        @default(0) @map("cost_per_unit") @db.Decimal(10, 4)
   currentStock Decimal        @default(0) @map("current_stock") @db.Decimal(10, 3)
@@ -429,6 +432,7 @@ model Ingredient {
   movements   IngredientMovement[]
 
   @@unique([tenantId, name])
+  @@unique([tenantId, barcode])
   @@index([tenantId])
   @@map("ingredients")
 }

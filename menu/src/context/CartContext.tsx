@@ -8,7 +8,7 @@ interface CartContextType {
   table: TableInfo | null;
   items: CartItem[];
   activeOrderId: string | null;
-  setSession: (restaurant: Restaurant, table: TableInfo) => void;
+  setSession: (restaurant: Restaurant, table: TableInfo | null) => void;
   setActiveOrderId: (id: string | null) => void;
   addItem: (product: MenuProduct) => void;
   removeItem: (productId: string) => void;
@@ -34,9 +34,9 @@ export function CartProvider({ slug, mesa, children }: { slug: string; mesa: num
     return localStorage.getItem(getStorageKey(slug, mesa));
   });
 
-  const setSession = useCallback((r: Restaurant, t: TableInfo) => {
+  const setSession = useCallback((r: Restaurant, t: TableInfo | null) => {
     setRestaurant(r);
-    setTable(t);
+    if (t) setTable(t);
   }, []);
 
   const setActiveOrderId = useCallback((id: string | null) => {
@@ -52,6 +52,7 @@ export function CartProvider({ slug, mesa, children }: { slug: string; mesa: num
     setItems(prev => {
       const existing = prev.find(i => i.product.id === product.id);
       if (existing) {
+        if (existing.quantity >= 10) return prev;
         return prev.map(i => i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
       }
       return [...prev, { product, quantity: 1 }];
@@ -66,7 +67,7 @@ export function CartProvider({ slug, mesa, children }: { slug: string; mesa: num
     if (quantity <= 0) {
       setItems(prev => prev.filter(i => i.product.id !== productId));
     } else {
-      setItems(prev => prev.map(i => i.product.id === productId ? { ...i, quantity } : i));
+      setItems(prev => prev.map(i => i.product.id === productId ? { ...i, quantity: Math.min(quantity, 10) } : i));
     }
   }, []);
 
