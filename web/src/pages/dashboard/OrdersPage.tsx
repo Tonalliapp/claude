@@ -292,7 +292,21 @@ export default function OrdersPage() {
                   <div className="flex items-center gap-1.5 mb-2">
                     <Bike size={12} className="text-orange-300" />
                     <span className="text-orange-200 text-xs truncate">{order.deliveryMeta.driverName}</span>
+                    {order.deliveryMeta.comandaCode && (
+                      <span className="text-orange-100 text-xs font-bold font-mono tracking-wider">{order.deliveryMeta.comandaCode}</span>
+                    )}
                     {order.deliveryMeta.pickupConfirmed && <ShieldCheck size={12} className="text-jade" />}
+                  </div>
+                )}
+
+                {/* Payment method badge */}
+                {order.source === 'yesswera' && order.deliveryMeta?.paymentMethod && order.deliveryMeta.paymentMethod !== 'cash' && (
+                  <div className={`rounded-md px-2 py-1 mb-2 inline-flex items-center gap-1 text-[11px] font-semibold ${
+                    order.deliveryMeta.paymentMethod === 'transfer'
+                      ? 'bg-jade/10 text-jade-light border border-jade/25'
+                      : 'bg-blue-500/10 text-blue-200 border border-blue-400/25'
+                  }`}>
+                    {order.deliveryMeta.paymentMethod === 'transfer' ? 'Pagado por transferencia' : 'Retiro sin tarjeta'}
                   </div>
                 )}
 
@@ -322,7 +336,7 @@ export default function OrdersPage() {
                         Cancelar
                       </button>
                     )}
-                    {nextLabel && !(order.status === 'ready' && order.source === 'yesswera' && order.deliveryMeta?.driverCode) && (
+                    {nextLabel && !(order.status === 'ready' && order.source === 'yesswera' && !order.deliveryMeta?.pickupConfirmed) && (
                       <button
                         onClick={() => {
                           if (order.status === 'delivered') {
@@ -344,7 +358,7 @@ export default function OrdersPage() {
                         {order.status !== 'delivered' && <ChevronRight size={14} />}
                       </button>
                     )}
-                    {order.status === 'ready' && order.source === 'yesswera' && order.deliveryMeta?.driverCode && (
+                    {order.status === 'ready' && order.source === 'yesswera' && !order.deliveryMeta?.pickupConfirmed && (
                       <span className="flex items-center gap-1 px-3.5 py-1.5 rounded-lg bg-orange-500/10 border border-orange-400/30 text-orange-300 text-xs font-medium">
                         Verificar en Cocina
                       </span>
@@ -408,6 +422,21 @@ export default function OrdersPage() {
                 )}
                 {detailOrder.deliveryMeta.driverPhone && (
                   <p className="text-orange-200/70 text-xs ml-5">{detailOrder.deliveryMeta.driverPhone}</p>
+                )}
+                {detailOrder.deliveryMeta.comandaCode && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-orange-300/60 text-[10px] uppercase tracking-wider">Comanda:</span>
+                    <span className="text-orange-100 text-sm font-bold tracking-[3px] font-mono">{detailOrder.deliveryMeta.comandaCode}</span>
+                  </div>
+                )}
+                {detailOrder.deliveryMeta.paymentMethod && detailOrder.deliveryMeta.paymentMethod !== 'cash' && (
+                  <div className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 mt-1 text-[11px] font-semibold ${
+                    detailOrder.deliveryMeta.paymentMethod === 'transfer'
+                      ? 'bg-jade/10 text-jade-light border border-jade/25'
+                      : 'bg-blue-500/10 text-blue-200 border border-blue-400/25'
+                  }`}>
+                    {detailOrder.deliveryMeta.paymentMethod === 'transfer' ? 'Pagado por transferencia' : 'Retiro sin tarjeta'}
+                  </div>
                 )}
                 {detailOrder.deliveryAddress && (
                   <p className="text-silver-muted text-xs mt-1">{detailOrder.deliveryAddress}</p>

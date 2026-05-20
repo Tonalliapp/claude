@@ -58,9 +58,25 @@ export function initSocket(server: HttpServer): Server {
 
   // Client namespace — for customers at tables (no JWT, uses table token)
   const clientNsp = io.of('/client');
-  clientNsp.on('connection', (socket: Socket) => {
+  clientNsp.on('connection', async (socket: Socket) => {
     const { tenantId, tableId } = socket.handshake.auth;
     if (!tenantId || !tableId) {
+      socket.disconnect();
+      return;
+    }
+
+    // Validate that table belongs to tenant
+    try {
+      const { prisma } = await import('../config/database');
+      const table = await prisma.table.findFirst({
+        where: { id: tableId, tenantId },
+        select: { id: true },
+      });
+      if (!table) {
+        socket.disconnect();
+        return;
+      }
+    } catch {
       socket.disconnect();
       return;
     }

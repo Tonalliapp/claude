@@ -42,7 +42,8 @@ function notifyYessweraOrderReady(order: {
     console.log(`[order_ready] Skipped: source=${order.source}, externalOrderId=${order.externalOrderId}`);
     return;
   }
-  console.log(`[order_ready] Firing webhook for order ${order.externalOrderId}`);
+  const webhookSentAt = new Date().toISOString();
+  console.log(`[LATENCY-TEST] order_ready webhook sent at: ${webhookSentAt} for order ${order.externalOrderId}`);
   const prepTimeMinutes = order.confirmedAt
     ? Math.round((Date.now() - order.confirmedAt.getTime()) / 60000)
     : undefined;
@@ -301,10 +302,10 @@ export async function updateStatus(tenantId: string, id: string, status: OrderSt
     );
   }
 
-  // Block ready → delivered for delivery orders with driverCode — must use confirm-pickup endpoint
+  // Block ready → delivered for ALL Yesswera orders — must use confirm-pickup endpoint
   if (status === 'delivered' && order.status === 'ready' && order.source === 'yesswera') {
     const meta = (order.deliveryMeta ?? {}) as Record<string, unknown>;
-    if (meta.driverCode && !meta.pickupConfirmed) {
+    if (!meta.pickupConfirmed) {
       throw new AppError(
         400,
         'Órdenes delivery deben confirmarse con el código del repartidor. Usa el flujo de verificación en Cocina.',

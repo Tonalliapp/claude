@@ -10,6 +10,7 @@ import CartPage from '@/pages/CartPage';
 import OrderTrackingPage from '@/pages/OrderTrackingPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
+import ChatWidget from '@/components/ui/ChatWidget';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,6 +47,7 @@ function SlugLayout() {
           <Route path="order/:id" element={<OrderTrackingPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
+        <ChatWidget />
       </SocketWrapper>
     </CartProvider>
   );

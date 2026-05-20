@@ -646,7 +646,7 @@ export async function businessAlerts(tenantId: string) {
       category: 'cash',
       title: 'Caja cerrada',
       message: 'No hay caja registradora abierta',
-      action: '/dashboard/cash-register',
+      action: '/dashboard/pos',
     });
   }
 

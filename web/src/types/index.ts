@@ -96,6 +96,8 @@ export interface Order {
     deliveredAt?: string;
     driverCode?: string;
     pickupCode?: string;
+    comandaCode?: string;
+    paymentMethod?: 'cash' | 'transfer' | 'cardless_withdrawal';
     pickupConfirmed?: boolean;
     pickupConfirmedAt?: string;
     pickupAttempts?: number;

@@ -41,9 +41,9 @@ export async function createClientOrder(data: CreateClientOrderInput) {
   );
 }
 
-export async function getClientOrder(orderId: string) {
+export async function getClientOrder(orderId: string, tenantId?: string) {
   const order = await prisma.order.findUnique({
-    where: { id: orderId },
+    where: { id: orderId, ...(tenantId ? { tenantId } : {}) },
     include: {
       items: {
         include: { product: { select: { id: true, name: true, imageUrl: true } } },

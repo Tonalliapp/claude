@@ -47,6 +47,12 @@ const envSchema = z.object({
   STRIPE_SECRET_KEY: z.string().min(1),
   STRIPE_PUBLISHABLE_KEY: z.string().min(1),
   STRIPE_WEBHOOK_SECRET: z.string().min(1).default('whsec_placeholder'),
+  STRIPE_PRICE_BASIC_MONTHLY: z.string().default(''),
+  STRIPE_PRICE_BASIC_YEARLY: z.string().default(''),
+  STRIPE_PRICE_PRO_MONTHLY: z.string().default(''),
+  STRIPE_PRICE_PRO_YEARLY: z.string().default(''),
+  STRIPE_PRICE_PREMIUM_MONTHLY: z.string().default(''),
+  STRIPE_PRICE_PREMIUM_YEARLY: z.string().default(''),
 
   // Storage
   STORAGE_PUBLIC_URL: z.string().url().optional(),
@@ -54,7 +60,7 @@ const envSchema = z.object({
   // Web Push (VAPID)
   VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
-  VAPID_EMAIL: z.string().email().default('valenzuela.carloseduardo@gmail.com'),
+  VAPID_EMAIL: z.string().email().default('noreply@tonalli.app'),
 
   // Sentry
   SENTRY_DSN: z.string().url().optional(),

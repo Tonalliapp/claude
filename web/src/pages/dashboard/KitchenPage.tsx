@@ -15,6 +15,8 @@ import {
   Bike,
   Phone,
   ShieldCheck,
+  Banknote,
+  CreditCard,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/config/api';
@@ -84,8 +86,15 @@ function KitchenTimer({ createdAt }: { createdAt: string }) {
     urgent: 'bg-red-500/15 text-red-400 animate-pulse',
   };
 
+  const glowStyles: Record<TimerLevel, React.CSSProperties> = {
+    normal: {},
+    warning: { boxShadow: '0 0 8px rgba(201, 168, 76, 0.3)' },
+    late: { boxShadow: '0 0 12px rgba(239, 68, 68, 0.4)' },
+    urgent: { boxShadow: '0 0 16px rgba(239, 68, 68, 0.6), 0 0 32px rgba(239, 68, 68, 0.3)' },
+  };
+
   return (
-    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm font-semibold tabular-nums ${styles[level]}`}>
+    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm font-semibold tabular-nums transition-shadow duration-500 ${styles[level]}`} style={glowStyles[level]}>
       {level === 'urgent' || level === 'late' ? <Flame size={13} /> : <Clock size={13} />}
       {elapsed}
     </div>
@@ -185,10 +194,10 @@ function DeliveryPickupVerification({
             <span className="text-orange-200/80 text-xs">{meta.driverPhone}</span>
           </div>
         )}
-        {meta?.driverCode && (
+        {meta?.comandaCode && (
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-orange-300/60 text-[10px] uppercase tracking-wider">Código esperado:</span>
-            <span className="text-orange-100 text-lg font-bold tracking-[4px] font-mono">{meta.driverCode}</span>
+            <span className="text-orange-300/60 text-[10px] uppercase tracking-wider">Comanda:</span>
+            <span className="text-orange-100 text-lg font-bold tracking-[4px] font-mono">{meta.comandaCode}</span>
           </div>
         )}
       </div>
@@ -263,9 +272,9 @@ function KitchenOrderCard({
         <div className="flex items-center gap-2">
           <span className="text-white text-lg font-bold">{formatOrderNumber(order.orderNumber)}</span>
           {order.orderType === 'delivery' ? (
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded-md border border-orange-400/30 bg-orange-500/15 text-orange-300 text-xs font-medium">
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium" style={{ background: 'rgba(234, 88, 12, 0.12)', color: '#EA580C', border: '1px solid rgba(234, 88, 12, 0.25)' }}>
               <Bike size={12} />
-              Domicilio
+              {isDelivery ? 'Delivery' : 'Domicilio'}
             </span>
           ) : (
             <span className="px-2 py-0.5 rounded-md border border-white/10 bg-tonalli-black-soft text-silver-light text-xs font-medium">
@@ -276,12 +285,33 @@ function KitchenOrderCard({
         <KitchenTimer createdAt={order.createdAt} />
       </div>
 
+      {/* Payment method badge for delivery orders */}
+      {isDelivery && order.deliveryMeta?.paymentMethod && order.deliveryMeta.paymentMethod !== 'cash' && (
+        <div className={`rounded-lg px-2.5 py-1.5 mb-2.5 flex items-center gap-1.5 ${
+          order.deliveryMeta.paymentMethod === 'transfer'
+            ? 'bg-jade/10 border border-jade/25'
+            : 'bg-blue-500/10 border border-blue-400/25'
+        }`}>
+          {order.deliveryMeta.paymentMethod === 'transfer' ? (
+            <Banknote size={13} className="text-jade shrink-0" />
+          ) : (
+            <CreditCard size={13} className="text-blue-300 shrink-0" />
+          )}
+          <span className={`text-xs font-semibold ${
+            order.deliveryMeta.paymentMethod === 'transfer' ? 'text-jade-light' : 'text-blue-200'
+          }`}>
+            {order.deliveryMeta.paymentMethod === 'transfer' ? 'Pagado por transferencia' : 'Retiro sin tarjeta'}
+          </span>
+        </div>
+      )}
+
       {/* Delivery info (non-ready columns) */}
       {order.orderType === 'delivery' && order.deliveryMeta?.driverName && column !== 'ready' && (
         <div className="bg-orange-500/10 rounded-lg px-2.5 py-1.5 mb-2.5 flex items-center gap-1.5">
           <Bike size={12} className="text-orange-300 shrink-0" />
           <span className="text-orange-200 text-xs font-medium truncate">
             {order.deliveryMeta.driverName}
+            {order.deliveryMeta.comandaCode && ` · ${order.deliveryMeta.comandaCode}`}
             {order.deliveryMeta.estimatedMinutes != null && ` · ~${order.deliveryMeta.estimatedMinutes} min`}
           </span>
         </div>
@@ -498,7 +528,7 @@ function KitchenHeader({
           <WifiOff size={14} className="text-red-400" />
         )}
         <span className={`text-xs font-medium ${isConnected ? 'text-jade' : 'text-red-400'}`}>
-          {isConnected ? 'En vivo' : 'Sin señal'}
+          {isConnected ? 'En línea' : 'Sin señal'}
         </span>
       </div>
 

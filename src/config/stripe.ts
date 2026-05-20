@@ -30,13 +30,13 @@ export const PLAN_CONFIG = {
 } as const;
 
 export const PRICE_IDS = {
-  basic_monthly: 'price_1T6LW32QogbirSNpeE3q01Si',
-  basic_yearly: 'price_1T6LWD2QogbirSNp9HOxbCch',
-  professional_monthly: 'price_1T6LWO2QogbirSNpFideOTDG',
-  professional_yearly: 'price_1T6LWe2QogbirSNphZ6ToNmj',
-  premium_monthly: 'price_1T6LWs2QogbirSNptsw8JCiL',
-  premium_yearly: 'price_1T6LY62QogbirSNpO3RP8Edr',
-} as const;
+  basic_monthly: env.STRIPE_PRICE_BASIC_MONTHLY,
+  basic_yearly: env.STRIPE_PRICE_BASIC_YEARLY,
+  professional_monthly: env.STRIPE_PRICE_PRO_MONTHLY,
+  professional_yearly: env.STRIPE_PRICE_PRO_YEARLY,
+  premium_monthly: env.STRIPE_PRICE_PREMIUM_MONTHLY,
+  premium_yearly: env.STRIPE_PRICE_PREMIUM_YEARLY,
+};
 
 export function getPlanFromPriceId(priceId: string): 'basic' | 'professional' | 'premium' {
   if (priceId === PRICE_IDS.basic_monthly || priceId === PRICE_IDS.basic_yearly) return 'basic';

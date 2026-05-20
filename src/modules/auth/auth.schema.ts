@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const loginSchema = z.object({
   email: z.string().email('Email inválido'),
   username: z.string().min(1, 'Username requerido'),
-  password: z.string().min(6, 'Mínimo 6 caracteres'),
+  password: z.string().min(8, 'Mínimo 8 caracteres'),
 });
 
 export const registerSchema = z.object({
@@ -22,7 +22,7 @@ export const refreshSchema = z.object({
 export const updateProfileSchema = z.object({
   name: z.string().min(2).max(255).optional(),
   email: z.string().email('Email inválido').optional(),
-  currentPassword: z.string().min(6).optional(),
+  currentPassword: z.string().min(8).optional(),
   newPassword: z.string().min(8, 'Mínimo 8 caracteres').optional(),
 }).refine(
   (data) => {

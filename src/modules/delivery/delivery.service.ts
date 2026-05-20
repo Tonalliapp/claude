@@ -102,6 +102,8 @@ export async function createDeliveryOrder(tenantId: string, data: CreateDelivery
       source: 'yesswera',
       deliveryMeta: {
         yessweraOrderId: data.externalOrderId,
+        ...(data.comandaCode ? { comandaCode: data.comandaCode } : {}),
+        ...(data.paymentMethod ? { paymentMethod: data.paymentMethod } : {}),
       },
       items: { create: items },
     } as any,
@@ -209,6 +211,7 @@ export async function processWebhook(tenantId: string, data: DeliveryWebhookInpu
       updatedMeta.driverAssigned = true;
       if (data.data.driverCode) updatedMeta.driverCode = data.data.driverCode;
       if (data.data.pickupCode) updatedMeta.pickupCode = data.data.pickupCode;
+      if (data.data.comandaCode) updatedMeta.comandaCode = data.data.comandaCode;
       break;
     case 'driver_verified':
       updatedMeta.verified = true;

@@ -159,7 +159,7 @@ export default function DashboardLayout() {
             {!collapsed && (
               <div className="flex flex-col">
                 <span className={`text-xs font-medium ${isConnected ? 'text-jade' : 'text-red-400'}`}>
-                  {isConnected ? 'En vivo' : 'Sin conexión'}
+                  {isConnected ? 'En línea' : 'Sin conexión'}
                 </span>
                 {!isConnected && (
                   <span className="text-red-400/70 text-[10px]">Pedidos no llegarán</span>
@@ -203,7 +203,7 @@ export default function DashboardLayout() {
               <span className={`text-[11px] font-medium hidden sm:inline ${
                 isConnected ? 'text-jade' : 'text-red-400'
               }`}>
-                {isConnected ? 'En vivo' : 'Desconectado'}
+                {isConnected ? 'En línea' : 'Desconectado'}
               </span>
             </div>
             {/* Alert indicator */}

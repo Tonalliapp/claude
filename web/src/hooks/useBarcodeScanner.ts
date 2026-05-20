@@ -17,6 +17,7 @@ export function useBarcodeScanner(
   const [error, setError] = useState<string | null>(null);
   const onScanRef = useRef(onScan);
   onScanRef.current = onScan;
+  const mountedRef = useRef(true);
 
   // Debounce: ignore same barcode within 2s
   const lastScanRef = useRef<{ code: string; time: number }>({ code: '', time: 0 });
@@ -28,16 +29,28 @@ export function useBarcodeScanner(
       } catch {
         // ignore — may not be running
       }
-      scannerRef.current.clear();
+      try {
+        scannerRef.current.clear();
+      } catch {
+        // ignore — DOM element may be gone
+      }
       scannerRef.current = null;
     }
-    setIsScanning(false);
+    if (mountedRef.current) setIsScanning(false);
   }, []);
 
   const start = useCallback(async () => {
     setError(null);
     try {
       await stop();
+
+      // Verify the container element exists in the DOM
+      const container = document.getElementById(containerId);
+      if (!container) {
+        setError('Contenedor de cámara no encontrado. Intenta de nuevo.');
+        return;
+      }
+
       const scanner = new Html5Qrcode(containerId);
       scannerRef.current = scanner;
 
@@ -57,6 +70,17 @@ export function useBarcodeScanner(
             return;
           }
           lastScanRef.current = { code: decodedText, time: now };
+
+          // Stop scanner BEFORE calling callback to prevent DOM crash
+          // when callback unmounts this component
+          if (scannerRef.current) {
+            scannerRef.current.stop().catch(() => {});
+            try { scannerRef.current.clear(); } catch { /* ignore */ }
+            scannerRef.current = null;
+          }
+          if (mountedRef.current) setIsScanning(false);
+
+          // Now safe to call — scanner is stopped, won't access removed DOM
           onScanRef.current(decodedText);
         },
         () => {
@@ -87,10 +111,12 @@ export function useBarcodeScanner(
   }, [containerId, stop]);
 
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
       if (scannerRef.current) {
         scannerRef.current.stop().catch(() => {});
-        scannerRef.current.clear();
+        try { scannerRef.current.clear(); } catch { /* ignore */ }
         scannerRef.current = null;
       }
     };

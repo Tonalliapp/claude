@@ -14,6 +14,8 @@ export const createDeliveryOrderSchema = z.object({
   customerPhone: z.string().max(20),
   deliveryAddress: z.string().max(500),
   notes: z.string().optional(),
+  comandaCode: z.string().max(10).optional(),
+  paymentMethod: z.enum(['cash', 'transfer', 'cardless_withdrawal']).optional(),
 });
 
 export const deliveryWebhookSchema = z.object({
@@ -39,6 +41,7 @@ export const deliveryWebhookSchema = z.object({
     reason: z.string().optional(),
     driverCode: z.string().optional(),
     pickupCode: z.string().optional(),
+    comandaCode: z.string().optional(),
     deliveryCodeUsed: z.boolean().optional(),
     deliveryVerifiedAt: z.string().optional(),
     orderId: z.string().optional(),
